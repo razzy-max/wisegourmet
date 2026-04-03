@@ -5,6 +5,9 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 
+const MENU_CACHE_TTL_MS = 90 * 1000;
+const MENU_CACHE_KEY_PREFIX = 'wg:menu:';
+
 const normalizeStatus = (item) => item.availabilityStatus || (item.isAvailable ? 'in_stock' : 'unavailable');
 
 const statusLabelMap = {
@@ -17,6 +20,51 @@ const statusOrder = {
   in_stock: 0,
   sold_out: 1,
   unavailable: 2,
+};
+
+const getMenuCacheKey = (selectedCategory, search) =>
+  `${MENU_CACHE_KEY_PREFIX}${selectedCategory || 'all'}:${String(search || '').trim().toLowerCase()}`;
+
+const readMenuCache = (cacheKey) => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(cacheKey);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+
+    if (Date.now() - Number(parsed.ts || 0) > MENU_CACHE_TTL_MS) {
+      window.sessionStorage.removeItem(cacheKey);
+      return null;
+    }
+
+    return parsed.data || null;
+  } catch {
+    return null;
+  }
+};
+
+const writeMenuCache = (cacheKey, payload) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    window.sessionStorage.setItem(
+      cacheKey,
+      JSON.stringify({ ts: Date.now(), data: payload })
+    );
+  } catch {
+    // Ignore storage failures; network fetch still works.
+  }
 };
 
 export default function HomeMenuPage() {
@@ -46,6 +94,16 @@ export default function HomeMenuPage() {
   }, [refreshCartCount]);
 
   const fetchData = useCallback(async () => {
+    const cacheKey = getMenuCacheKey(selectedCategory, search);
+    const cached = readMenuCache(cacheKey);
+
+    if (cached?.items && cached?.categories) {
+      setItems(cached.items);
+      setCategories(cached.categories);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const [menuRes, categoryRes] = await Promise.all([
@@ -66,6 +124,10 @@ export default function HomeMenuPage() {
 
       setItems(orderedItems);
       setCategories(categoryRes.categories || []);
+      writeMenuCache(cacheKey, {
+        items: orderedItems,
+        categories: categoryRes.categories || [],
+      });
     } catch (error) {
       setMessage(error.message);
     } finally {
