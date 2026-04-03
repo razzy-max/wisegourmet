@@ -148,14 +148,27 @@ const seed = async () => {
   ];
 
   for (const demoUser of demoUsers) {
-    await User.create({
-      fullName: demoUser.fullName,
-      email: demoUser.email.toLowerCase(),
-      password: demoUser.password,
-      role: demoUser.role,
-      phone: demoUser.phone,
-      isActive: true,
-    });
+    const email = demoUser.email.toLowerCase();
+    const existing = await User.findOne({ email });
+
+    if (!existing) {
+      await User.create({
+        fullName: demoUser.fullName,
+        email,
+        password: demoUser.password,
+        role: demoUser.role,
+        phone: demoUser.phone,
+        isActive: true,
+      });
+      continue;
+    }
+
+    existing.fullName = demoUser.fullName;
+    existing.password = demoUser.password;
+    existing.role = demoUser.role;
+    existing.phone = demoUser.phone;
+    existing.isActive = true;
+    await existing.save();
   }
 
   console.log('Seed completed successfully');
