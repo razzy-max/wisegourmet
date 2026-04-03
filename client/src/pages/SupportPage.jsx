@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supportApi } from '../api/supportApi';
 import { filesToAttachments } from '../utils/attachments';
@@ -29,16 +29,16 @@ export default function SupportPage() {
     }
   }, [searchParams]);
 
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     try {
       const response = await orderApi.myOrders();
       setOrders(response.orders || []);
     } catch {
       setOrders([]);
     }
-  };
+  }, []);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [ticketsResponse] = await Promise.all([supportApi.myTickets(), loadOrders()]);
@@ -49,11 +49,11 @@ export default function SupportPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [loadOrders]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   const submit = async (event) => {
     event.preventDefault();

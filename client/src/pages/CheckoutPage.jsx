@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { orderApi } from '../api/orderApi';
 import { cartApi } from '../api/cartApi';
@@ -83,7 +83,7 @@ export default function CheckoutPage() {
     loadCart();
   }, []);
 
-  const handlePaystackCallback = async (orderId) => {
+  const handlePaystackCallback = useCallback(async (orderId) => {
     setLoading(true);
     setError('');
     try {
@@ -108,14 +108,14 @@ export default function CheckoutPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchParams]);
 
   useEffect(() => {
     const orderId = searchParams.get('orderId');
     if (orderId && !order && !loading) {
       handlePaystackCallback(orderId);
     }
-  }, [searchParams, order]);
+  }, [searchParams, order, loading, handlePaystackCallback]);
   const submit = async (event) => {
     event.preventDefault();
     setLoading(true);

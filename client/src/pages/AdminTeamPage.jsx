@@ -9,6 +9,8 @@ const initialForm = {
   role: 'staff',
 };
 
+const generatePasswordSuggestion = () => `WG${Date.now().toString(36).slice(-6)}!`;
+
 export default function AdminTeamPage() {
   const [form, setForm] = useState(initialForm);
   const [users, setUsers] = useState([]);
@@ -64,7 +66,7 @@ export default function AdminTeamPage() {
   };
 
   const resetPassword = async (user) => {
-    const generated = `WG${Math.random().toString(36).slice(2, 8)}!`;
+    const generated = generatePasswordSuggestion();
     const newPassword =
       window.prompt(`Set a new password for ${user.email}`, generated) || '';
 
