@@ -118,6 +118,7 @@ export default function RiderQueuePage() {
             <article className="panel" key={order._id}>
               <h4>Order {order._id.slice(-6)}</h4>
               <p>Customer: {order.customer?.fullName || 'Unknown'}</p>
+              <p>Phone: {order.customer?.phone || 'Not provided'}</p>
               <p>Status: {order.status}</p>
               <p>
                 Accepted by:{' '}
@@ -146,6 +147,7 @@ export default function RiderQueuePage() {
               <h4>Order {order._id.slice(-6)}</h4>
               <p>Status: {order.status}</p>
               <p>Customer: {order.customer?.fullName || 'Unknown'}</p>
+              <p>Phone: {order.customer?.phone || 'Not provided'}</p>
               <p>Being handled by: {order.assignedRider?.fullName || 'You'}</p>
               <p>Address: {order.deliveryAddress?.fullText || 'Not provided'}</p>
 

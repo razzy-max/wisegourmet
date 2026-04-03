@@ -96,15 +96,14 @@ export default function HomeMenuPage() {
   const fetchData = useCallback(async () => {
     const cacheKey = getMenuCacheKey(selectedCategory, search);
     const cached = readMenuCache(cacheKey);
+    const hasCachedData = Boolean(cached?.items && cached?.categories);
 
-    if (cached?.items && cached?.categories) {
+    if (hasCachedData) {
       setItems(cached.items);
       setCategories(cached.categories);
-      setLoading(false);
-      return;
     }
 
-    setLoading(true);
+    setLoading(!hasCachedData);
     try {
       const [menuRes, categoryRes] = await Promise.all([
         menuApi.list({

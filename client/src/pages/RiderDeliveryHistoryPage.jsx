@@ -51,6 +51,7 @@ export default function RiderDeliveryHistoryPage() {
             <article className="panel" key={order._id}>
               <h4>Order {order._id.slice(-6)}</h4>
               <p>Customer: {order.customer?.fullName || 'Unknown'}</p>
+              <p>Phone: {order.customer?.phone || 'Not provided'}</p>
               <p>Status: {order.status}</p>
               <p>Address: {order.deliveryAddress?.fullText || 'Not provided'}</p>
               <p>Fee: N {Number(order.deliveryFee || 0).toLocaleString()}</p>

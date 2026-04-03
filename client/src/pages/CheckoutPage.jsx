@@ -23,7 +23,7 @@ const getZoneLabel = (zone) => {
     case 'outside':
       return 'Outside';
     default:
-      return 'Zone A';
+      return 'Select zone';
   }
 };
 
@@ -35,7 +35,7 @@ export default function CheckoutPage() {
     area: '',
     landmark: '',
     notes: '',
-    zone: 'zone_a',
+    zone: '',
   });
   const [result, setResult] = useState('');
   const [error, setError] = useState('');
@@ -46,7 +46,7 @@ export default function CheckoutPage() {
   const cartItems = cart.items || [];
   const displayedItems = order?.items || cartItems;
   const subtotal = displayedItems.reduce((sum, item) => sum + Number(item.price || item.priceSnapshot || 0) * Number(item.quantity || 0), 0);
-  const deliveryFee = ZONE_FEES[form.zone] ?? ZONE_FEES.outside;
+  const deliveryFee = order ? Number(order.deliveryFee || 0) : (ZONE_FEES[form.zone] ?? 0);
   const total = order ? Number(order.total || order.totalAmount || subtotal + deliveryFee) : subtotal + deliveryFee;
 
   useEffect(() => {
@@ -124,6 +124,12 @@ export default function CheckoutPage() {
 
     if ((cart.items || []).length === 0) {
       setError('Your cart is empty. Add items before checkout.');
+      setLoading(false);
+      return;
+    }
+
+    if (!form.zone) {
+      setError('Please select a delivery zone.');
       setLoading(false);
       return;
     }
@@ -227,7 +233,14 @@ export default function CheckoutPage() {
             value={form.notes}
             onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
           />
-          <select value={form.zone} onChange={(event) => setForm((prev) => ({ ...prev, zone: event.target.value }))}>
+          <select
+            value={form.zone}
+            onChange={(event) => setForm((prev) => ({ ...prev, zone: event.target.value }))}
+            required
+          >
+            <option value="" disabled>
+              Select zone
+            </option>
             <option value="zone_a">Zone A</option>
             <option value="zone_b">Zone B</option>
             <option value="zone_c">Zone C</option>
