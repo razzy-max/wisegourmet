@@ -95,6 +95,7 @@ export default function HomeMenuPage() {
   const addToCart = async (item) => {
     if (!isAuthenticated || user.role !== 'customer') {
       setMessage('Login as customer to add items to cart.');
+      window.scrollTo(0, 0);
       return;
     }
 

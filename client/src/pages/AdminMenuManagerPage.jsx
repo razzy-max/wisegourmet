@@ -33,6 +33,7 @@ export default function AdminMenuManagerPage() {
     availabilityStatus: 'in_stock',
   });
   const [savingItemId, setSavingItemId] = useState('');
+  const [creatingItemId, setCreatingItemId] = useState('');
   const [message, setMessage] = useState('');
 
   const toImageDataUrl = async (fileList) => {
@@ -75,7 +76,9 @@ export default function AdminMenuManagerPage() {
   const createItem = async (event) => {
     event.preventDefault();
     setMessage('');
+    setCreatingItemId('creating');
     try {
+      setMessage('Creating menu item...');
       await menuApi.createItem({
         ...newItem,
         price: Number(newItem.price),
@@ -90,8 +93,11 @@ export default function AdminMenuManagerPage() {
         availabilityStatus: 'in_stock',
       });
       await load();
+      setMessage('Menu item created successfully.');
     } catch (error) {
       setMessage(error.message);
+    } finally {
+      setCreatingItemId('');
     }
   };
 
@@ -261,8 +267,8 @@ export default function AdminMenuManagerPage() {
                 </option>
               ))}
             </select>
-            <button className="btn" type="submit">
-              Create item
+            <button className="btn" type="submit" disabled={creatingItemId === 'creating'}>
+              {creatingItemId === 'creating' ? 'Creating...' : 'Create item'}
             </button>
           </form>
         </article>
