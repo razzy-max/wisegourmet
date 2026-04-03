@@ -497,6 +497,9 @@ select {
   padding-right: 2.5rem;
   background-color: #ffffff;
   cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  color: #223126;
 }
 
 select:hover {
@@ -507,10 +510,12 @@ select:hover {
 @media (max-width: 640px) {
   select {
     padding: 0.85rem 2.5rem 0.85rem 0.85rem;
-    font-size: 1rem;
+    font-size: 1.05rem;
     min-height: 48px;
     background-position: right 0.85rem center;
     background-size: 14px;
+    line-height: 1.5;
+    border: 1px solid #a0b19b;
   }
 
   .controls {
