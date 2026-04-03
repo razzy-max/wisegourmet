@@ -1,0 +1,291 @@
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { orderApi } from '../api/orderApi';
+import { cartApi } from '../api/cartApi';
+import { authApi } from '../api/authApi';
+import { useCart } from '../context/CartContext';
+
+const ZONE_FEES = {
+  zone_a: 700,
+  zone_b: 1000,
+  zone_c: 1500,
+  outside: 2000,
+};
+
+const getZoneLabel = (zone) => {
+  switch (zone) {
+    case 'zone_a':
+      return 'Zone A';
+    case 'zone_b':
+      return 'Zone B';
+    case 'zone_c':
+      return 'Zone C';
+    case 'outside':
+      return 'Outside';
+    default:
+      return 'Zone A';
+  }
+};
+
+export default function CheckoutPage() {
+  const [searchParams] = useSearchParams();
+  const { refreshCartCount } = useCart();
+  const [form, setForm] = useState({
+    fullText: '',
+    area: '',
+    landmark: '',
+    notes: '',
+    zone: 'zone_a',
+  });
+  const [result, setResult] = useState('');
+  const [error, setError] = useState('');
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [cart, setCart] = useState({ items: [] });
+
+  const cartItems = cart.items || [];
+  const displayedItems = order?.items || cartItems;
+  const subtotal = displayedItems.reduce((sum, item) => sum + Number(item.price || item.priceSnapshot || 0) * Number(item.quantity || 0), 0);
+  const deliveryFee = ZONE_FEES[form.zone] ?? ZONE_FEES.outside;
+  const total = order ? Number(order.total || order.totalAmount || subtotal + deliveryFee) : subtotal + deliveryFee;
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const response = await authApi.me();
+        const savedAddress = response.user?.savedAddress || {};
+        setForm((prev) => ({
+          ...prev,
+          fullText: savedAddress.fullText || prev.fullText,
+          area: savedAddress.area || prev.area,
+          landmark: savedAddress.landmark || prev.landmark,
+          notes: savedAddress.notes || prev.notes,
+          zone: savedAddress.zone || prev.zone,
+        }));
+      } catch {
+        // ignore profile load failures; checkout remains editable
+      }
+    };
+
+    loadProfile();
+  }, []);
+
+  const loadCart = async () => {
+    try {
+      const response = await cartApi.get();
+      setCart(response.cart || { items: [] });
+    } catch {
+      setCart({ items: [] });
+    }
+  };
+
+  useEffect(() => {
+    loadCart();
+  }, []);
+
+  const handlePaystackCallback = async (orderId) => {
+    setLoading(true);
+    setError('');
+    try {
+      const orderData = await orderApi.getOrder(orderId);
+      const callbackReference = searchParams.get('reference') || searchParams.get('trxref');
+
+      if (orderData.order.payment?.status === 'paid') {
+        setOrder(orderData.order);
+        setResult('Payment verified successfully!');
+      } else {
+        const reference = callbackReference || orderData.order.payment?.reference;
+        if (!reference) {
+          throw new Error('Payment reference not found');
+        }
+
+        const response = await orderApi.verifyPayment(orderId, reference);
+        setOrder(response.order);
+        setResult('Payment verified successfully!');
+      }
+    } catch (err) {
+      setError(`Failed to verify payment: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const orderId = searchParams.get('orderId');
+    if (orderId && !order && !loading) {
+      handlePaystackCallback(orderId);
+    }
+  }, [searchParams, order]);
+  const submit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setResult('');
+    setError('');
+
+    if ((cart.items || []).length === 0) {
+      setError('Your cart is empty. Add items before checkout.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // 1. Create order
+      const createResponse = await orderApi.create({
+        deliveryMode: 'zone',
+        zone: form.zone,
+        deliveryAddress: {
+          fullText: form.fullText,
+          area: form.area,
+          landmark: form.landmark,
+          notes: form.notes,
+          lat: null,
+          lng: null,
+        },
+      });
+
+      const orderId = createResponse.order._id;
+      await refreshCartCount();
+      await loadCart();
+      setOrder(createResponse.order);
+      setResult('Order created. Redirecting to Paystack...');
+
+      try {
+        await authApi.updateProfile({
+          savedAddress: {
+            fullText: form.fullText,
+            area: form.area,
+            landmark: form.landmark,
+            notes: form.notes,
+            zone: form.zone,
+          },
+        });
+      } catch {
+        // profile save is non-blocking for checkout
+      }
+
+      // 2. Initiate payment and redirect
+      const paymentResponse = await orderApi.initiatePayment(orderId);
+      
+      if (paymentResponse.payment?.authorizationUrl) {
+        // Redirect to Paystack payment page
+        window.location.href = paymentResponse.payment.authorizationUrl;
+      } else {
+        setError('Failed to get payment authorization URL');
+        setLoading(false);
+      }
+    } catch (err) {
+      setError(err.message);
+      setResult('');
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section className="page-wrap panel">
+      <h1>Checkout</h1>
+
+      <article className="panel" style={{ marginBottom: '1rem' }}>
+        <h3>Order summary</h3>
+        <ul className="timeline">
+          {displayedItems.length > 0 ? displayedItems.map((item) => (
+            <li key={item._id}>
+              {item.quantity} x {item.nameSnapshot || item.name} - N {Number((item.priceSnapshot || item.price || 0) * item.quantity).toLocaleString()}
+            </li>
+          )) : <li>No items to show.</li>}
+        </ul>
+        <p className="total">
+          Subtotal: N {subtotal.toLocaleString()}
+        </p>
+        <p className="total">
+          Delivery fee ({getZoneLabel(form.zone)}): N {deliveryFee.toLocaleString()}
+        </p>
+        <p className="total">
+          Total: N {total.toLocaleString()}
+        </p>
+      </article>
+      
+      {!order ? (
+        <form className="form" onSubmit={submit}>
+          <textarea
+            placeholder="Full delivery address"
+            value={form.fullText}
+            onChange={(event) => setForm((prev) => ({ ...prev, fullText: event.target.value }))}
+            required
+          />
+          <input
+            placeholder="Area"
+            value={form.area}
+            onChange={(event) => setForm((prev) => ({ ...prev, area: event.target.value }))}
+          />
+          <input
+            placeholder="Landmark"
+            value={form.landmark}
+            onChange={(event) => setForm((prev) => ({ ...prev, landmark: event.target.value }))}
+          />
+          <textarea
+            placeholder="Notes"
+            value={form.notes}
+            onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
+          />
+          <select value={form.zone} onChange={(event) => setForm((prev) => ({ ...prev, zone: event.target.value }))}>
+            <option value="zone_a">Zone A</option>
+            <option value="zone_b">Zone B</option>
+            <option value="zone_c">Zone C</option>
+            <option value="outside">Outside</option>
+          </select>
+          <button className="btn" type="submit" disabled={loading}>
+            {loading ? 'Processing...' : 'Place order & Pay with Paystack'}
+          </button>
+        </form>
+      ) : null}
+
+      {result ? <p className="message">{result}</p> : null}
+
+      {loading && <p style={{ textAlign: 'center', color: '#666' }}>Processing payment...</p>}
+
+      {order && order.payment?.status === 'paid' ? (
+        <div className="panel">
+          <p><strong>Order Confirmed:</strong> {order._id}</p>
+          <h3>Order summary</h3>
+          <ul className="timeline">
+            {(order.items || []).map((item, index) => (
+              <li key={`${item.menuItem || item.name}-${index}`}>
+                {item.quantity} x {item.name} - N {Number(item.price || 0).toLocaleString()}
+              </li>
+            ))}
+          </ul>
+          <p><strong>Subtotal:</strong> N {Number(order.subtotal || 0).toLocaleString()}</p>
+          <p><strong>Delivery fee:</strong> N {Number(order.deliveryFee || 0).toLocaleString()}</p>
+          <p><strong>Zone:</strong> {getZoneLabel(order.deliveryRule?.zone || form.zone)}</p>
+          
+          {order.deliveryPin && (
+            <div style={{
+              backgroundColor: '#f0f0f0',
+              padding: '20px',
+              borderRadius: '8px',
+              textAlign: 'center',
+              border: '2px solid #333',
+              marginTop: '20px',
+              marginBottom: '20px'
+            }}>
+              <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#666' }}>
+                Your Delivery PIN (share with rider):
+              </p>
+              <p style={{ margin: '0', fontSize: '36px', fontWeight: 'bold', letterSpacing: '8px', color: '#000' }}>
+                {order.deliveryPin}
+              </p>
+              <p style={{ margin: '10px 0 0 0', fontSize: '12px', color: '#999' }}>
+                Rider will ask for this PIN before completing delivery
+              </p>
+            </div>
+          )}
+
+          <p><strong>Status:</strong> {order.status}</p>
+          <p><strong>Order Amount:</strong> ₦{order.total ?? order.totalAmount ?? 'N/A'}</p>
+        </div>
+      ) : null}
+
+      {error ? <p className="error">{error}</p> : null}
+    </section>
+  );
+}
