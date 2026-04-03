@@ -478,6 +478,49 @@ select {
   border-radius: 10px;
   border: 1px solid #c7d6c2;
   padding: 0.65rem 0.75rem;
+  transition: all 0.18s ease;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: #2a7a40;
+  box-shadow: 0 0 0 3px rgba(42, 122, 64, 0.12);
+}
+
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%232a7a40' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.5rem;
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
+select:hover {
+  border-color: #2a7a40;
+  background-color: #f8fbf7;
+}
+
+@media (max-width: 640px) {
+  select {
+    padding: 0.85rem 2.5rem 0.85rem 0.85rem;
+    font-size: 1rem;
+    min-height: 48px;
+    background-position: right 0.85rem center;
+    background-size: 14px;
+  }
+
+  .controls {
+    grid-template-columns: 1fr;
+  }
+
+  .controls input,
+  .controls select {
+    width: 100%;
+  }
 }
 
 .btn {
