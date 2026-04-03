@@ -13,6 +13,7 @@ const normalizeStatus = (item) => item.availabilityStatus || (item.isAvailable ?
 export default function AdminMenuManagerPage() {
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
+  const [loadingItems, setLoadingItems] = useState(false);
   const [newCategory, setNewCategory] = useState('');
   const [newItem, setNewItem] = useState({
     name: '',
@@ -31,6 +32,7 @@ export default function AdminMenuManagerPage() {
     imageUrl: '',
     availabilityStatus: 'in_stock',
   });
+  const [savingItemId, setSavingItemId] = useState('');
   const [message, setMessage] = useState('');
 
   const toImageDataUrl = async (fileList) => {
@@ -38,10 +40,20 @@ export default function AdminMenuManagerPage() {
     return attachments[0]?.dataUrl || '';
   };
 
-  const load = async () => {
-    const [categoryRes, itemRes] = await Promise.all([menuApi.categories(), menuApi.list()]);
-    setCategories(categoryRes.categories || []);
-    setItems(itemRes.items || []);
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) {
+      setLoadingItems(true);
+    }
+
+    try {
+      const [categoryRes, itemRes] = await Promise.all([menuApi.categories(), menuApi.list()]);
+      setCategories(categoryRes.categories || []);
+      setItems(itemRes.items || []);
+    } finally {
+      if (!silent) {
+        setLoadingItems(false);
+      }
+    }
   };
 
   useEffect(() => {
@@ -133,15 +145,25 @@ export default function AdminMenuManagerPage() {
 
   const saveEdit = async (itemId) => {
     setMessage('');
+    setSavingItemId(itemId);
     try {
-      await menuApi.updateItem(itemId, {
+      setMessage('Saving item changes...');
+      const response = await menuApi.updateItem(itemId, {
         ...editItem,
         price: Number(editItem.price),
       });
+
+      if (response?.item) {
+        setItems((prev) => prev.map((existing) => (existing._id === itemId ? response.item : existing)));
+      }
+
       cancelEdit();
-      await load();
+      await load({ silent: true });
+      setMessage('Item updated successfully.');
     } catch (error) {
       setMessage(error.message);
+    } finally {
+      setSavingItemId('');
     }
   };
 
@@ -169,6 +191,7 @@ export default function AdminMenuManagerPage() {
     <section className="page-wrap">
       <h1>Admin Menu Manager</h1>
       {message ? <p className="error">{message}</p> : null}
+      {loadingItems ? <p className="muted">Refreshing menu data...</p> : null}
 
       <div className="grid">
         <article className="panel">
@@ -306,13 +329,28 @@ export default function AdminMenuManagerPage() {
                   <input type="file" accept="image/*" onChange={handleEditImageUpload} />
                 </div>
                 <div className="row">
-                  <button className="btn" type="button" onClick={() => saveEdit(item._id)}>
-                    Save
+                  <button
+                    className="btn"
+                    type="button"
+                    onClick={() => saveEdit(item._id)}
+                    disabled={savingItemId === item._id}
+                  >
+                    {savingItemId === item._id ? 'Saving...' : 'Save'}
                   </button>
-                  <button className="btn btn-ghost" type="button" onClick={cancelEdit}>
+                  <button
+                    className="btn btn-ghost"
+                    type="button"
+                    onClick={cancelEdit}
+                    disabled={savingItemId === item._id}
+                  >
                     Cancel
                   </button>
-                  <button className="btn btn-danger" type="button" onClick={() => deleteItem(item._id)}>
+                  <button
+                    className="btn btn-danger"
+                    type="button"
+                    onClick={() => deleteItem(item._id)}
+                    disabled={savingItemId === item._id}
+                  >
                     Delete item
                   </button>
                 </div>

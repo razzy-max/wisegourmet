@@ -1,70 +1,10 @@
 require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 
 const connectDB = require('../config/db');
-const Category = require('../models/Category');
-const MenuItem = require('../models/MenuItem');
 const User = require('../models/User');
-const slugify = require('./slugify');
 
 const seed = async () => {
   await connectDB();
-
-  const categoryNames = ['Burger', 'Shawarma', 'Pizza', 'Drinks'];
-
-  const categories = {};
-  for (const name of categoryNames) {
-    const slug = slugify(name);
-    const category = await Category.findOneAndUpdate(
-      { slug },
-      { name, slug, isActive: true },
-      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
-    );
-    categories[name] = category;
-  }
-
-  const samples = [
-    {
-      name: 'Classic Beef Burger',
-      description: 'Grilled beef patty, lettuce, tomato, house sauce.',
-      category: categories.Burger._id,
-      price: 4500,
-      tags: ['burger', 'beef'],
-    },
-    {
-      name: 'Chicken Shawarma Wrap',
-      description: 'Spiced chicken, cabbage, onion, creamy garlic.',
-      category: categories.Shawarma._id,
-      price: 3500,
-      tags: ['shawarma', 'chicken'],
-    },
-    {
-      name: 'Pepperoni Pizza (Medium)',
-      description: 'Stone-baked pizza with mozzarella and pepperoni.',
-      category: categories.Pizza._id,
-      price: 8000,
-      tags: ['pizza'],
-    },
-    {
-      name: 'Chilled Soft Drink',
-      description: '500ml assorted options.',
-      category: categories.Drinks._id,
-      price: 900,
-      tags: ['drinks'],
-    },
-  ];
-
-  for (const sample of samples) {
-    const slug = slugify(sample.name);
-    await MenuItem.findOneAndUpdate(
-      { slug: new RegExp(`^${slug}`) },
-      {
-        ...sample,
-        slug: `${slug}-seed`,
-        isAvailable: true,
-      },
-      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
-    );
-  }
 
   // Delete all non-customer users (keep customer data for demo)
   await User.deleteMany({ role: { $in: ['admin', 'staff', 'rider', 'support'] } });
