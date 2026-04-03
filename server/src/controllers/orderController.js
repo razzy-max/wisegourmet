@@ -195,12 +195,12 @@ const acceptRiderOrder = asyncHandler(async (req, res) => {
 
   if (order.status !== ORDER_STATUS.READY_FOR_PICKUP) {
     res.status(400);
-    throw new Error('Only ready_for_pickup orders can be accepted');
+    throw new Error('This order is no longer available for pickup');
   }
 
   if (order.assignedRider && String(order.assignedRider) !== String(req.user._id)) {
     res.status(403);
-    throw new Error('Order is already assigned to another rider');
+    throw new Error('Order already accepted by another rider');
   }
 
   order.assignedRider = req.user._id;
@@ -506,6 +506,11 @@ const verifyDeliveryPin = asyncHandler(async (req, res) => {
     throw new Error('Order must be in arrived status to verify PIN');
   }
 
+  if (!order.assignedRider || String(order.assignedRider) !== String(req.user._id)) {
+    res.status(403);
+    throw new Error('Only the assigned rider can verify delivery PIN');
+  }
+
   if (String(pin) !== String(order.deliveryPin)) {
     res.status(401);
     throw new Error('Invalid PIN');
@@ -515,7 +520,7 @@ const verifyDeliveryPin = asyncHandler(async (req, res) => {
   order.status = ORDER_STATUS.DELIVERED;
   order.statusTimeline.push({
     status: ORDER_STATUS.DELIVERED,
-    changedBy: order.assignedRider,
+    changedBy: req.user._id,
     note: 'Delivery verified with PIN',
   });
 
