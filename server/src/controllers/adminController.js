@@ -1,5 +1,7 @@
 const Order = require('../models/Order');
 const SupportTicket = require('../models/SupportTicket');
+const Category = require('../models/Category');
+const MenuItem = require('../models/MenuItem');
 const asyncHandler = require('../utils/asyncHandler');
 
 const MS_IN_DAY = 24 * 60 * 60 * 1000;
@@ -231,6 +233,53 @@ const getOverviewStats = asyncHandler(async (req, res) => {
   });
 });
 
+const purgeSeededData = asyncHandler(async (_req, res) => {
+  const seededMenuNames = [
+    'Classic Beef Burger',
+    'Chicken Shawarma Wrap',
+    'Pepperoni Pizza (Medium)',
+    'Chilled Soft Drink',
+  ];
+  const seededSupportSubjects = ['Food arrived late', 'Need help with payment receipt', 'Menu question'];
+
+  const seededOrders = await Order.find({ 'payment.reference': /^demo-order-/ }, '_id').lean();
+  const seededOrderIds = seededOrders.map((order) => order._id);
+
+  const menuResult = await MenuItem.deleteMany({
+    $or: [{ slug: /-seed$/ }, { name: { $in: seededMenuNames } }],
+  });
+
+  const orderResult = await Order.deleteMany({
+    $or: [{ _id: { $in: seededOrderIds } }, { 'payment.reference': /^demo-order-/ }],
+  });
+
+  const supportResult = await SupportTicket.deleteMany({
+    $or: [{ subject: { $in: seededSupportSubjects } }, { order: { $in: seededOrderIds } }],
+  });
+
+  const activeCategoryIds = (await MenuItem.find({}, 'category').lean())
+    .map((item) => String(item.category))
+    .filter(Boolean);
+  const seededCategories = await Category.find({ slug: { $in: ['burger', 'shawarma', 'pizza', 'drinks'] } }).lean();
+
+  let deletedSeedCategories = 0;
+  for (const category of seededCategories) {
+    if (!activeCategoryIds.includes(String(category._id))) {
+      await Category.deleteOne({ _id: category._id });
+      deletedSeedCategories += 1;
+    }
+  }
+
+  res.json({
+    ok: true,
+    deletedSeedMenuItems: menuResult.deletedCount || 0,
+    deletedSeedOrders: orderResult.deletedCount || 0,
+    deletedSeedSupportTickets: supportResult.deletedCount || 0,
+    deletedSeedCategories,
+  });
+});
+
 module.exports = {
   getOverviewStats,
+  purgeSeededData,
 };
