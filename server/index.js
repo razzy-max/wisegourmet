@@ -13,6 +13,7 @@ const userRoutes = require('./src/routes/userRoutes');
 const supportRoutes = require('./src/routes/supportRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
 const { notFound, errorHandler } = require('./src/middleware/error');
+const ensureDemoData = require('./src/utils/bootstrapDemoData');
 
 dotenv.config();
 
@@ -83,6 +84,7 @@ app.use(errorHandler);
 const start = async () => {
   try {
     await connectDB();
+    await ensureDemoData();
     server.listen(PORT, () => {
       console.log(`Wise Gourmet API running on http://localhost:${PORT}`);
     });
