@@ -537,12 +537,45 @@ select:hover {
   cursor: pointer;
   text-decoration: none;
   display: inline-block;
+  transition: all 0.18s ease;
+}
+
+.btn:not(:disabled) {
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled) {
+  background: #1f5a2f;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(42, 122, 64, 0.25);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(42, 122, 64, 0.15);
+}
+
+.btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  background: #5d9070;
 }
 
 .btn-ghost {
   background: transparent;
   border: 1px solid #86a788;
   color: #214c2e;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(42, 122, 64, 0.08);
+  border-color: #2a7a40;
+}
+
+.btn-ghost:disabled {
+  opacity: 0.5;
+  border-color: #b8cab3;
+  cursor: not-allowed;
 }
 
 .nav-shell .btn-ghost {
@@ -552,6 +585,17 @@ select:hover {
 
 .btn-danger {
   background: #ba3932;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #9d2e2a;
+  transform: translateY(-1px);
+}
+
+.btn-danger:disabled {
+  opacity: 0.65;
+  background: #d97169;
+  cursor: not-allowed;
 }
 
 .price,

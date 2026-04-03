@@ -1,16 +1,22 @@
 import { useEffect, useState } from 'react';
 import { orderApi } from '../api/orderApi';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 export default function RiderDeliveryHistoryPage() {
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const load = async () => {
+    setLoading(true);
     try {
       const response = await orderApi.riderOrders();
       setOrders(response.orders || []);
+      setError('');
     } catch (err) {
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -25,6 +31,7 @@ export default function RiderDeliveryHistoryPage() {
     <section className="page-wrap">
       <h1>Delivery History</h1>
       {error ? <p className="error">{error}</p> : null}
+      {loading ? <LoadingSpinner label="Loading delivery history..." /> : null}
 
       <article className="panel">
         <div className="row">

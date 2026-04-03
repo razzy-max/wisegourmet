@@ -10,6 +10,9 @@ export default function RiderQueuePage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [pinInputs, setPinInputs] = useState({});
+  const [acceptingOrderId, setAcceptingOrderId] = useState('');
+  const [updatingStatusOrderId, setUpdatingStatusOrderId] = useState('');
+  const [verifyingPinOrderId, setVerifyingPinOrderId] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -46,6 +49,7 @@ export default function RiderQueuePage() {
   const acceptOrder = async (orderId) => {
     setError('');
     setMessage('');
+    setAcceptingOrderId(orderId);
 
     try {
       await orderApi.acceptRiderOrder(orderId);
@@ -53,12 +57,15 @@ export default function RiderQueuePage() {
       await load();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setAcceptingOrderId('');
     }
   };
 
   const updateStatus = async (orderId, status) => {
     setError('');
     setMessage('');
+    setUpdatingStatusOrderId(orderId);
 
     try {
       await orderApi.updateStatus(orderId, {
@@ -69,6 +76,8 @@ export default function RiderQueuePage() {
       await load();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setUpdatingStatusOrderId('');
     }
   };
 
@@ -82,6 +91,7 @@ export default function RiderQueuePage() {
       return;
     }
 
+    setVerifyingPinOrderId(orderId);
     try {
       await orderApi.verifyDeliveryPin(orderId, pin);
       setMessage(`Order ${orderId.slice(-6)} delivered!`);
@@ -89,6 +99,8 @@ export default function RiderQueuePage() {
       await load();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setVerifyingPinOrderId('');
     }
   };
 
@@ -112,8 +124,13 @@ export default function RiderQueuePage() {
                 {order.assignedRider?.fullName ? order.assignedRider.fullName : 'Available for pickup'}
               </p>
               <p>Address: {order.deliveryAddress?.fullText || 'Not provided'}</p>
-              <button className="btn" type="button" onClick={() => acceptOrder(order._id)}>
-                Accept Order
+              <button 
+                className="btn" 
+                type="button" 
+                onClick={() => acceptOrder(order._id)}
+                disabled={acceptingOrderId === order._id}
+              >
+                {acceptingOrderId === order._id ? 'Accepting...' : 'Accept Order'}
               </button>
             </article>
           ))}
@@ -138,8 +155,9 @@ export default function RiderQueuePage() {
                     className="btn"
                     type="button"
                     onClick={() => updateStatus(order._id, 'on_the_way')}
+                    disabled={updatingStatusOrderId === order._id}
                   >
-                    Mark On The Way
+                    {updatingStatusOrderId === order._id ? 'Updating...' : 'Mark On The Way'}
                   </button>
                 ) : null}
                 {order.status === 'on_the_way' ? (
@@ -147,8 +165,9 @@ export default function RiderQueuePage() {
                     className="btn"
                     type="button"
                     onClick={() => updateStatus(order._id, 'arrived')}
+                    disabled={updatingStatusOrderId === order._id}
                   >
-                    Mark Arrived
+                    {updatingStatusOrderId === order._id ? 'Updating...' : 'Mark Arrived'}
                   </button>
                 ) : null}
               </div>
@@ -169,13 +188,15 @@ export default function RiderQueuePage() {
                         }))
                       }
                       style={{ flex: 1, minWidth: '80px' }}
+                      disabled={verifyingPinOrderId === order._id}
                     />
                     <button
                       className="btn"
                       type="button"
                       onClick={() => verifyDeliveryPin(order._id)}
+                      disabled={verifyingPinOrderId === order._id}
                     >
-                      Verify & Deliver
+                      {verifyingPinOrderId === order._id ? 'Verifying...' : 'Verify & Deliver'}
                     </button>
                   </div>
                 </div>
