@@ -1108,6 +1108,14 @@ select:hover {
   width: 100%;
 }
 
+.profile-logout {
+  margin-top: 0.7rem;
+}
+
+.profile-logout .btn {
+  width: 100%;
+}
+
 .support-layout {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

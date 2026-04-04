@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { authApi } from '../api/authApi';
+import { useAuth } from '../context/AuthContext';
 
 const initialForm = {
   fullName: '',
@@ -14,6 +15,7 @@ const initialForm = {
 };
 
 export default function ProfilePage() {
+  const { logout } = useAuth();
   const [form, setForm] = useState(initialForm);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -174,6 +176,11 @@ export default function ProfilePage() {
           </button>
         </div>
       </form>
+      <div className="profile-logout">
+        <button type="button" className="btn btn-ghost" onClick={logout}>
+          Logout
+        </button>
+      </div>
       {message ? <p className="message">{message}</p> : null}
       {error ? <p className="error">{error}</p> : null}
     </section>
