@@ -3,6 +3,20 @@ import { Link } from 'react-router-dom';
 import { supportApi } from '../api/supportApi';
 import LoadingSpinner from '../components/LoadingSpinner';
 
+const getTicketStatusBadge = (status) => {
+  const badges = {
+    open: { label: 'Open', emoji: '✉', badgeColor: 'status-pending' },
+    in_progress: { label: 'In Progress', emoji: '⏳', badgeColor: 'status-confirmed' },
+    resolved: { label: 'Resolved', emoji: '✓', badgeColor: 'status-delivered' },
+  };
+  return badges[status] || { label: status, emoji: '•', badgeColor: 'status-default' };
+};
+
+const getTicketStatusText = (status) => {
+  const badge = getTicketStatusBadge(status);
+  return `${badge.emoji} ${badge.label}`;
+};
+
 export default function SupportInboxPage() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -103,27 +117,54 @@ export default function SupportInboxPage() {
       {!loading && filteredTickets.length === 0 ? <p className="muted">No tickets in this view.</p> : null}
       <div className="grid">
         {filteredTickets.map((ticket) => (
-          <article className="panel" key={ticket._id}>
-            <h3>
-              <Link to={`/support/tickets/${ticket._id}`}>{ticket.subject}</Link>
-            </h3>
-            <p>Customer: {ticket.customer?.fullName || 'Unknown'}</p>
-            <p>Status: {ticket.status}</p>
-            <p>Latest: {ticket.messages?.[ticket.messages.length - 1]?.text || ticket.message}</p>
-            <textarea
-              placeholder="Reply"
-              value={replyInputs[ticket._id] || ''}
-              onChange={(event) =>
-                setReplyInputs((prev) => ({ ...prev, [ticket._id]: event.target.value }))
-              }
-            />
-            <div className="row">
-              <button className="btn" type="button" onClick={() => save(ticket._id, 'in_progress')}>
-                Mark in progress
-              </button>
-              <button className="btn" type="button" onClick={() => save(ticket._id, 'resolved')}>
-                Resolve
-              </button>
+          <article className="panel ticket-admin-card" key={ticket._id}>
+            <div className="ticket-card-header">
+              <Link to={`/support/tickets/${ticket._id}`} className="ticket-subject">
+                {ticket.subject}
+              </Link>
+              <span className={`status-badge ${getTicketStatusBadge(ticket.status).badgeColor}`}>
+                {getTicketStatusText(ticket.status)}
+              </span>
+            </div>
+
+            <div className="ticket-card-info">
+              <p>
+                <strong>Customer:</strong> {ticket.customer?.fullName || 'Unknown'}
+              </p>
+              {ticket.order && (
+                <p>
+                  <strong>Order:</strong> #{ticket.order._id.slice(-6)}
+                </p>
+              )}
+            </div>
+
+            <div className="ticket-card-preview">
+              <p className="muted">
+                Latest: {ticket.messages?.[ticket.messages.length - 1]?.text || ticket.message}
+              </p>
+            </div>
+
+            <div className="ticket-reply-section">
+              <textarea
+                placeholder="Reply message..."
+                value={replyInputs[ticket._id] || ''}
+                onChange={(event) =>
+                  setReplyInputs((prev) => ({ ...prev, [ticket._id]: event.target.value }))
+                }
+                className="ticket-reply-textarea"
+              />
+              <div className="ticket-reply-actions">
+                <button
+                  className="btn btn-amber"
+                  type="button"
+                  onClick={() => save(ticket._id, 'in_progress')}
+                >
+                  Mark in progress
+                </button>
+                <button className="btn" type="button" onClick={() => save(ticket._id, 'resolved')}>
+                  Resolve
+                </button>
+              </div>
             </div>
           </article>
         ))}

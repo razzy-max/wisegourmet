@@ -9,7 +9,7 @@ const rangeOptions = [
   { value: 'custom', label: 'Custom range' },
 ];
 
-const money = (value) => `N ${Number(value || 0).toLocaleString()}`;
+const money = (value) => `₦${Number(value || 0).toLocaleString()}`;
 
 function TrendChart({ data = [] }) {
   const width = 560;
@@ -49,6 +49,12 @@ function StatusBars({ breakdown = {} }) {
   const entries = Object.entries(breakdown).sort((a, b) => b[1] - a[1]);
   const max = Math.max(...entries.map(([, count]) => Number(count || 0)), 1);
 
+  const getStatusBarColor = (status) => {
+    if (['delivered', 'arrived'].includes(status)) return '#3a6835';
+    if (['confirmed', 'preparing', 'ready_for_pickup', 'picked_up', 'on_the_way'].includes(status)) return '#e8a020';
+    return '#d0d0d0';
+  };
+
   if (!entries.length) {
     return <p className="muted">No status data in this range.</p>;
   }
@@ -59,7 +65,7 @@ function StatusBars({ breakdown = {} }) {
         <div key={status} className="status-bar-row">
           <span className="status-label">{status}</span>
           <div className="status-track">
-            <div className="status-fill" style={{ width: `${(Number(count || 0) / max) * 100}%` }} />
+            <div className="status-fill" style={{ width: `${(Number(count || 0) / max) * 100}%`, background: getStatusBarColor(status) }} />
           </div>
           <span className="status-count">{count}</span>
         </div>
@@ -141,7 +147,7 @@ export default function AdminStatsPage() {
               <input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
             </>
           ) : null}
-          <button className="btn" type="button" onClick={fetchStats}>
+          <button className="btn btn-ghost stats-refresh-btn" type="button" onClick={fetchStats}>
             Refresh
           </button>
         </div>

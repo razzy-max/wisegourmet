@@ -11,6 +11,15 @@ const initialForm = {
 
 const generatePasswordSuggestion = () => `WG${Date.now().toString(36).slice(-6)}!`;
 
+const getRoleBadge = (role) => {
+  const badges = {
+    staff: { label: 'Staff', color: 'role-staff' },
+    rider: { label: 'Rider', color: 'role-rider' },
+    support: { label: 'Support', color: 'role-support' },
+  };
+  return badges[role] || { label: role, color: 'role-default' };
+};
+
 export default function AdminTeamPage() {
   const [form, setForm] = useState(initialForm);
   const [users, setUsers] = useState([]);
@@ -135,15 +144,30 @@ export default function AdminTeamPage() {
         {error ? <p className="error">{error}</p> : null}
       </article>
 
+      <div className="section-divider" />
+
       <article className="panel" style={{ marginTop: '1rem' }}>
         <h3>Current Staff and Riders</h3>
         <div className="grid">
           {users.map((user) => (
-            <div key={user._id} className="panel">
-              <p><strong>{user.fullName}</strong></p>
-              <p>{user.email}</p>
-              <p>Role: {user.role}</p>
-              <p>Status: {user.isActive ? 'active' : 'inactive'}</p>
+            <div key={user._id} className="panel team-member-card">
+              <div className="member-header">
+                <div>
+                  <h4>{user.fullName}</h4>
+                  <p className="muted">{user.email}</p>
+                </div>
+                <span className={`role-badge ${getRoleBadge(user.role).color}`}>
+                  {getRoleBadge(user.role).label}
+                </span>
+              </div>
+
+              <div className="member-status">
+                <span className="status-dot" style={{ background: user.isActive ? '#3a6835' : '#ccc' }} />
+                <span>{user.isActive ? 'Active' : 'Inactive'}</span>
+              </div>
+
+              {user.phone && <p className="muted">{user.phone}</p>}
+
               <div className="row">
                 <button className="btn" type="button" onClick={() => resetPassword(user)}>
                   Reset password

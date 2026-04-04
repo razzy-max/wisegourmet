@@ -242,7 +242,17 @@ export default function AdminMenuManagerPage() {
               value={newItem.imageUrl}
               onChange={(event) => setNewItem((prev) => ({ ...prev, imageUrl: event.target.value }))}
             />
-            <input type="file" accept="image/*" onChange={handleCreateImageUpload} />
+            <label className="upload-zone" htmlFor="create-menu-image">
+              <p className="upload-icon" aria-hidden="true">☁</p>
+              <p>Drag files here or click to upload.</p>
+            </label>
+            <input
+              id="create-menu-image"
+              type="file"
+              accept="image/*"
+              onChange={handleCreateImageUpload}
+              className="hidden-file-input"
+            />
             <select
               value={newItem.category}
               onChange={(event) => setNewItem((prev) => ({ ...prev, category: event.target.value }))}
@@ -332,7 +342,17 @@ export default function AdminMenuManagerPage() {
                     value={editItem.imageUrl}
                     onChange={(event) => setEditItem((prev) => ({ ...prev, imageUrl: event.target.value }))}
                   />
-                  <input type="file" accept="image/*" onChange={handleEditImageUpload} />
+                  <label className="upload-zone" htmlFor="edit-menu-image">
+                    <p className="upload-icon" aria-hidden="true">☁</p>
+                    <p>Drag files here or click to upload.</p>
+                  </label>
+                  <input
+                    id="edit-menu-image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleEditImageUpload}
+                    className="hidden-file-input"
+                  />
                 </div>
                 <div className="row">
                   <button
@@ -370,7 +390,7 @@ export default function AdminMenuManagerPage() {
                 )}
                 <h3>{item.name}</h3>
                 <p>{item.description}</p>
-                <p>N {item.price.toLocaleString()}</p>
+                <p class="menu-item-price">₦{item.price.toLocaleString()}</p>
                 <p>
                   Status:{' '}
                   {

@@ -44,21 +44,41 @@ export default function AdminDashboardPage() {
     <section className="page-wrap">
       <h1>Admin Dashboard</h1>
       <div className="grid">
-        <article className="panel">
+        <article className="panel admin-dashboard-overview">
           <h3>Live Overview</h3>
-          <p>Total orders: {counts.total}</p>
-          <p>Pending: {counts.pending}</p>
-          <p>Confirmed: {counts.confirmed}</p>
-          <p>Preparing: {counts.preparing}</p>
-          <p>Ready for pickup: {counts.ready_for_pickup}</p>
-          <p>Delivered: {counts.delivered}</p>
+          <div className="overview-stats">
+            <div className="overview-stat">
+              <span className="stat-label">Confirmed</span>
+              <span className="stat-number" style={{ color: '#e8a020' }}>
+                {counts.confirmed}
+              </span>
+            </div>
+            <div className="overview-stat">
+              <span className="stat-label">Preparing</span>
+              <span className="stat-number" style={{ color: '#e8a020' }}>
+                {counts.preparing}
+              </span>
+            </div>
+            <div className="overview-stat">
+              <span className="stat-label">Ready</span>
+              <span className="stat-number" style={{ color: '#e8a020' }}>
+                {counts.ready_for_pickup}
+              </span>
+            </div>
+            <div className="overview-stat">
+              <span className="stat-label">Delivered</span>
+              <span className="stat-number" style={{ color: '#3a6835' }}>
+                {counts.delivered}
+              </span>
+            </div>
+          </div>
         </article>
         <article className="panel">
           <h3>Operations</h3>
           <p>Watch orders move from payment to kitchen to dispatch in real time.</p>
           <p>Claimed kitchen orders show the staff member handling them.</p>
           <p>Assigned riders show who has accepted each delivery.</p>
-          <Link to="/admin/stats" className="btn" style={{ marginTop: '0.6rem' }}>
+          <Link to="/admin/stats" className="btn">
             Open Detailed Stats
           </Link>
         </article>
