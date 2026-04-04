@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { orderApi } from '../api/orderApi';
 import { useOrdersRealtime } from '../hooks/useOrdersRealtime';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { getStatusLabel, getStatusBadgeClass, getStepperCircleClass } from '../utils/statusHelpers';
 
 const dedupeTimeline = (timeline = []) => {
   return timeline.filter((entry, index, array) => {
@@ -12,10 +13,22 @@ const dedupeTimeline = (timeline = []) => {
   });
 };
 
+const statusOrder = [
+  'pending',
+  'confirmed',
+  'preparing',
+  'ready_for_pickup',
+  'picked_up',
+  'on_the_way',
+  'arrived',
+  'delivered',
+];
+
 export default function OrderDetailsPage() {
   const { id } = useParams();
   const [order, setOrder] = useState(null);
   const [error, setError] = useState('');
+  const [copiedPin, setCopiedPin] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -32,6 +45,20 @@ export default function OrderDetailsPage() {
   }, [load]);
 
   useOrdersRealtime(load, { orderId: id });
+
+  const copyPin = () => {
+    if (order.deliveryPin) {
+      navigator.clipboard.writeText(order.deliveryPin);
+      setCopiedPin(true);
+      setTimeout(() => setCopiedPin(false), 2000);
+    }
+  };
+
+  const getRiderInitials = (fullName) => {
+    if (!fullName) return 'R';
+    const parts = fullName.split(' ');
+    return (parts[0]?.[0] + (parts[1]?.[0] || '')).toUpperCase();
+  };
 
   if (error) {
     return (
@@ -53,14 +80,18 @@ export default function OrderDetailsPage() {
   }
 
   const timeline = dedupeTimeline(order.statusTimeline || []);
+
   return (
     <section className="page-wrap">
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1>Order {order._id.slice(-6)}</h1>
-          <p className="muted">Live order detail and delivery tracking</p>
+      {/* Header */}
+      <div className="order-details-header">
+        <div className="order-details-title">
+          <h1 style={{ display: 'inline-block', marginRight: '1rem' }}>Order {order._id.slice(-6)}</h1>
+          <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
+            {getStatusLabel(order.status)}
+          </span>
         </div>
-        <div className="row">
+        <div className="order-details-actions">
           <Link to={`/support?orderId=${order._id}`} className="btn">
             Get Help For This Order
           </Link>
@@ -70,33 +101,56 @@ export default function OrderDetailsPage() {
         </div>
       </div>
 
+      {/* Summary & Delivery PIN Grid */}
       <div className="grid">
-        <article className="panel">
-          <h3>Summary</h3>
-          <p>Status: {order.status}</p>
-          <p>Payment: {order.payment?.status}</p>
-          <p>Order total: N {Number(order.total || 0).toLocaleString()}</p>
-          <p>Delivery fee: N {Number(order.deliveryFee || 0).toLocaleString()}</p>
-          <p>Payment reference: {order.payment?.reference || 'N/A'}</p>
-          <p>
-            Kitchen handled by:{' '}
-            {order.kitchenHandledBy ? order.kitchenHandledBy.fullName : 'Not claimed yet'}
-          </p>
-          <p>
-            Rider assigned:{' '}
-            {order.assignedRider
-              ? `${order.assignedRider.fullName}${order.assignedRider.phone ? ` (${order.assignedRider.phone})` : ''}`
-              : 'Not assigned yet'}
-          </p>
+        {/* Summary Card */}
+        <article className="panel order-summary">
+          <h3>Order Summary</h3>
+          <div className="label-value-grid">
+            <div className="label-value-row">
+              <span className="label">Status</span>
+              <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
+                {getStatusLabel(order.status)}
+              </span>
+            </div>
+            <div className="label-value-row">
+              <span className="label">Payment</span>
+              <span className="value">{order.payment?.status || 'N/A'}</span>
+            </div>
+            <div className="label-value-row">
+              <span className="label">Order Total</span>
+              <span className="value price">₦{Number(order.total || 0).toLocaleString()}</span>
+            </div>
+            <div className="label-value-row">
+              <span className="label">Delivery Fee</span>
+              <span className="value">₦{Number(order.deliveryFee || 0).toLocaleString()}</span>
+            </div>
+            <div className="label-value-row">
+              <span className="label">Payment Ref</span>
+              <span className="value">{order.payment?.reference || 'N/A'}</span>
+            </div>
+            <div className="label-value-row">
+              <span className="label">Kitchen Staff</span>
+              <span className="value">
+                {order.kitchenHandledBy?.fullName || 'Not claimed yet'}
+              </span>
+            </div>
+          </div>
         </article>
 
-        <article className="panel">
-          <h3>Delivery PIN</h3>
+        {/* Delivery PIN Card */}
+        <article className="panel order-delivery-pin">
+          <div className="pin-header">
+            <span>🔐 Delivery PIN</span>
+            <span className="pin-subtitle">Share with your rider</span>
+          </div>
           {order.payment?.status === 'paid' && order.deliveryPin ? (
             <>
-              <p className="muted">Share this PIN with the rider when they arrive.</p>
-              <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-                <strong style={{ fontSize: '2.5rem', letterSpacing: '0.5rem' }}>{order.deliveryPin}</strong>
+              <div className="pin-display" onClick={copyPin}>
+                <strong>{order.deliveryPin}</strong>
+                <p className="pin-hint" style={{ opacity: copiedPin ? 1 : 0.5 }}>
+                  {copiedPin ? '✓ Copied!' : 'Tap to copy'}
+                </p>
               </div>
             </>
           ) : (
@@ -105,47 +159,109 @@ export default function OrderDetailsPage() {
         </article>
       </div>
 
-      <div className="grid" style={{ marginTop: '1rem' }}>
-        <article className="panel">
-          <h3>Customer & Delivery</h3>
-          <p>Name: {order.customer?.fullName || 'Unknown'}</p>
-          <p>Phone: {order.customer?.phone || 'N/A'}</p>
-          <p>Address: {order.deliveryAddress?.fullText || 'Not provided'}</p>
-          <p>Area: {order.deliveryAddress?.area || 'N/A'}</p>
-          <p>Landmark: {order.deliveryAddress?.landmark || 'N/A'}</p>
-          <p>Notes: {order.deliveryAddress?.notes || 'None'}</p>
+      {/* Customer & Rider Grid */}
+      <div className="grid" style={{ marginTop: '1.5rem' }}>
+        {/* Customer & Delivery Card */}
+        <article className="panel order-customer">
+          <h3>Customer & Delivery Address</h3>
+          <div className="address-block">
+            <div className="address-item">
+              <strong>{order.customer?.fullName || 'Unknown'}</strong>
+              {order.customer?.phone && (
+                <a href={`tel:${order.customer.phone}`} className="phone-link">
+                  {order.customer.phone}
+                </a>
+              )}
+            </div>
+            {order.deliveryAddress?.fullText && (
+              <div className="address-item">
+                <p>{order.deliveryAddress.fullText}</p>
+              </div>
+            )}
+            {order.deliveryAddress?.area && (
+              <div className="address-item">
+                <span className="label">Area:</span> {order.deliveryAddress.area}
+              </div>
+            )}
+            {order.deliveryAddress?.landmark && (
+              <div className="address-item">
+                <span className="label">Landmark:</span> {order.deliveryAddress.landmark}
+              </div>
+            )}
+            {order.deliveryAddress?.notes && (
+              <div className="address-item">
+                <span className="label">Delivery Notes:</span> {order.deliveryAddress.notes}
+              </div>
+            )}
+          </div>
         </article>
 
-        <article className="panel">
-          <h3>Rider</h3>
-          <p>Name: {order.assignedRider?.fullName || 'Not assigned yet'}</p>
-          <p>Phone: {order.assignedRider?.phone || 'N/A'}</p>
-          <p>Status: {['picked_up', 'on_the_way', 'arrived', 'delivered'].includes(order.status) ? order.status : 'Waiting for dispatch'}</p>
+        {/* Rider Card */}
+        <article className="panel order-rider">
+          <h3>Assigned Rider</h3>
+          {order.assignedRider ? (
+            <div className="rider-card">
+              <div className="rider-avatar">{getRiderInitials(order.assignedRider.fullName)}</div>
+              <div className="rider-info">
+                <h4>{order.assignedRider.fullName}</h4>
+                {order.assignedRider.phone && (
+                  <a href={`tel:${order.assignedRider.phone}`} className="phone-link">
+                    {order.assignedRider.phone}
+                  </a>
+                )}
+                <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
+                  {getStatusLabel(order.status)}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <p className="muted">No rider assigned yet. Waiting for dispatch.</p>
+          )}
         </article>
       </div>
 
-      <article className="panel" style={{ marginTop: '1rem' }}>
-        <h3>Status Timeline</h3>
-        <ul className="timeline">
-          {timeline.map((entry, index) => (
-            <li key={`${entry.status}-${entry.changedAt}-${index}`}>
-              <strong>{entry.status}</strong> - {new Date(entry.changedAt).toLocaleString()}
-              {entry.note ? ` - ${entry.note}` : ''}
-              {entry.changedBy?.fullName ? ` (${entry.changedBy.fullName})` : ''}
-            </li>
-          ))}
-        </ul>
+      {/* Status Timeline - Full Width */}
+      <article className="panel order-timeline" style={{ marginTop: '1.5rem' }}>
+        <h3>Delivery Timeline</h3>
+        <div className="status-stepper">
+          {statusOrder.map((status, index) => {
+            const timelineEntry = timeline.find((t) => t.status === status);
+            const isCompleted =
+              statusOrder.indexOf(status) < statusOrder.indexOf(order.status);
+
+            return (
+              <div key={status} className="stepper-step">
+                <div className={`stepper-circle ${getStepperCircleClass(order.status, status)}`}>
+                  {isCompleted && <span>✓</span>}
+                </div>
+                {index < statusOrder.length - 1 && <div className="stepper-line" />}
+                <div className="stepper-content">
+                  <h4>{status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</h4>
+                  {timelineEntry && (
+                    <p className="muted">
+                      {new Date(timelineEntry.changedAt).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </article>
 
-      <article className="panel" style={{ marginTop: '1rem' }}>
+      {/* Items Card - Full Width */}
+      <article className="panel order-items" style={{ marginTop: '1.5rem' }}>
         <h3>Items</h3>
-        <ul className="timeline">
+        <div className="items-list">
           {(order.items || []).map((item, index) => (
-            <li key={`${item.menuItem || item.name}-${index}`}>
-              {item.quantity}x {item.name} - N {Number(item.price || 0).toLocaleString()}
-            </li>
+            <div key={`${item.menuItem || item.name}-${index}`} className="item-row">
+              <div className="item-name">{item.name}</div>
+              <div className="item-price">
+                {item.quantity} × ₦{Number(item.price || 0).toLocaleString()}
+              </div>
+            </div>
           ))}
-        </ul>
+        </div>
       </article>
     </section>
   );

@@ -55,7 +55,7 @@ export default function StaffOrderHistoryPage() {
               <h4>Order {order._id.slice(-6)}</h4>
               <p>Customer: {order.customer?.fullName || 'Unknown'}</p>
               <p>Status: {order.status}</p>
-              <p>Total: N {Number(order.total || 0).toLocaleString()}</p>
+              <p>Total: ₦{Number(order.total || 0).toLocaleString()}</p>
               <p className="muted">
                 {new Date(order.createdAt).toLocaleDateString()} {new Date(order.createdAt).toLocaleTimeString()}
               </p>

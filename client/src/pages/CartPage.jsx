@@ -135,6 +135,15 @@ export default function CartPage() {
           <Link to="/checkout" className="btn">Checkout</Link>
         </div>
       ) : null}
+
+      {!loading && hasItems && (
+        <div className="page-footer">
+          <Link to="/" className="footer-suggestion">
+            <span className="footer-icon">🍽</span>
+            <span>Keep browsing the menu</span>
+          </Link>
+        </div>
+      )}
     </section>
   );
 }

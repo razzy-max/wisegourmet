@@ -56,7 +56,7 @@ export default function KitchenOrdersPage() {
             <h3>Order {order._id.slice(-6)}</h3>
             <p>Customer: {order.customer?.fullName || 'Unknown'}</p>
             <p>Status: {order.status}</p>
-            <p>Total: N {Number(order.total || 0).toLocaleString()}</p>
+            <p>Total: ₦{Number(order.total || 0).toLocaleString()}</p>
             <p>
               Handled by:{' '}
               {order.kitchenHandledBy?.fullName ? order.kitchenHandledBy.fullName : 'Unclaimed yet'}

@@ -267,7 +267,18 @@ export default function SupportTicketPage() {
                 value={composer.text}
                 onChange={(event) => setComposer((prev) => ({ ...prev, text: event.target.value }))}
               />
-              <input type="file" accept="image/*" multiple onChange={handleFiles} />
+              <label className="upload-zone" htmlFor="ticket-reply-attachments">
+                <p className="upload-icon" aria-hidden="true">☁</p>
+                <p>Drag files here or click to upload.</p>
+              </label>
+              <input
+                id="ticket-reply-attachments"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFiles}
+                className="hidden-file-input"
+              />
               {composer.attachments.length ? (
                 <div className="ticket-upload-list">
                   {composer.attachments.map((attachment, index) => (

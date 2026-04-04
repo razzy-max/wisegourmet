@@ -39,7 +39,7 @@ export default function RiderDeliveryHistoryPage() {
             <strong>Total Deliveries:</strong> {completedOrders.length}
           </div>
           <div>
-            <strong>Earnings:</strong> N {Number(totalEarnings || 0).toLocaleString()}
+            <strong>Earnings:</strong> ₦{Number(totalEarnings || 0).toLocaleString()}
           </div>
         </div>
       </article>
@@ -54,7 +54,7 @@ export default function RiderDeliveryHistoryPage() {
               <p>Phone: {order.customer?.phone || 'Not provided'}</p>
               <p>Status: {order.status}</p>
               <p>Address: {order.deliveryAddress?.fullText || 'Not provided'}</p>
-              <p>Fee: N {Number(order.deliveryFee || 0).toLocaleString()}</p>
+              <p>Fee: ₦{Number(order.deliveryFee || 0).toLocaleString()}</p>
               <p className="muted">
                 {new Date(order.updatedAt).toLocaleDateString()} {new Date(order.updatedAt).toLocaleTimeString()}
               </p>

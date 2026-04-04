@@ -74,6 +74,15 @@ export default function MyOrdersPage() {
           </article>
         ))}
       </div>
+
+      {!loading && orders.length > 0 && (
+        <div className="page-footer">
+          <Link to="/" className="footer-suggestion">
+            <span className="footer-icon">🍽</span>
+            <span>Ready to order again? Browse the menu</span>
+          </Link>
+        </div>
+      )}
     </section>
   );
 }
