@@ -84,6 +84,32 @@ nav {
   display: none;
 }
 
+.mobile-auth-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.mobile-auth-link {
+  text-decoration: none;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.34rem 0.62rem;
+}
+
+.mobile-auth-link-ghost {
+  color: #edf6ec;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: transparent;
+}
+
+.mobile-auth-link-solid {
+  color: #1f3b1e;
+  background: #f2c56e;
+  border: 1px solid rgba(242, 197, 110, 0.8);
+}
+
 .logout-link {
   background: transparent;
   border: none;
@@ -2256,6 +2282,11 @@ input:-webkit-autofill::first-line {
 
   .customer-nav-mobile-top {
     display: block;
+  }
+
+  .mobile-auth-link {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.56rem;
   }
 
   .mobile-cart-link {

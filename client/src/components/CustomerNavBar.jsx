@@ -103,8 +103,8 @@ export default function CustomerNavBar() {
             )}
           </nav>
 
-          {isAuthenticated ? (
-            <div className="customer-nav-mobile-top">
+          <div className="customer-nav-mobile-top">
+            {isAuthenticated ? (
               <Link to="/cart" className={animateCart ? 'mobile-cart-link cart-link-pop' : 'mobile-cart-link'}>
                 {renderCartIcon()}
                 {cartCount > 0 ? (
@@ -113,8 +113,17 @@ export default function CustomerNavBar() {
                   </span>
                 ) : null}
               </Link>
-            </div>
-          ) : null}
+            ) : (
+              <div className="mobile-auth-actions">
+                <Link to="/login" className="mobile-auth-link mobile-auth-link-ghost">
+                  Login
+                </Link>
+                <Link to="/register" className="mobile-auth-link mobile-auth-link-solid">
+                  Register
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
