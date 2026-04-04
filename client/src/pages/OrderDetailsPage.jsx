@@ -123,7 +123,7 @@ export default function OrderDetailsPage() {
       </div>
 
       {/* Summary & Delivery PIN Grid */}
-      <div className="grid">
+      <div className="grid order-top-grid">
         {/* Summary Card */}
         <article className="panel order-summary">
           <h3>Order Summary</h3>
@@ -183,7 +183,23 @@ export default function OrderDetailsPage() {
         {isPaymentPending && (
           <article className="panel order-payment-action">
             <div className="payment-status-header">
-              <span>💳 Complete Payment</span>
+              <span className="payment-status-icon" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.9"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="2.5" y="5" width="19" height="14" rx="2.5" />
+                  <path d="M2.5 10h19" />
+                  <path d="M7.5 15h3" />
+                </svg>
+              </span>
+              <span>Complete Payment</span>
             </div>
             <p className="payment-status-info">
               Order total: <strong>₦{Number(order.total || 0).toLocaleString()}</strong>

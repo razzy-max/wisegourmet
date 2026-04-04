@@ -90,12 +90,64 @@ nav {
   gap: 0.35rem;
 }
 
-.mobile-auth-link {
+.mobile-guest-nav-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mobile-menu-pill {
   text-decoration: none;
   border-radius: 999px;
   font-size: 0.78rem;
   font-weight: 700;
-  padding: 0.34rem 0.62rem;
+  color: #edf6ec;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  min-height: 38px;
+  padding: 0 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-menu-pill-active {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.guest-login-link {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.guest-login-link.active,
+.guest-login-link:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.guest-register-link {
+  color: #233f21;
+  background: var(--wg-amber);
+  border: 1px solid #d6941d;
+  font-weight: 700;
+}
+
+.guest-register-link.active,
+.guest-register-link:hover {
+  color: #1d361b;
+  background: #f1b64d;
+}
+
+.mobile-auth-link {
+  text-decoration: none;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  min-height: 44px;
+  padding: 0 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .mobile-auth-link-ghost {
@@ -1306,6 +1358,16 @@ select:hover {
   margin-bottom: 1rem;
 }
 
+.payment-status-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .payment-status-info {
   margin: 0 0 1rem 0;
   font-size: 0.95rem;
@@ -2362,8 +2424,21 @@ input:-webkit-autofill::first-line {
   }
 
   .mobile-auth-link {
-    font-size: 0.75rem;
-    padding: 0.3rem 0.56rem;
+    font-size: 0.78rem;
+  }
+
+  .mobile-auth-actions {
+    gap: 0.42rem;
+  }
+
+  .mobile-guest-nav-row {
+    gap: 0.42rem;
+  }
+
+  .mobile-menu-pill {
+    min-height: 44px;
+    font-size: 0.78rem;
+    padding: 0 0.8rem;
   }
 
   .mobile-cart-link {
@@ -2511,5 +2586,24 @@ input:-webkit-autofill::first-line {
   .status-bar-row {
     grid-template-columns: 1fr;
     gap: 0.35rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .order-top-grid {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .order-top-grid .order-summary {
+    order: 1;
+  }
+
+  .order-top-grid .order-payment-action {
+    order: 2;
+  }
+
+  .order-top-grid .order-delivery-pin {
+    order: 3;
   }
 }

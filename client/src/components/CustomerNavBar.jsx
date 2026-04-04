@@ -90,12 +90,19 @@ export default function CustomerNavBar() {
               </>
             ) : (
               <>
-                <NavLink to="/login" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
+                <NavLink
+                  to="/login"
+                  className={({ isActive }) =>
+                    isActive ? 'nav-link guest-login-link active' : 'nav-link guest-login-link'
+                  }
+                >
                   Login
                 </NavLink>
                 <NavLink
                   to="/register"
-                  className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                  className={({ isActive }) =>
+                    isActive ? 'nav-link guest-register-link active' : 'nav-link guest-register-link'
+                  }
                 >
                   Register
                 </NavLink>
@@ -114,13 +121,24 @@ export default function CustomerNavBar() {
                 ) : null}
               </Link>
             ) : (
-              <div className="mobile-auth-actions">
-                <Link to="/login" className="mobile-auth-link mobile-auth-link-ghost">
-                  Login
-                </Link>
-                <Link to="/register" className="mobile-auth-link mobile-auth-link-solid">
-                  Register
-                </Link>
+              <div className="mobile-guest-nav-row">
+                <NavLink
+                  to="/"
+                  end
+                  className={({ isActive }) =>
+                    isActive ? 'mobile-menu-pill mobile-menu-pill-active' : 'mobile-menu-pill'
+                  }
+                >
+                  Menu
+                </NavLink>
+                <div className="mobile-auth-actions">
+                  <Link to="/login" className="mobile-auth-link mobile-auth-link-ghost">
+                    Login
+                  </Link>
+                  <Link to="/register" className="mobile-auth-link mobile-auth-link-solid">
+                    Register
+                  </Link>
+                </div>
               </div>
             )}
           </div>
