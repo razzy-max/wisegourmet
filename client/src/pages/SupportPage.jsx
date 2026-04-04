@@ -95,67 +95,88 @@ export default function SupportPage() {
   return (
     <section className="page-wrap">
       <h1>Support Tickets</h1>
-      <article className="panel narrow">
-        <form className="form" onSubmit={submit}>
-          <select
-            value={form.orderId}
-            onChange={(event) => setForm((prev) => ({ ...prev, orderId: event.target.value }))}
-          >
-            <option value="">General issue (no order linked)</option>
-            {orders.map((order) => (
-              <option key={order._id} value={order._id}>
-                {`Order ${order._id.slice(-6)} - ${order.status}`}
-              </option>
-            ))}
-          </select>
-          <input
-            placeholder="Subject"
-            value={form.subject}
-            onChange={(event) => setForm((prev) => ({ ...prev, subject: event.target.value }))}
-            required
-          />
-          <textarea
-            placeholder="Describe the issue"
-            value={form.message}
-            onChange={(event) => setForm((prev) => ({ ...prev, message: event.target.value }))}
-            required
-          />
-          <input type="file" accept="image/*" multiple onChange={handleFiles} />
-          {form.attachments.length ? (
-            <div className="ticket-upload-list">
-              {form.attachments.map((attachment, index) => (
-                <div className="ticket-upload-item" key={`${attachment.fileName}-${index}`}>
-                  <span>{attachment.fileName}</span>
-                  <button type="button" className="btn btn-ghost" onClick={() => removeAttachment(index)}>
-                    Remove
-                  </button>
-                </div>
+      <div className="support-layout">
+        <article className="panel">
+          <form className="form" onSubmit={submit}>
+            <select
+              value={form.orderId}
+              onChange={(event) => setForm((prev) => ({ ...prev, orderId: event.target.value }))}
+            >
+              <option value="">General issue (no order linked)</option>
+              {orders.map((order) => (
+                <option key={order._id} value={order._id}>
+                  {`Order ${order._id.slice(-6)} - ${order.status}`}
+                </option>
               ))}
+            </select>
+            <input
+              placeholder="Subject"
+              value={form.subject}
+              onChange={(event) => setForm((prev) => ({ ...prev, subject: event.target.value }))}
+              required
+            />
+            <textarea
+              placeholder="Describe the issue"
+              value={form.message}
+              onChange={(event) => setForm((prev) => ({ ...prev, message: event.target.value }))}
+              required
+            />
+
+            <label className="upload-zone" htmlFor="support-attachments">
+              <p className="upload-icon" aria-hidden="true">☁</p>
+              <p>Drag files here or click to upload.</p>
+            </label>
+            <input
+              id="support-attachments"
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFiles}
+              className="hidden-file-input"
+            />
+
+            {form.attachments.length ? (
+              <div className="ticket-upload-list">
+                {form.attachments.map((attachment, index) => (
+                  <div className="ticket-upload-item" key={`${attachment.fileName}-${index}`}>
+                    <span>{attachment.fileName}</span>
+                    <button type="button" className="btn btn-ghost" onClick={() => removeAttachment(index)}>
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            <button className="btn" type="submit">
+              Create support ticket
+            </button>
+          </form>
+          {message ? <p className="message">{message}</p> : null}
+          {error ? <p className="error">{error}</p> : null}
+        </article>
+
+        <article className="panel">
+          <h3>My tickets</h3>
+          {loading ? <LoadingSpinner label="Loading your tickets..." /> : null}
+          {!loading && tickets.length === 0 ? (
+            <div className="empty-state">
+              <p className="empty-icon" aria-hidden="true">📥</p>
+              <p className="muted">No tickets yet. We&apos;re here if you need us.</p>
             </div>
           ) : null}
-          <button className="btn" type="submit">
-            Create support ticket
-          </button>
-        </form>
-        {message ? <p className="message">{message}</p> : null}
-        {error ? <p className="error">{error}</p> : null}
-      </article>
-
-      <article className="panel" style={{ marginTop: '1rem' }}>
-        <h3>My tickets</h3>
-        {loading ? <LoadingSpinner label="Loading your tickets..." /> : null}
-        {!loading && tickets.length === 0 ? <p className="muted">No tickets yet. Create one above.</p> : null}
-        <div className="grid">
-          {tickets.map((ticket) => (
-            <Link className="panel ticket-card" key={ticket._id} to={`/support/tickets/${ticket._id}`}>
-              <p><strong>{ticket.subject}</strong></p>
-              <p>Status: {ticket.status}</p>
-              <p>Linked order: {ticket.order?._id ? ticket.order._id.slice(-6) : 'None'}</p>
-              <p>{ticket.messages?.[ticket.messages.length - 1]?.text || ticket.reply || 'Open ticket to view the conversation'}</p>
-            </Link>
-          ))}
-        </div>
-      </article>
+          <div className="grid">
+            {tickets.map((ticket) => (
+              <Link className="panel ticket-card" key={ticket._id} to={`/support/tickets/${ticket._id}`}>
+                <p><strong>{ticket.subject}</strong></p>
+                <p>Status: {ticket.status}</p>
+                <p>Linked order: {ticket.order?._id ? ticket.order._id.slice(-6) : 'None'}</p>
+                <p>{ticket.messages?.[ticket.messages.length - 1]?.text || ticket.reply || 'Open ticket to view the conversation'}</p>
+              </Link>
+            ))}
+          </div>
+        </article>
+      </div>
     </section>
   );
 }

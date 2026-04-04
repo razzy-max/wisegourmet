@@ -32,6 +32,8 @@ export default function CartPage() {
     [cart.items]
   );
 
+  const hasItems = cart.items.length > 0;
+
   const removeItem = async (itemId) => {
     await cartApi.remove(itemId);
     await load();
@@ -45,50 +47,93 @@ export default function CartPage() {
   };
 
   return (
-    <section className="page-wrap">
+    <section className="page-wrap cart-page">
       <h1>Cart</h1>
       {error ? <p className="error">{error}</p> : null}
       {loading ? <LoadingSpinner label="Loading cart..." /> : null}
-      <div className="grid">
-        {cart.items.map((item) => (
-          <article className="panel" key={item._id}>
-            <h3>{item.nameSnapshot}</h3>
-            <div className="qty-wrap">
-              <button
-                className="btn btn-ghost qty-btn"
-                type="button"
-                onClick={() => updateQuantity(item._id, item.quantity - 1)}
-              >
-                -
-              </button>
-              <input
-                className="qty-input"
-                type="number"
-                min="1"
-                value={item.quantity}
-                onChange={(event) => updateQuantity(item._id, event.target.value)}
-              />
-              <button
-                className="btn btn-ghost qty-btn"
-                type="button"
-                onClick={() => updateQuantity(item._id, item.quantity + 1)}
-              >
-                +
-              </button>
-            </div>
-            <p>N {(item.priceSnapshot * item.quantity).toLocaleString()}</p>
-            <button className="btn btn-danger" onClick={() => removeItem(item._id)} type="button">
-              Remove
-            </button>
+
+      {!loading && !hasItems ? (
+        <article className="panel empty-state">
+          <p className="empty-icon" aria-hidden="true">🧺</p>
+          <p className="muted">Your cart is empty. Add something tasty from the menu.</p>
+        </article>
+      ) : null}
+
+      {hasItems ? (
+        <div className="cart-layout">
+          <article className="panel cart-list-panel">
+            {cart.items.map((item) => (
+              <div className="cart-item-row" key={item._id}>
+                {item.menuItem?.imageUrl ? (
+                  <img src={item.menuItem.imageUrl} alt={item.nameSnapshot} className="cart-thumb" loading="lazy" />
+                ) : (
+                  <div className="cart-thumb cart-thumb-fallback" aria-hidden="true">🍽</div>
+                )}
+                <div className="cart-item-main">
+                  <h3>{item.nameSnapshot}</h3>
+                  <p className="price">₦{(item.priceSnapshot * item.quantity).toLocaleString()}</p>
+                  <div className="qty-wrap menu-stepper">
+                    <button
+                      className="btn btn-ghost qty-btn"
+                      type="button"
+                      onClick={() => updateQuantity(item._id, item.quantity - 1)}
+                    >
+                      -
+                    </button>
+                    <input
+                      className="qty-input"
+                      type="number"
+                      min="1"
+                      value={item.quantity}
+                      onChange={(event) => updateQuantity(item._id, event.target.value)}
+                    />
+                    <button
+                      className="btn btn-ghost qty-btn"
+                      type="button"
+                      onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+                <button
+                  className="icon-btn icon-btn-danger"
+                  onClick={() => removeItem(item._id)}
+                  type="button"
+                  aria-label={`Remove ${item.nameSnapshot}`}
+                >
+                  🗑
+                </button>
+              </div>
+            ))}
           </article>
-        ))}
-      </div>
-      <p className="total">Subtotal: N {total.toLocaleString()}</p>
-      {!loading && cart.items.length === 0 ? <p className="muted">Your cart is empty.</p> : null}
-      {!loading && cart.items.length > 0 ? (
-        <Link to="/checkout" className="btn" style={{ marginTop: '0.75rem' }}>
-          Proceed to checkout
-        </Link>
+
+          <aside className="panel cart-summary-panel">
+            <h3>Order Summary</h3>
+            <div className="summary-lines">
+              {cart.items.map((item) => (
+                <p key={`summary-${item._id}`}>
+                  {item.quantity} x {item.nameSnapshot} <span>₦{(item.priceSnapshot * item.quantity).toLocaleString()}</span>
+                </p>
+              ))}
+            </div>
+            <hr />
+            <p className="summary-total-row">Subtotal <span>₦{total.toLocaleString()}</span></p>
+            <p className="summary-total grand-total">Total <span>₦{total.toLocaleString()}</span></p>
+            <Link to="/checkout" className="btn cart-checkout-btn">
+              Proceed to Checkout
+            </Link>
+          </aside>
+        </div>
+      ) : null}
+
+      {hasItems ? (
+        <div className="cart-mobile-bar">
+          <p>
+            Subtotal <strong>₦{total.toLocaleString()}</strong>
+          </p>
+          <Link to="/checkout" className="btn">Checkout</Link>
+        </div>
       ) : null}
     </section>
   );

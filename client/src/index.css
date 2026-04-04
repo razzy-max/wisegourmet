@@ -1,9 +1,9 @@
 :root {
-  font-family: 'Trebuchet MS', 'Segoe UI', Tahoma, sans-serif;
+  font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #223126;
-  background: radial-gradient(circle at 10% 10%, #f3f8ef 0%, #edf4e8 45%, #e3eedf 100%);
+  color: #253126;
+  background: #faf8f4;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -17,6 +17,7 @@
 body {
   margin: 0;
   min-height: 100svh;
+  background: #faf8f4;
 }
 
 p {

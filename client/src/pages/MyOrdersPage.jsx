@@ -4,6 +4,25 @@ import { orderApi } from '../api/orderApi';
 import { useOrdersRealtime } from '../hooks/useOrdersRealtime';
 import LoadingSpinner from '../components/LoadingSpinner';
 
+const getStatusTone = (status) => {
+  if (['arrived', 'delivered'].includes(status)) {
+    return 'success';
+  }
+  if (['confirmed', 'preparing', 'ready_for_pickup', 'picked_up', 'on_the_way'].includes(status)) {
+    return 'active';
+  }
+  return 'muted';
+};
+
+const getStatusLabel = (status) => {
+  const readable = String(status || '').replaceAll('_', ' ');
+  if (status === 'delivered') return '✓ Delivered';
+  if (status === 'confirmed') return '⏳ Confirmed';
+  if (status === 'on_the_way') return '🚚 On the way';
+  if (status === 'cancelled') return '✕ Cancelled';
+  return readable.charAt(0).toUpperCase() + readable.slice(1);
+};
+
 export default function MyOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,15 +52,24 @@ export default function MyOrdersPage() {
       <h1>My Orders</h1>
       {error ? <p className="error">{error}</p> : null}
       {loading ? <LoadingSpinner label="Loading your orders..." /> : null}
-      {!loading && orders.length === 0 ? <p className="muted">No orders yet.</p> : null}
+      {!loading && orders.length === 0 ? (
+        <article className="panel empty-state">
+          <p className="empty-icon" aria-hidden="true">📦</p>
+          <p className="muted">No orders yet. Your first order will show up here.</p>
+        </article>
+      ) : null}
       <div className="grid">
         {orders.map((order) => (
-          <article className="panel" key={order._id} style={{ display: 'grid', gap: '0.5rem' }}>
-            <h3>Order {order._id.slice(-6)}</h3>
-            <p>Status: {order.status}</p>
-            <p>Total: N {Number(order.total || 0).toLocaleString()}</p>
-            <Link className="btn" to={`/orders/${order._id}`}>
-              View order details
+          <article className={`panel order-card tone-${getStatusTone(order.status)}`} key={order._id}>
+            <p className="muted order-id">Order #{order._id.slice(-6)}</p>
+            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+              <p className="summary-total">₦{Number(order.total || 0).toLocaleString()}</p>
+              <span className={`status-badge status-${getStatusTone(order.status)}`}>
+                {getStatusLabel(order.status)}
+              </span>
+            </div>
+            <Link className="order-link" to={`/orders/${order._id}`}>
+              View order details →
             </Link>
           </article>
         ))}

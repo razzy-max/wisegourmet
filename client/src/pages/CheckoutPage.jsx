@@ -48,6 +48,7 @@ export default function CheckoutPage() {
   const subtotal = displayedItems.reduce((sum, item) => sum + Number(item.price || item.priceSnapshot || 0) * Number(item.quantity || 0), 0);
   const deliveryFee = order ? Number(order.deliveryFee || 0) : (ZONE_FEES[form.zone] ?? 0);
   const total = order ? Number(order.total || order.totalAmount || subtotal + deliveryFee) : subtotal + deliveryFee;
+  const displayedDeliveryFee = order ? Number(order.deliveryFee || 0) : deliveryFee;
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -187,74 +188,108 @@ export default function CheckoutPage() {
   };
 
   return (
-    <section className="page-wrap panel">
+    <section className="page-wrap checkout-page">
       <h1>Checkout</h1>
 
-      <article className="panel" style={{ marginBottom: '1rem' }}>
-        <h3>Order summary</h3>
-        <ul className="timeline">
-          {displayedItems.length > 0 ? displayedItems.map((item) => (
-            <li key={item._id}>
-              {item.quantity} x {item.nameSnapshot || item.name} - N {Number((item.priceSnapshot || item.price || 0) * item.quantity).toLocaleString()}
-            </li>
-          )) : <li>No items to show.</li>}
-        </ul>
-        <p className="total">
-          Subtotal: N {subtotal.toLocaleString()}
-        </p>
-        <p className="total">
-          Delivery fee ({getZoneLabel(form.zone)}): N {deliveryFee.toLocaleString()}
-        </p>
-        <p className="total">
-          Total: N {total.toLocaleString()}
-        </p>
-      </article>
-      
-      {!order ? (
-        <form className="form" onSubmit={submit}>
-          <textarea
-            placeholder="Full delivery address"
-            value={form.fullText}
-            onChange={(event) => setForm((prev) => ({ ...prev, fullText: event.target.value }))}
-            required
-          />
-          <input
-            placeholder="Area"
-            value={form.area}
-            onChange={(event) => setForm((prev) => ({ ...prev, area: event.target.value }))}
-          />
-          <input
-            placeholder="Landmark"
-            value={form.landmark}
-            onChange={(event) => setForm((prev) => ({ ...prev, landmark: event.target.value }))}
-          />
-          <textarea
-            placeholder="Notes"
-            value={form.notes}
-            onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
-          />
-          <select
-            value={form.zone}
-            onChange={(event) => setForm((prev) => ({ ...prev, zone: event.target.value }))}
-            required
-          >
-            <option value="" disabled>
-              Select zone
-            </option>
-            <option value="zone_a">Zone A</option>
-            <option value="zone_b">Zone B</option>
-            <option value="zone_c">Zone C</option>
-            <option value="outside">Outside</option>
-          </select>
-          <button className="btn" type="submit" disabled={loading}>
-            {loading ? 'Processing...' : 'Place order & Pay with Paystack'}
-          </button>
-        </form>
-      ) : null}
+      <div className="checkout-layout">
+        {!order ? (
+          <form className="panel form checkout-form" onSubmit={submit}>
+            <h3>Delivery Details</h3>
+
+            <label className="floating-field field-full">
+              <textarea
+                placeholder=" "
+                value={form.fullText}
+                onChange={(event) => setForm((prev) => ({ ...prev, fullText: event.target.value }))}
+                required
+              />
+              <span>Full delivery address</span>
+            </label>
+
+            <label className="floating-field">
+              <input
+                placeholder=" "
+                value={form.area}
+                onChange={(event) => setForm((prev) => ({ ...prev, area: event.target.value }))}
+              />
+              <span>Area</span>
+            </label>
+
+            <label className="floating-field">
+              <input
+                placeholder=" "
+                value={form.landmark}
+                onChange={(event) => setForm((prev) => ({ ...prev, landmark: event.target.value }))}
+              />
+              <span>Landmark</span>
+            </label>
+
+            <label className="floating-field field-full">
+              <textarea
+                placeholder=" "
+                value={form.notes}
+                onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
+              />
+              <span>Notes</span>
+            </label>
+
+            <label className="floating-field field-full">
+              <select
+                value={form.zone}
+                onChange={(event) => setForm((prev) => ({ ...prev, zone: event.target.value }))}
+                required
+              >
+                <option value="" disabled>
+                  Select zone
+                </option>
+                <option value="zone_a">Zone A</option>
+                <option value="zone_b">Zone B</option>
+                <option value="zone_c">Zone C</option>
+                <option value="outside">Outside</option>
+              </select>
+              <span>Delivery zone</span>
+            </label>
+
+            <button className="btn checkout-pay-btn" type="submit" disabled={loading}>
+              {loading ? 'Processing payment...' : 'Place order & Pay with Paystack'}
+            </button>
+          </form>
+        ) : null}
+
+        <article className="panel checkout-summary">
+          <h3>Order Summary</h3>
+          <div className="summary-lines">
+            {displayedItems.length > 0 ? (
+              displayedItems.map((item, index) => (
+                <p key={`${item._id || item.menuItem || item.name}-${index}`}>
+                  {item.quantity} x {item.nameSnapshot || item.name}
+                  <span>₦{Number((item.priceSnapshot || item.price || 0) * item.quantity).toLocaleString()}</span>
+                </p>
+              ))
+            ) : (
+              <p>No items to show.</p>
+            )}
+          </div>
+          <hr />
+          <p className="summary-total-row">
+            Subtotal
+            <span>₦{subtotal.toLocaleString()}</span>
+          </p>
+          <p className="summary-total-row">
+            Delivery fee ({getZoneLabel(order?.deliveryRule?.zone || form.zone)})
+            <span>₦{displayedDeliveryFee.toLocaleString()}</span>
+          </p>
+          <hr />
+          <p className="summary-total grand-total">
+            Total
+            <span>₦{total.toLocaleString()}</span>
+          </p>
+        </article>
+      </div>
 
       {result ? <p className="message">{result}</p> : null}
 
-      {loading && <p style={{ textAlign: 'center', color: '#666' }}>Processing payment...</p>}
+      {loading && <p className="muted">Processing payment...</p>}
 
       {order && order.payment?.status === 'paid' ? (
         <div className="panel">
@@ -263,12 +298,12 @@ export default function CheckoutPage() {
           <ul className="timeline">
             {(order.items || []).map((item, index) => (
               <li key={`${item.menuItem || item.name}-${index}`}>
-                {item.quantity} x {item.name} - N {Number(item.price || 0).toLocaleString()}
+                {item.quantity} x {item.name} - ₦{Number(item.price || 0).toLocaleString()}
               </li>
             ))}
           </ul>
-          <p><strong>Subtotal:</strong> N {Number(order.subtotal || 0).toLocaleString()}</p>
-          <p><strong>Delivery fee:</strong> N {Number(order.deliveryFee || 0).toLocaleString()}</p>
+          <p><strong>Subtotal:</strong> ₦{Number(order.subtotal || 0).toLocaleString()}</p>
+          <p><strong>Delivery fee:</strong> ₦{Number(order.deliveryFee || 0).toLocaleString()}</p>
           <p><strong>Zone:</strong> {getZoneLabel(order.deliveryRule?.zone || form.zone)}</p>
           
           {order.deliveryPin && (

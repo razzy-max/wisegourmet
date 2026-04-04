@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import AdminNavBar from './components/AdminNavBar';
 import StaffNavBar from './components/StaffNavBar';
@@ -51,10 +52,49 @@ function NavBarSelector() {
 }
 
 function App() {
+  const location = useLocation();
+
+  useEffect(() => {
+    const path = location.pathname;
+
+    if (path === '/') {
+      document.title = 'Menu — Wise Gourmet';
+      return;
+    }
+
+    if (path.startsWith('/cart')) {
+      document.title = 'Cart — Wise Gourmet';
+      return;
+    }
+
+    if (path.startsWith('/checkout')) {
+      document.title = 'Checkout — Wise Gourmet';
+      return;
+    }
+
+    if (path.startsWith('/orders')) {
+      document.title = 'My Orders — Wise Gourmet';
+      return;
+    }
+
+    if (path.startsWith('/profile')) {
+      document.title = 'Profile — Wise Gourmet';
+      return;
+    }
+
+    if (path.startsWith('/support')) {
+      document.title = 'Support — Wise Gourmet';
+      return;
+    }
+
+    document.title = 'Wise Gourmet';
+  }, [location.pathname]);
+
   return (
     <div>
       <NavBarSelector />
-      <Routes>
+      <div key={location.pathname} className="route-fade">
+        <Routes>
         <Route path="/" element={<HomeMenuPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/admin/login" element={<Navigate to="/login" replace />} />
@@ -205,7 +245,8 @@ function App() {
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+        </Routes>
+      </div>
     </div>
   );
 }

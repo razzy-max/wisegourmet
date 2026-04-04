@@ -12,13 +12,13 @@ const isInStock = (menuItem) => {
 const getOrCreateCart = async (userId) => {
   let cart = await Cart.findOne({ user: userId }).populate(
     'items.menuItem',
-    'name price isAvailable availabilityStatus'
+    'name price isAvailable availabilityStatus imageUrl'
   );
   if (!cart) {
     cart = await Cart.create({ user: userId, items: [] });
     cart = await Cart.findById(cart._id).populate(
       'items.menuItem',
-      'name price isAvailable availabilityStatus'
+      'name price isAvailable availabilityStatus imageUrl'
     );
   }
   return cart;
@@ -61,7 +61,7 @@ const addCartItem = asyncHandler(async (req, res) => {
   await cart.save();
   const hydrated = await Cart.findById(cart._id).populate(
     'items.menuItem',
-    'name price isAvailable availabilityStatus'
+    'name price isAvailable availabilityStatus imageUrl'
   );
   res.json({ cart: hydrated });
 });
@@ -86,7 +86,7 @@ const updateCartItem = asyncHandler(async (req, res) => {
   await cart.save();
   const hydrated = await Cart.findById(cart._id).populate(
     'items.menuItem',
-    'name price isAvailable availabilityStatus'
+    'name price isAvailable availabilityStatus imageUrl'
   );
   res.json({ cart: hydrated });
 });
@@ -106,7 +106,7 @@ const removeCartItem = asyncHandler(async (req, res) => {
 
   const hydrated = await Cart.findById(cart._id).populate(
     'items.menuItem',
-    'name price isAvailable availabilityStatus'
+    'name price isAvailable availabilityStatus imageUrl'
   );
   res.json({ cart: hydrated });
 });

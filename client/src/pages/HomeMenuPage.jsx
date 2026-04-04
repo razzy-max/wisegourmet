@@ -22,6 +22,8 @@ const statusOrder = {
   unavailable: 2,
 };
 
+const formatCurrency = (value) => `₦${Number(value || 0).toLocaleString()}`;
+
 const getMenuCacheKey = (selectedCategory, search) =>
   `${MENU_CACHE_KEY_PREFIX}${selectedCategory || 'all'}:${String(search || '').trim().toLowerCase()}`;
 
@@ -80,6 +82,12 @@ export default function HomeMenuPage() {
   const [quantities, setQuantities] = useState({});
   const inFlightAddsRef = useRef(0);
   const refreshTimeoutRef = useRef(null);
+  const greeting =
+    new Date().getHours() < 12
+      ? 'Good morning'
+      : new Date().getHours() < 17
+        ? 'Good afternoon'
+        : 'Good evening';
 
   const scheduleCartCountRefresh = useCallback(() => {
     if (refreshTimeoutRef.current) {
@@ -179,6 +187,12 @@ export default function HomeMenuPage() {
 
   return (
     <section className="page-wrap">
+      <div className="menu-hero">
+        <div className="menu-hero-overlay">
+          <p>{greeting} 👋</p>
+          <h2>What are you craving today?</h2>
+        </div>
+      </div>
       <h1>Menu</h1>
       <div className="panel controls">
         <input
@@ -201,21 +215,26 @@ export default function HomeMenuPage() {
         </p>
       ) : null}
       {loading ? <LoadingSpinner label="Loading menu..." /> : null}
-      <div className="grid">
+      <div className="grid menu-grid">
         {items.map((item) => (
-          <article className="panel" key={item._id}>
+          <article className="panel menu-card" key={item._id}>
             {item.imageUrl ? (
               <img className="menu-item-image" src={item.imageUrl} alt={item.name} loading="lazy" />
             ) : (
               <div className="menu-item-image-placeholder">Food Image</div>
             )}
-            <h3>{item.name}</h3>
+            <div className="menu-meta-row">
+              <span className="menu-category-pill">🏷 {item.category?.name || 'General'}</span>
+              <span className="menu-status-inline">
+                <span className={`status-dot ${normalizeStatus(item) === 'in_stock' ? 'in-stock' : 'offline'}`} />
+                {statusLabelMap[normalizeStatus(item)] || 'Unknown'}
+              </span>
+            </div>
+            <h3 className="menu-item-title">{item.name}</h3>
             <p>{item.description}</p>
-            <p className="muted">Category: {item.category?.name}</p>
-            <p className="price">N {item.price.toLocaleString()}</p>
-            <p className="muted">Status: {statusLabelMap[normalizeStatus(item)] || 'Unknown'}</p>
+            <p className="price menu-price">{formatCurrency(item.price)}</p>
             {normalizeStatus(item) === 'in_stock' ? (
-              <div className="qty-wrap">
+              <div className="qty-wrap menu-stepper">
                 <button
                   className="btn btn-ghost qty-btn"
                   type="button"
@@ -240,7 +259,7 @@ export default function HomeMenuPage() {
               </div>
             ) : null}
             <button
-              className="btn"
+              className="btn menu-add-btn"
               type="button"
               onClick={() => addToCart(item)}
               disabled={normalizeStatus(item) !== 'in_stock'}

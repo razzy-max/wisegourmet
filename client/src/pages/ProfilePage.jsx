@@ -18,6 +18,12 @@ export default function ProfilePage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const initials = form.fullName
+    .split(' ')
+    .map((value) => value.trim().charAt(0).toUpperCase())
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('') || 'WG';
 
   const loadProfile = async () => {
     try {
@@ -69,8 +75,11 @@ export default function ProfilePage() {
   };
 
   return (
-    <section className="page-wrap panel narrow">
-      <h1>My Profile</h1>
+    <section className="page-wrap panel narrow profile-card">
+      <div className="profile-header">
+        <div className="profile-avatar" aria-hidden="true">{initials}</div>
+        <h1>My Profile</h1>
+      </div>
       <form className="form profile-form" onSubmit={saveProfile}>
         <label className="field">
           <span className="field-label">Full name</span>
