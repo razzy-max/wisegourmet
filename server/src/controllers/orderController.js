@@ -134,7 +134,16 @@ const getMyOrders = asyncHandler(async (req, res) => {
 
 const getOrder = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const order = await Order.findOne({ _id: id, customer: req.user._id })
+  const query = { _id: id };
+
+  // Customers can only view their own orders; riders can only view assigned orders.
+  if (req.user.role === 'customer') {
+    query.customer = req.user._id;
+  } else if (req.user.role === 'rider') {
+    query.assignedRider = req.user._id;
+  }
+
+  const order = await Order.findOne(query)
     .populate('customer', 'fullName email phone')
     .populate('assignedRider', 'fullName phone')
     .populate('kitchenHandledBy', 'fullName phone')

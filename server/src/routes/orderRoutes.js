@@ -28,6 +28,6 @@ router.patch('/:id/assign-rider', protect, authorize('admin', 'staff'), assignRi
 router.post('/:id/payment/initiate', protect, authorize('customer'), initiatePayment);
 router.post('/:id/payment/verify', protect, authorize('customer'), verifyPayment);
 router.patch('/:id/status', protect, authorize('admin', 'staff', 'rider'), updateOrderStatus);
-router.get('/:id', protect, authorize('customer'), getOrder);
+router.get('/:id', protect, authorize('customer', 'admin', 'staff', 'rider', 'support'), getOrder);
 
 module.exports = router;
