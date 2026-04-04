@@ -29,6 +29,8 @@ export default function OrderDetailsPage() {
   const [order, setOrder] = useState(null);
   const [error, setError] = useState('');
   const [copiedPin, setCopiedPin] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -59,6 +61,25 @@ export default function OrderDetailsPage() {
     const parts = fullName.split(' ');
     return (parts[0]?.[0] + (parts[1]?.[0] || '')).toUpperCase();
   };
+
+  const handlePayNow = async () => {
+    setPaymentLoading(true);
+    setPaymentError('');
+    try {
+      const response = await orderApi.initiatePayment(id);
+      if (response.payment?.authorizationUrl) {
+        window.location.href = response.payment.authorizationUrl;
+      } else {
+        setPaymentError('Payment initiation failed. Please try again.');
+      }
+    } catch (err) {
+      setPaymentError(err.message || 'Failed to initiate payment');
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const isPaymentPending = order && order.status === 'pending' && order.payment?.status !== 'paid';
 
   if (error) {
     return (
@@ -157,6 +178,33 @@ export default function OrderDetailsPage() {
             <p className="muted">PIN will appear after payment is verified.</p>
           )}
         </article>
+
+        {/* Payment Action Card - Show if payment is pending */}
+        {isPaymentPending && (
+          <article className="panel order-payment-action">
+            <div className="payment-status-header">
+              <span>💳 Complete Payment</span>
+            </div>
+            <p className="payment-status-info">
+              Order total: <strong>₦{Number(order.total || 0).toLocaleString()}</strong>
+            </p>
+            {paymentError && (
+              <div className="error-message" style={{ marginBottom: '1rem' }}>
+                {paymentError}
+              </div>
+            )}
+            <button
+              className="btn btn-primary order-payment-btn"
+              onClick={handlePayNow}
+              disabled={paymentLoading}
+            >
+              {paymentLoading ? 'Processing...' : 'Proceed to Payment'}
+            </button>
+            <p className="payment-hint">
+              You'll be redirected to Paystack to complete the payment securely.
+            </p>
+          </article>
+        )}
       </div>
 
       {/* Customer & Rider Grid */}

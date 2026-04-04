@@ -1286,6 +1286,79 @@ select:hover {
   transition: opacity 0.2s ease;
 }
 
+/* Payment Action Card */
+.order-payment-action {
+  background: linear-gradient(135deg, var(--wg-amber) 0%, #d8921a 100%);
+  color: white;
+}
+
+.order-payment-action h3 {
+  color: white;
+}
+
+.payment-status-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.payment-status-info {
+  margin: 0 0 1rem 0;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.payment-status-info strong {
+  font-size: 1.3rem;
+  display: block;
+  margin-top: 0.25rem;
+  color: white;
+}
+
+.order-payment-btn {
+  width: 100%;
+  background: white;
+  color: var(--wg-amber);
+  font-weight: 700;
+  border: none;
+  padding: 0.875rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 0.75rem;
+}
+
+.order-payment-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.order-payment-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.payment-hint {
+  font-size: 0.8rem;
+  margin: 0;
+  opacity: 0.9;
+  line-height: 1.4;
+}
+
+.error-message {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  border-left: 3px solid white;
+}
+
 /* Customer & Rider Cards */
 .order-customer,
 .order-rider {
@@ -2180,6 +2253,10 @@ input:-webkit-autofill::first-line {
   }
 
   .order-delivery-pin {
+    grid-column: 1 / -1;
+  }
+
+  .order-payment-action {
     grid-column: 1 / -1;
   }
 
