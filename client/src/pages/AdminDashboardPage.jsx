@@ -40,6 +40,8 @@ export default function AdminDashboardPage() {
     }
   );
 
+  const fulfilledCount = Number(counts.delivered || 0) + Number(counts.picked_up || 0);
+
   return (
     <section className="page-wrap">
       <h1>Admin Dashboard</h1>
@@ -66,9 +68,9 @@ export default function AdminDashboardPage() {
               </span>
             </div>
             <div className="overview-stat">
-              <span className="stat-label">Delivered</span>
+              <span className="stat-label">Fulfilled</span>
               <span className="stat-number" style={{ color: '#3a6835' }}>
-                {counts.delivered}
+                {fulfilledCount}
               </span>
             </div>
           </div>
