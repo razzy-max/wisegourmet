@@ -50,8 +50,8 @@ function StatusBars({ breakdown = {} }) {
   const max = Math.max(...entries.map(([, count]) => Number(count || 0)), 1);
 
   const getStatusBarColor = (status) => {
-    if (['delivered', 'arrived'].includes(status)) return '#3a6835';
-    if (['confirmed', 'preparing', 'ready_for_pickup', 'picked_up', 'on_the_way'].includes(status)) return '#e8a020';
+    if (['delivered', 'arrived', 'picked_up'].includes(status)) return '#3a6835';
+    if (['confirmed', 'preparing', 'ready_for_pickup', 'on_the_way'].includes(status)) return '#e8a020';
     return '#d0d0d0';
   };
 
@@ -175,9 +175,11 @@ export default function AdminStatsPage() {
               <p className="muted">AOV: {money(summary.avgOrderValue)}</p>
             </article>
             <article className="panel stat-card">
-              <h3>Delivered</h3>
-              <p className="stat-number">{Number(summary.deliveredCount || 0).toLocaleString()}</p>
-              <p className="muted">Cancelled: {Number(summary.cancelledCount || 0).toLocaleString()}</p>
+              <h3>Fulfilled</h3>
+              <p className="stat-number">{Number(summary.fulfilledCount || 0).toLocaleString()}</p>
+              <p className="muted">
+                Delivery: {Number(summary.deliveredCount || 0).toLocaleString()} • Pickup: {Number(summary.pickedUpCount || 0).toLocaleString()}
+              </p>
             </article>
           </div>
 
@@ -227,6 +229,18 @@ export default function AdminStatsPage() {
                 <div>
                   <p className="muted">Avg delivery time</p>
                   <p className="stat-number small">{Number(operations.avgDeliveryMinutes || 0).toFixed(1)}m</p>
+                </div>
+                <div>
+                  <p className="muted">Avg pickup completion</p>
+                  <p className="stat-number small">{Number(operations.avgPickupCompletionMinutes || 0).toFixed(1)}m</p>
+                </div>
+                <div>
+                  <p className="muted">Delivery orders</p>
+                  <p className="stat-number small">{Number(summary.deliveryOrdersCount || 0).toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="muted">Self pickup orders</p>
+                  <p className="stat-number small">{Number(summary.selfPickupOrdersCount || 0).toLocaleString()}</p>
                 </div>
                 <div>
                   <p className="muted">Open tickets</p>

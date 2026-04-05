@@ -84,14 +84,23 @@ const getOverviewStats = asyncHandler(async (req, res) => {
   }).lean();
 
   const paidOrders = periodOrders.filter((order) => order.payment?.status === 'paid');
-  const deliveredOrders = periodOrders.filter((order) => order.status === 'delivered');
+  const deliveryCompletedOrders = periodOrders.filter(
+    (order) => order.fulfillmentType !== 'self_pickup' && order.status === 'delivered'
+  );
+  const selfPickupCompletedOrders = periodOrders.filter(
+    (order) => order.fulfillmentType === 'self_pickup' && order.status === 'picked_up'
+  );
 
   const revenue = paidOrders.reduce((sum, order) => sum + Number(order.total || 0), 0);
   const subtotalRevenue = paidOrders.reduce((sum, order) => sum + Number(order.subtotal || 0), 0);
   const deliveryFeeRevenue = paidOrders.reduce((sum, order) => sum + Number(order.deliveryFee || 0), 0);
   const ordersCount = periodOrders.length;
   const paidOrdersCount = paidOrders.length;
-  const deliveredCount = deliveredOrders.length;
+  const deliveredCount = deliveryCompletedOrders.length;
+  const pickedUpCount = selfPickupCompletedOrders.length;
+  const fulfilledCount = deliveredCount + pickedUpCount;
+  const selfPickupOrdersCount = periodOrders.filter((order) => order.fulfillmentType === 'self_pickup').length;
+  const deliveryOrdersCount = periodOrders.length - selfPickupOrdersCount;
   const cancelledCount = periodOrders.filter((order) => order.status === 'cancelled').length;
 
   const itemsSold = paidOrders.reduce(
@@ -146,6 +155,7 @@ const getOverviewStats = asyncHandler(async (req, res) => {
 
   const prepMinutes = [];
   const deliveryMinutes = [];
+  const pickupCompletionMinutes = [];
 
   periodOrders.forEach((order) => {
     const confirmedAt = getTimelineTime(order, 'confirmed');
@@ -157,8 +167,12 @@ const getOverviewStats = asyncHandler(async (req, res) => {
       prepMinutes.push((readyAt - confirmedAt) / (1000 * 60));
     }
 
-    if (pickedUpAt && deliveredAt && deliveredAt >= pickedUpAt) {
+    if (order.fulfillmentType !== 'self_pickup' && pickedUpAt && deliveredAt && deliveredAt >= pickedUpAt) {
       deliveryMinutes.push((deliveredAt - pickedUpAt) / (1000 * 60));
+    }
+
+    if (order.fulfillmentType === 'self_pickup' && readyAt && pickedUpAt && pickedUpAt >= readyAt) {
+      pickupCompletionMinutes.push((pickedUpAt - readyAt) / (1000 * 60));
     }
   });
 
@@ -206,6 +220,10 @@ const getOverviewStats = asyncHandler(async (req, res) => {
       ordersCount,
       paidOrdersCount,
       deliveredCount,
+      pickedUpCount,
+      fulfilledCount,
+      selfPickupOrdersCount,
+      deliveryOrdersCount,
       cancelledCount,
       itemsSold,
       revenue,
@@ -223,6 +241,7 @@ const getOverviewStats = asyncHandler(async (req, res) => {
     operations: {
       avgPrepMinutes: average(prepMinutes),
       avgDeliveryMinutes: average(deliveryMinutes),
+      avgPickupCompletionMinutes: average(pickupCompletionMinutes),
     },
     support: {
       totalTickets: supportTickets.length,

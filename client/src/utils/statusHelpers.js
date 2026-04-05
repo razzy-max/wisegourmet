@@ -9,7 +9,7 @@ export const getStatusBadge = (status) => {
     confirmed: { label: 'Confirmed', emoji: '✓', badgeColor: 'status-confirmed' },
     preparing: { label: 'Preparing', emoji: '👨‍🍳', badgeColor: 'status-preparing' },
     ready_for_pickup: { label: 'Ready for Pickup', emoji: '📦', badgeColor: 'status-ready' },
-    picked_up: { label: 'Picked Up', emoji: '🚚', badgeColor: 'status-picked' },
+    picked_up: { label: 'Picked up', emoji: '✓', badgeColor: 'status-picked' },
     on_the_way: { label: 'On the Way', emoji: '🚚', badgeColor: 'status-way' },
     arrived: { label: 'Arrived', emoji: '📍', badgeColor: 'status-arrived' },
     delivered: { label: 'Delivered', emoji: '✓', badgeColor: 'status-delivered' },

@@ -17,6 +17,7 @@ const getStatusTone = (status) => {
 const getStatusLabel = (status) => {
   const readable = String(status || '').replaceAll('_', ' ');
   if (status === 'delivered') return '✓ Delivered';
+  if (status === 'picked_up') return '✓ Picked up';
   if (status === 'confirmed') return '⏳ Confirmed';
   if (status === 'on_the_way') return '🚚 On the way';
   if (status === 'cancelled') return '✕ Cancelled';
