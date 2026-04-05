@@ -17,12 +17,9 @@ export default function RiderNavBar() {
           >
             Queue
           </NavLink>
-          <NavLink
-            to="/rider/queue"
-            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-          >
+          <Link to="/rider/queue#active-deliveries" className="nav-link">
             Active
-          </NavLink>
+          </Link>
           <NavLink
             to="/rider/history"
             className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}

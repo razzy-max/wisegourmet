@@ -139,7 +139,7 @@ export default function RiderQueuePage() {
         </div>
       </article>
 
-      <article className="panel" style={{ marginTop: '1rem' }}>
+      <article id="active-deliveries" className="panel" style={{ marginTop: '1rem' }}>
         <h3>My Active Deliveries</h3>
         <div className="grid">
           {activeOrders.map((order) => (

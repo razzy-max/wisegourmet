@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { orderApi } from '../api/orderApi';
 import { useOrdersRealtime } from '../hooks/useOrdersRealtime';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const KITCHEN_STATUSES = ['confirmed', 'preparing'];
 
@@ -8,14 +9,19 @@ export default function KitchenOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [updatingOrderId, setUpdatingOrderId] = useState('');
 
   const load = useCallback(async () => {
+    setLoading(true);
     try {
       const response = await orderApi.allOrders();
       setOrders(response.orders || []);
       setError('');
     } catch (err) {
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -33,6 +39,7 @@ export default function KitchenOrdersPage() {
   const updateStatus = async (orderId, status, note) => {
     setError('');
     setMessage('');
+    setUpdatingOrderId(orderId);
 
     try {
       await orderApi.updateStatus(orderId, { status, note });
@@ -40,6 +47,8 @@ export default function KitchenOrdersPage() {
       await load();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setUpdatingOrderId('');
     }
   };
 
@@ -49,6 +58,8 @@ export default function KitchenOrdersPage() {
       <p className="muted">Manage confirmed orders and move them to ready_for_pickup.</p>
       {message ? <p className="message">{message}</p> : null}
       {error ? <p className="error">{error}</p> : null}
+      {loading ? <LoadingSpinner label="Loading kitchen orders..." /> : null}
+      {!loading && kitchenOrders.length === 0 ? <p className="muted">No kitchen orders pending right now.</p> : null}
 
       <div className="grid">
         {kitchenOrders.map((order) => (
@@ -80,8 +91,9 @@ export default function KitchenOrdersPage() {
                   className="btn"
                   type="button"
                   onClick={() => updateStatus(order._id, 'preparing', 'Kitchen started preparing')}
+                  disabled={updatingOrderId === order._id}
                 >
-                  Start Preparing
+                  {updatingOrderId === order._id ? 'Updating...' : 'Start Preparing'}
                 </button>
               ) : null}
 
@@ -90,8 +102,9 @@ export default function KitchenOrdersPage() {
                   className="btn"
                   type="button"
                   onClick={() => updateStatus(order._id, 'ready_for_pickup', 'Kitchen marked ready')}
+                  disabled={updatingOrderId === order._id}
                 >
-                  Mark Ready for Pickup
+                  {updatingOrderId === order._id ? 'Updating...' : 'Mark Ready for Pickup'}
                 </button>
               ) : null}
             </div>
