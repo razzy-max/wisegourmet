@@ -13,7 +13,7 @@ const dedupeTimeline = (timeline = []) => {
   });
 };
 
-const statusOrder = [
+const deliveryStatusOrder = [
   'pending',
   'confirmed',
   'preparing',
@@ -23,6 +23,8 @@ const statusOrder = [
   'arrived',
   'delivered',
 ];
+
+const selfPickupStatusOrder = ['pending', 'confirmed', 'preparing', 'ready_for_pickup', 'picked_up'];
 
 export default function OrderDetailsPage() {
   const { id } = useParams();
@@ -101,6 +103,9 @@ export default function OrderDetailsPage() {
   }
 
   const timeline = dedupeTimeline(order.statusTimeline || []);
+  const statusOrder =
+    order.fulfillmentType === 'self_pickup' ? selfPickupStatusOrder : deliveryStatusOrder;
+  const currentStatusIndex = statusOrder.indexOf(order.status);
 
   return (
     <section className="page-wrap">
@@ -122,7 +127,7 @@ export default function OrderDetailsPage() {
         </div>
       </div>
 
-      {/* Summary & Delivery PIN Grid */}
+      {/* Summary & PIN Grid */}
       <div className="grid order-top-grid">
         {/* Summary Card */}
         <article className="panel order-summary">
@@ -165,11 +170,15 @@ export default function OrderDetailsPage() {
           </div>
         </article>
 
-        {/* Delivery PIN Card */}
+        {/* PIN Card */}
         <article className="panel order-delivery-pin">
           <div className="pin-header">
-            <span>🔐 Delivery PIN</span>
-            <span className="pin-subtitle">Share with your rider</span>
+            <span>{order.fulfillmentType === 'self_pickup' ? '🔐 Pickup PIN' : '🔐 Delivery PIN'}</span>
+            <span className="pin-subtitle">
+              {order.fulfillmentType === 'self_pickup'
+                ? 'Show to kitchen staff at collection'
+                : 'Share with your rider'}
+            </span>
           </div>
           {order.payment?.status === 'paid' && order.deliveryPin ? (
             <>
@@ -181,7 +190,11 @@ export default function OrderDetailsPage() {
               </div>
             </>
           ) : (
-            <p className="muted">PIN will appear after payment is verified.</p>
+            <p className="muted">
+              {order.fulfillmentType === 'self_pickup'
+                ? 'Pickup PIN will appear after payment is verified.'
+                : 'Delivery PIN will appear after payment is verified.'}
+            </p>
           )}
         </article>
 
@@ -233,7 +246,7 @@ export default function OrderDetailsPage() {
       <div className="grid" style={{ marginTop: '1.5rem' }}>
         {/* Customer & Delivery Card */}
         <article className="panel order-customer">
-          <h3>Customer & Delivery Address</h3>
+          <h3>{order.fulfillmentType === 'self_pickup' ? 'Customer & Pickup Note' : 'Customer & Delivery Address'}</h3>
           <div className="address-block">
             <div className="address-item">
               <strong>{order.customer?.fullName || 'Unknown'}</strong>
@@ -297,12 +310,11 @@ export default function OrderDetailsPage() {
 
       {/* Status Timeline - Full Width */}
       <article className="panel order-timeline" style={{ marginTop: '1.5rem' }}>
-        <h3>Delivery Timeline</h3>
+        <h3>{order.fulfillmentType === 'self_pickup' ? 'Pickup Timeline' : 'Delivery Timeline'}</h3>
         <div className="status-stepper">
           {statusOrder.map((status, index) => {
             const timelineEntry = timeline.find((t) => t.status === status);
-            const isCompleted =
-              statusOrder.indexOf(status) < statusOrder.indexOf(order.status);
+            const isCompleted = currentStatusIndex > -1 && statusOrder.indexOf(status) < currentStatusIndex;
 
             return (
               <div key={status} className="stepper-step">

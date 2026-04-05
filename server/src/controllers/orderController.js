@@ -514,12 +514,7 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     throw new Error('Order not found');
   }
 
-  const isSelfPickupCompletion =
-    order.fulfillmentType === 'self_pickup' &&
-    order.status === ORDER_STATUS.READY_FOR_PICKUP &&
-    status === ORDER_STATUS.DELIVERED;
-
-  if (!canTransition(order.status, status) && !isSelfPickupCompletion) {
+  if (!canTransition(order.status, status)) {
     res.status(400);
     throw new Error(`Invalid status transition from ${order.status} to ${status}`);
   }
@@ -537,7 +532,7 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   }
 
   if (req.user.role === 'admin' || req.user.role === 'staff') {
-    if (!STAFF_ALLOWED_STATUSES.has(status) && status !== ORDER_STATUS.CANCELLED && !isSelfPickupCompletion) {
+    if (!STAFF_ALLOWED_STATUSES.has(status) && status !== ORDER_STATUS.CANCELLED) {
       res.status(403);
       throw new Error('Admin/staff is not allowed to set this status directly');
     }
@@ -625,6 +620,67 @@ const verifyDeliveryPin = asyncHandler(async (req, res) => {
   res.json({ order: hydrated });
 });
 
+const verifySelfPickupPin = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { pin } = req.body;
+
+  if (!pin) {
+    res.status(400);
+    throw new Error('Pickup PIN is required');
+  }
+
+  const order = await Order.findById(id);
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
+  }
+
+  if (order.fulfillmentType !== 'self_pickup') {
+    res.status(400);
+    throw new Error('This order is not a self pickup order');
+  }
+
+  if (order.status !== ORDER_STATUS.READY_FOR_PICKUP) {
+    res.status(400);
+    throw new Error('Order must be ready for pickup before PIN verification');
+  }
+
+  if (req.user.role === 'staff') {
+    if (order.kitchenHandledBy && String(order.kitchenHandledBy) !== String(req.user._id)) {
+      res.status(403);
+      throw new Error('This order is already being handled by another staff member');
+    }
+
+    if (!order.kitchenHandledBy) {
+      order.kitchenHandledBy = req.user._id;
+    }
+  }
+
+  if (String(pin).trim() !== String(order.deliveryPin || '').trim()) {
+    res.status(401);
+    throw new Error('Invalid pickup PIN');
+  }
+
+  order.status = ORDER_STATUS.PICKED_UP;
+  order.statusTimeline.push({
+    status: ORDER_STATUS.PICKED_UP,
+    changedBy: req.user._id,
+    note: 'Self pickup verified with PIN at kitchen counter',
+  });
+
+  await order.save();
+
+  const hydrated = await Order.findById(order._id)
+    .populate('customer', 'fullName email phone role')
+    .populate('assignedRider', 'fullName email role')
+    .populate('kitchenHandledBy', 'fullName email phone role')
+    .populate('statusTimeline.changedBy', 'fullName role');
+
+  notifyOrderChanged(req, hydrated);
+
+  res.json({ order: hydrated });
+});
+
 module.exports = {
   createOrderFromCart,
   getDeliveryZones,
@@ -638,5 +694,6 @@ module.exports = {
   initiatePayment,
   verifyPayment,
   verifyDeliveryPin,
+  verifySelfPickupPin,
   updateOrderStatus,
 };

@@ -11,6 +11,8 @@ export default function KitchenOrdersPage() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [updatingOrderId, setUpdatingOrderId] = useState('');
+  const [pickupPins, setPickupPins] = useState({});
+  const [verifyingPickupOrderId, setVerifyingPickupOrderId] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -54,6 +56,29 @@ export default function KitchenOrdersPage() {
       setError(err.message);
     } finally {
       setUpdatingOrderId('');
+    }
+  };
+
+  const verifyPickupPin = async (orderId) => {
+    setError('');
+    setMessage('');
+
+    const pin = String(pickupPins[orderId] || '').trim();
+    if (!pin) {
+      setError(`Enter pickup PIN for order ${orderId.slice(-6)}`);
+      return;
+    }
+
+    setVerifyingPickupOrderId(orderId);
+    try {
+      await orderApi.verifySelfPickupPin(orderId, pin);
+      setMessage(`Self pickup confirmed for order ${orderId.slice(-6)}`);
+      setPickupPins((prev) => ({ ...prev, [orderId]: '' }));
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setVerifyingPickupOrderId('');
     }
   };
 
@@ -119,14 +144,33 @@ export default function KitchenOrdersPage() {
               ) : null}
 
               {order.fulfillmentType === 'self_pickup' && order.status === 'ready_for_pickup' ? (
-                <button
-                  className="btn"
-                  type="button"
-                  onClick={() => updateStatus(order._id, 'delivered', 'Customer collected self pickup order')}
-                  disabled={updatingOrderId === order._id}
-                >
-                  {updatingOrderId === order._id ? 'Updating...' : 'Mark Collected'}
-                </button>
+                <div style={{ marginTop: '0.75rem', width: '100%' }}>
+                  <p className="muted">Verify customer Pickup PIN before completing collection.</p>
+                  <div className="row">
+                    <input
+                      type="password"
+                      maxLength="4"
+                      placeholder="Enter pickup PIN"
+                      value={pickupPins[order._id] || ''}
+                      onChange={(event) =>
+                        setPickupPins((prev) => ({
+                          ...prev,
+                          [order._id]: event.target.value,
+                        }))
+                      }
+                      style={{ flex: 1, minWidth: '110px' }}
+                      disabled={verifyingPickupOrderId === order._id}
+                    />
+                    <button
+                      className="btn"
+                      type="button"
+                      onClick={() => verifyPickupPin(order._id)}
+                      disabled={verifyingPickupOrderId === order._id}
+                    >
+                      {verifyingPickupOrderId === order._id ? 'Verifying...' : 'Verify & Complete Pickup'}
+                    </button>
+                  </div>
+                </div>
               ) : null}
             </div>
           </article>

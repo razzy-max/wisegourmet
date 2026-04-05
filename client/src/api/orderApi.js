@@ -28,6 +28,12 @@ export const orderApi = {
       body: { pin },
     });
   },
+  verifySelfPickupPin(id, pin) {
+    return apiRequest(`/orders/${id}/staff/verify-pickup-pin`, {
+      method: 'PATCH',
+      body: { pin },
+    });
+  },
   assignRider(id, riderId) {
     return apiRequest(`/orders/${id}/assign-rider`, {
       method: 'PATCH',
