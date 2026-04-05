@@ -5,10 +5,10 @@ import { useOrdersRealtime } from '../hooks/useOrdersRealtime';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const getStatusTone = (status) => {
-  if (['arrived', 'delivered'].includes(status)) {
+  if (['arrived', 'picked_up', 'delivered'].includes(status)) {
     return 'success';
   }
-  if (['confirmed', 'preparing', 'ready_for_pickup', 'picked_up', 'on_the_way'].includes(status)) {
+  if (['confirmed', 'preparing', 'ready_for_pickup', 'on_the_way'].includes(status)) {
     return 'active';
   }
   return 'muted';
