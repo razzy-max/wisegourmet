@@ -2,6 +2,8 @@ const Order = require('../models/Order');
 const SupportTicket = require('../models/SupportTicket');
 const Category = require('../models/Category');
 const MenuItem = require('../models/MenuItem');
+const DeliveryZone = require('../models/DeliveryZone');
+const { DEFAULT_ZONE_FEES } = require('../utils/deliveryFee');
 const asyncHandler = require('../utils/asyncHandler');
 
 const MS_IN_DAY = 24 * 60 * 60 * 1000;
@@ -279,7 +281,99 @@ const purgeSeededData = asyncHandler(async (_req, res) => {
   });
 });
 
+const getDeliveryZones = asyncHandler(async (_req, res) => {
+  const zones = await DeliveryZone.find({}).sort({ sortOrder: 1, label: 1 }).lean();
+
+  if (zones.length) {
+    res.json({ zones });
+    return;
+  }
+
+  const defaults = Object.entries(DEFAULT_ZONE_FEES).map(([key, fee], index) => ({
+    key,
+    label: key.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
+    fee,
+    isActive: true,
+    sortOrder: index,
+  }));
+
+  const created = await DeliveryZone.insertMany(defaults);
+  res.json({ zones: created });
+});
+
+const createDeliveryZone = asyncHandler(async (req, res) => {
+  const { key, label, fee, isActive = true, sortOrder = 0 } = req.body;
+
+  if (!key || !label || fee === undefined) {
+    res.status(400);
+    throw new Error('key, label, and fee are required');
+  }
+
+  const normalizedKey = String(key).toLowerCase().trim();
+  const exists = await DeliveryZone.findOne({ key: normalizedKey });
+  if (exists) {
+    res.status(400);
+    throw new Error('A zone with this key already exists');
+  }
+
+  const zone = await DeliveryZone.create({
+    key: normalizedKey,
+    label: String(label).trim(),
+    fee: Number(fee),
+    isActive: Boolean(isActive),
+    sortOrder: Number(sortOrder) || 0,
+  });
+
+  res.status(201).json({ zone });
+});
+
+const updateDeliveryZone = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { key, label, fee, isActive, sortOrder } = req.body;
+
+  const zone = await DeliveryZone.findById(id);
+  if (!zone) {
+    res.status(404);
+    throw new Error('Delivery zone not found');
+  }
+
+  if (key !== undefined) {
+    const normalizedKey = String(key).toLowerCase().trim();
+    const duplicate = await DeliveryZone.findOne({ key: normalizedKey, _id: { $ne: id } });
+    if (duplicate) {
+      res.status(400);
+      throw new Error('A zone with this key already exists');
+    }
+    zone.key = normalizedKey;
+  }
+
+  if (label !== undefined) zone.label = String(label).trim();
+  if (fee !== undefined) zone.fee = Number(fee);
+  if (isActive !== undefined) zone.isActive = Boolean(isActive);
+  if (sortOrder !== undefined) zone.sortOrder = Number(sortOrder) || 0;
+
+  await zone.save();
+  res.json({ zone });
+});
+
+const deleteDeliveryZone = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const zone = await DeliveryZone.findById(id);
+
+  if (!zone) {
+    res.status(404);
+    throw new Error('Delivery zone not found');
+  }
+
+  await zone.deleteOne();
+  res.json({ ok: true });
+});
+
 module.exports = {
   getOverviewStats,
   purgeSeededData,
+  getDeliveryZones,
+  createDeliveryZone,
+  updateDeliveryZone,
+  deleteDeliveryZone,
 };

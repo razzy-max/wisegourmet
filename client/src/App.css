@@ -1106,6 +1106,68 @@ select:hover {
   grid-column: 1 / -1;
 }
 
+.checkout-fulfillment-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  background: #f7f4ec;
+  border: 1px solid #e8e1d0;
+  border-radius: 12px;
+  padding: 0.35rem;
+}
+
+.fulfillment-option {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--wg-muted);
+  border-radius: 10px;
+  padding: 0.68rem 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fulfillment-option-active {
+  border-color: #e7c278;
+  background: #fff4db;
+  color: #734a08;
+}
+
+.pickup-info-card {
+  border: 1px solid #e8e1d0;
+  border-radius: 12px;
+  background: #fcfaf4;
+  padding: 0.85rem 0.9rem;
+}
+
+.pickup-info-card h4 {
+  margin: 0 0 0.45rem;
+}
+
+.pickup-info-card p {
+  margin: 0.2rem 0;
+}
+
+.zone-summary-card,
+.zone-create-card,
+.zone-card {
+  background: var(--wg-card);
+}
+
+.zone-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.checkbox-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.9rem;
+  color: var(--wg-muted);
+}
+
 .order-card {
   border-left: 4px solid #9ca3af;
   display: grid;
@@ -2546,6 +2608,10 @@ input:-webkit-autofill::first-line {
   }
 
   .checkout-form {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-fulfillment-toggle {
     grid-template-columns: 1fr;
   }
 

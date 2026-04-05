@@ -4,6 +4,9 @@ export const orderApi = {
   create(payload) {
     return apiRequest('/orders', { method: 'POST', body: payload });
   },
+  deliveryZones() {
+    return apiRequest('/orders/delivery-zones');
+  },
   myOrders() {
     return apiRequest('/orders/my');
   },

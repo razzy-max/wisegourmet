@@ -1,8 +1,9 @@
 const Cart = require('../models/Cart');
 const Order = require('../models/Order');
 const User = require('../models/User');
+const DeliveryZone = require('../models/DeliveryZone');
 const asyncHandler = require('../utils/asyncHandler');
-const { calculateDeliveryFee } = require('../utils/deliveryFee');
+const { calculateDeliveryFee, DEFAULT_ZONE_FEES } = require('../utils/deliveryFee');
 const { ORDER_STATUS, canTransition } = require('../utils/orderStatus');
 
 const STAFF_ALLOWED_STATUSES = new Set([
@@ -42,12 +43,57 @@ const notifyOrderChanged = (req, order) => {
   io.to(`order:${String(order._id)}`).emit('order:changed', payload);
 };
 
-const createOrderFromCart = asyncHandler(async (req, res) => {
-  const { deliveryAddress, deliveryMode = 'zone', zone = 'outside', distanceKm = 0 } = req.body;
+const getZoneFeeMap = async () => {
+  const zones = await DeliveryZone.find({ isActive: true }).sort({ sortOrder: 1, label: 1 }).lean();
 
-  if (!deliveryAddress || !deliveryAddress.fullText) {
+  if (!zones.length) {
+    return DEFAULT_ZONE_FEES;
+  }
+
+  return zones.reduce((accumulator, zone) => {
+    accumulator[zone.key] = Number(zone.fee || 0);
+    return accumulator;
+  }, {});
+};
+
+const getDeliveryZones = asyncHandler(async (_req, res) => {
+  const zones = await DeliveryZone.find({ isActive: true })
+    .sort({ sortOrder: 1, label: 1 })
+    .select('key label fee sortOrder')
+    .lean();
+
+  if (zones.length) {
+    res.json({ zones });
+    return;
+  }
+
+  const fallback = Object.entries(DEFAULT_ZONE_FEES).map(([key, fee], index) => ({
+    key,
+    label: key.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
+    fee,
+    sortOrder: index,
+  }));
+
+  res.json({ zones: fallback });
+});
+
+const createOrderFromCart = asyncHandler(async (req, res) => {
+  const {
+    fulfillmentType = 'delivery',
+    deliveryAddress,
+    deliveryMode = 'zone',
+    zone = 'outside',
+    distanceKm = 0,
+  } = req.body;
+
+  if (!['delivery', 'self_pickup'].includes(fulfillmentType)) {
     res.status(400);
-    throw new Error('deliveryAddress.fullText is required');
+    throw new Error('Invalid fulfillmentType. Use delivery or self_pickup');
+  }
+
+  if (fulfillmentType === 'delivery' && (!deliveryAddress || !deliveryAddress.fullText)) {
+    res.status(400);
+    throw new Error('deliveryAddress.fullText is required for delivery orders');
   }
 
   const cart = await Cart.findOne({ user: req.user._id }).populate(
@@ -74,8 +120,26 @@ const createOrderFromCart = asyncHandler(async (req, res) => {
   }));
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const feeResult = calculateDeliveryFee({ mode: deliveryMode, zone, distanceKm: Number(distanceKm) });
-  const total = subtotal + feeResult.fee;
+  let feeResult = {
+    fee: 0,
+    appliedRule: {
+      mode: 'zone',
+      zone: 'self_pickup',
+      distanceKm: 0,
+    },
+  };
+
+  if (fulfillmentType === 'delivery') {
+    const zoneFeeMap = await getZoneFeeMap();
+    feeResult = calculateDeliveryFee({
+      mode: deliveryMode,
+      zone,
+      distanceKm: Number(distanceKm),
+      zoneFees: zoneFeeMap,
+    });
+  }
+
+  const total = subtotal + Number(feeResult.fee || 0);
 
   // Generate random PIN for delivery verification
   const deliveryPin = Math.floor(1000 + Math.random() * 9000).toString();
@@ -86,18 +150,22 @@ const createOrderFromCart = asyncHandler(async (req, res) => {
     subtotal,
     deliveryFee: feeResult.fee,
     total,
+    fulfillmentType,
     deliveryRule: {
       mode: feeResult.appliedRule.mode,
       zone: feeResult.appliedRule.zone || 'outside',
       distanceKm: feeResult.appliedRule.distanceKm || Number(distanceKm) || 0,
     },
     deliveryAddress: {
-      fullText: deliveryAddress.fullText,
-      area: deliveryAddress.area || '',
-      landmark: deliveryAddress.landmark || '',
-      notes: deliveryAddress.notes || '',
-      lat: deliveryAddress.lat ?? null,
-      lng: deliveryAddress.lng ?? null,
+      fullText:
+        fulfillmentType === 'delivery'
+          ? deliveryAddress.fullText
+          : 'Self pickup at Wise Gourmet kitchen',
+      area: fulfillmentType === 'delivery' ? deliveryAddress.area || '' : '',
+      landmark: fulfillmentType === 'delivery' ? deliveryAddress.landmark || '' : '',
+      notes: fulfillmentType === 'delivery' ? deliveryAddress.notes || '' : '',
+      lat: fulfillmentType === 'delivery' ? deliveryAddress.lat ?? null : null,
+      lng: fulfillmentType === 'delivery' ? deliveryAddress.lng ?? null : null,
     },
     payment: {
       provider: 'paystack',
@@ -182,6 +250,7 @@ const getRiderOrders = asyncHandler(async (req, res) => {
 const getRiderQueue = asyncHandler(async (req, res) => {
   const orders = await Order.find({
     status: ORDER_STATUS.READY_FOR_PICKUP,
+    fulfillmentType: 'delivery',
     $or: [{ assignedRider: null }, { assignedRider: req.user._id }],
   })
     .sort({ createdAt: -1 })
@@ -203,6 +272,11 @@ const acceptRiderOrder = asyncHandler(async (req, res) => {
   }
 
   if (order.status !== ORDER_STATUS.READY_FOR_PICKUP) {
+      if (order.fulfillmentType !== 'delivery') {
+        res.status(400);
+        throw new Error('Self pickup orders cannot be accepted by riders');
+      }
+
     res.status(400);
     throw new Error('This order is no longer available for pickup');
   }
@@ -440,7 +514,12 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     throw new Error('Order not found');
   }
 
-  if (!canTransition(order.status, status)) {
+  const isSelfPickupCompletion =
+    order.fulfillmentType === 'self_pickup' &&
+    order.status === ORDER_STATUS.READY_FOR_PICKUP &&
+    status === ORDER_STATUS.DELIVERED;
+
+  if (!canTransition(order.status, status) && !isSelfPickupCompletion) {
     res.status(400);
     throw new Error(`Invalid status transition from ${order.status} to ${status}`);
   }
@@ -458,7 +537,7 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   }
 
   if (req.user.role === 'admin' || req.user.role === 'staff') {
-    if (!STAFF_ALLOWED_STATUSES.has(status) && status !== ORDER_STATUS.CANCELLED) {
+    if (!STAFF_ALLOWED_STATUSES.has(status) && status !== ORDER_STATUS.CANCELLED && !isSelfPickupCompletion) {
       res.status(403);
       throw new Error('Admin/staff is not allowed to set this status directly');
     }
@@ -548,6 +627,7 @@ const verifyDeliveryPin = asyncHandler(async (req, res) => {
 
 module.exports = {
   createOrderFromCart,
+  getDeliveryZones,
   getMyOrders,
   getOrder,
   getAllOrders,

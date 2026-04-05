@@ -142,6 +142,10 @@ export default function AdminOrdersPage() {
               <p>
                 <strong>Total:</strong> <span className="price">₦{Number(order.total || 0).toLocaleString()}</span>
               </p>
+              <p>
+                <strong>Fulfillment:</strong>{' '}
+                {order.fulfillmentType === 'self_pickup' ? 'Self pickup' : 'Delivery'}
+              </p>
             </div>
 
             {/* Operation Alerts */}
@@ -150,7 +154,7 @@ export default function AdminOrdersPage() {
                 ⚠ <strong>Not claimed yet</strong> — No kitchen staff assigned
               </div>
             )}
-            {!order.assignedRider && (
+            {!order.assignedRider && order.fulfillmentType !== 'self_pickup' && (
               <div className="alert alert-warning">
                 ⚠ <strong>No rider assigned</strong> — Waiting for dispatch
               </div>

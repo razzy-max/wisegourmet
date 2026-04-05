@@ -28,6 +28,7 @@ import StaffOrderHistoryPage from './pages/StaffOrderHistoryPage';
 import RiderQueuePage from './pages/RiderQueuePage';
 import RiderDeliveryHistoryPage from './pages/RiderDeliveryHistoryPage';
 import AdminPasswordPage from './pages/AdminPasswordPage';
+import AdminDeliveryZonesPage from './pages/AdminDeliveryZonesPage';
 import './App.css';
 
 function NavBarSelector() {
@@ -185,6 +186,14 @@ function App() {
           element={
             <ProtectedRoute roles={['admin', 'staff', 'rider']}>
               <AdminOrdersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/zones"
+          element={
+            <ProtectedRoute roles={['admin']}>
+              <AdminDeliveryZonesPage />
             </ProtectedRoute>
           }
         />

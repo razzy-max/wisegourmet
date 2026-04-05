@@ -1,4 +1,6 @@
 const User = require('../models/User');
+const DeliveryZone = require('../models/DeliveryZone');
+const { DEFAULT_ZONE_FEES } = require('./deliveryFee');
 
 async function ensureDemoData() {
   const demoUsers = [
@@ -36,6 +38,18 @@ async function ensureDemoData() {
     existing.phone = demoUser.phone;
     existing.isActive = true;
     await existing.save();
+  }
+
+  const existingZones = await DeliveryZone.countDocuments();
+  if (!existingZones) {
+    const defaults = Object.entries(DEFAULT_ZONE_FEES).map(([key, fee], index) => ({
+      key,
+      label: key.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
+      fee,
+      isActive: true,
+      sortOrder: index,
+    }));
+    await DeliveryZone.insertMany(defaults);
   }
 
 }

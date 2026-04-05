@@ -72,6 +72,11 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    fulfillmentType: {
+      type: String,
+      enum: ['delivery', 'self_pickup'],
+      default: 'delivery',
+    },
     deliveryRule: {
       mode: {
         type: String,
@@ -90,7 +95,7 @@ const orderSchema = new mongoose.Schema(
     deliveryAddress: {
       fullText: {
         type: String,
-        required: true,
+        default: '',
         trim: true,
       },
       area: {

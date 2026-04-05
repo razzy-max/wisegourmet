@@ -139,6 +139,12 @@ export default function OrderDetailsPage() {
               <span className="value">{order.payment?.status || 'N/A'}</span>
             </div>
             <div className="label-value-row">
+              <span className="label">Fulfillment</span>
+              <span className="value">
+                {order.fulfillmentType === 'self_pickup' ? 'Self pickup' : 'Delivery'}
+              </span>
+            </div>
+            <div className="label-value-row">
               <span className="label">Order Total</span>
               <span className="value price">₦{Number(order.total || 0).toLocaleString()}</span>
             </div>
@@ -262,8 +268,13 @@ export default function OrderDetailsPage() {
 
         {/* Rider Card */}
         <article className="panel order-rider">
-          <h3>Assigned Rider</h3>
-          {order.assignedRider ? (
+          <h3>{order.fulfillmentType === 'self_pickup' ? 'Pickup Status' : 'Assigned Rider'}</h3>
+          {order.fulfillmentType === 'self_pickup' ? (
+            <div className="pickup-info-card">
+              <p>Your order will be ready at the kitchen counter once status reaches Ready for Pickup.</p>
+              <p className="muted">No rider will be assigned for self pickup orders.</p>
+            </div>
+          ) : order.assignedRider ? (
             <div className="rider-card">
               <div className="rider-avatar">{getRiderInitials(order.assignedRider.fullName)}</div>
               <div className="rider-info">

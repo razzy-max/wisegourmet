@@ -5,26 +5,10 @@ import { cartApi } from '../api/cartApi';
 import { authApi } from '../api/authApi';
 import { useCart } from '../context/CartContext';
 
-const ZONE_FEES = {
-  zone_a: 700,
-  zone_b: 1000,
-  zone_c: 1500,
-  outside: 2000,
-};
-
-const getZoneLabel = (zone) => {
-  switch (zone) {
-    case 'zone_a':
-      return 'Zone A';
-    case 'zone_b':
-      return 'Zone B';
-    case 'zone_c':
-      return 'Zone C';
-    case 'outside':
-      return 'Outside';
-    default:
-      return 'Select zone';
-  }
+const getZoneLabel = (zoneKey, zones = []) => {
+  if (!zoneKey) return 'Select zone';
+  const matched = zones.find((zone) => zone.key === zoneKey);
+  return matched?.label || zoneKey.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
 export default function CheckoutPage() {
@@ -42,11 +26,19 @@ export default function CheckoutPage() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [cart, setCart] = useState({ items: [] });
+  const [fulfillmentType, setFulfillmentType] = useState('delivery');
+  const [zones, setZones] = useState([]);
 
   const cartItems = cart.items || [];
   const displayedItems = order?.items || cartItems;
   const subtotal = displayedItems.reduce((sum, item) => sum + Number(item.price || item.priceSnapshot || 0) * Number(item.quantity || 0), 0);
-  const deliveryFee = order ? Number(order.deliveryFee || 0) : (ZONE_FEES[form.zone] ?? 0);
+  const selectedZoneFee = Number(zones.find((zone) => zone.key === form.zone)?.fee || 0);
+  const deliveryFee =
+    order
+      ? Number(order.deliveryFee || 0)
+      : fulfillmentType === 'self_pickup'
+        ? 0
+        : selectedZoneFee;
   const total = order ? Number(order.total || order.totalAmount || subtotal + deliveryFee) : subtotal + deliveryFee;
   const displayedDeliveryFee = order ? Number(order.deliveryFee || 0) : deliveryFee;
 
@@ -82,6 +74,23 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     loadCart();
+  }, []);
+
+  useEffect(() => {
+    const loadZones = async () => {
+      try {
+        const response = await orderApi.deliveryZones();
+        const fetchedZones = response.zones || [];
+        setZones(fetchedZones);
+        if (fetchedZones.length) {
+          setForm((prev) => (prev.zone ? prev : { ...prev, zone: fetchedZones[0].key }));
+        }
+      } catch {
+        setZones([]);
+      }
+    };
+
+    loadZones();
   }, []);
 
   const handlePaystackCallback = useCallback(async (orderId) => {
@@ -130,7 +139,15 @@ export default function CheckoutPage() {
     }
 
     if (!form.zone) {
-      setError('Please select a delivery zone.');
+      if (fulfillmentType === 'delivery') {
+        setError('Please select a delivery zone.');
+        setLoading(false);
+        return;
+      }
+    }
+
+    if (fulfillmentType === 'delivery' && !form.fullText.trim()) {
+      setError('Please enter your full delivery address.');
       setLoading(false);
       return;
     }
@@ -138,16 +155,20 @@ export default function CheckoutPage() {
     try {
       // 1. Create order
       const createResponse = await orderApi.create({
+        fulfillmentType,
         deliveryMode: 'zone',
-        zone: form.zone,
-        deliveryAddress: {
-          fullText: form.fullText,
-          area: form.area,
-          landmark: form.landmark,
-          notes: form.notes,
-          lat: null,
-          lng: null,
-        },
+        zone: fulfillmentType === 'delivery' ? form.zone : undefined,
+        deliveryAddress:
+          fulfillmentType === 'delivery'
+            ? {
+                fullText: form.fullText,
+                area: form.area,
+                landmark: form.landmark,
+                notes: form.notes,
+                lat: null,
+                lng: null,
+              }
+            : undefined,
       });
 
       const orderId = createResponse.order._id;
@@ -156,18 +177,20 @@ export default function CheckoutPage() {
       setOrder(createResponse.order);
       setResult('Order created. Redirecting to Paystack...');
 
-      try {
-        await authApi.updateProfile({
-          savedAddress: {
-            fullText: form.fullText,
-            area: form.area,
-            landmark: form.landmark,
-            notes: form.notes,
-            zone: form.zone,
-          },
-        });
-      } catch {
-        // profile save is non-blocking for checkout
+      if (fulfillmentType === 'delivery') {
+        try {
+          await authApi.updateProfile({
+            savedAddress: {
+              fullText: form.fullText,
+              area: form.area,
+              landmark: form.landmark,
+              notes: form.notes,
+              zone: form.zone,
+            },
+          });
+        } catch {
+          // profile save is non-blocking for checkout
+        }
       }
 
       // 2. Initiate payment and redirect
@@ -194,61 +217,93 @@ export default function CheckoutPage() {
       <div className="checkout-layout">
         {!order ? (
           <form className="panel form checkout-form" onSubmit={submit}>
-            <h3>Delivery Details</h3>
+            <h3>Fulfillment</h3>
 
-            <label className="floating-field field-full">
-              <textarea
-                placeholder=" "
-                value={form.fullText}
-                onChange={(event) => setForm((prev) => ({ ...prev, fullText: event.target.value }))}
-                required
-              />
-              <span>Full delivery address</span>
-            </label>
-
-            <label className="floating-field">
-              <input
-                placeholder=" "
-                value={form.area}
-                onChange={(event) => setForm((prev) => ({ ...prev, area: event.target.value }))}
-              />
-              <span>Area</span>
-            </label>
-
-            <label className="floating-field">
-              <input
-                placeholder=" "
-                value={form.landmark}
-                onChange={(event) => setForm((prev) => ({ ...prev, landmark: event.target.value }))}
-              />
-              <span>Landmark</span>
-            </label>
-
-            <label className="floating-field field-full">
-              <textarea
-                placeholder=" "
-                value={form.notes}
-                onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
-              />
-              <span>Notes</span>
-            </label>
-
-            <label className="floating-field field-full">
-              <select
-                value={form.zone}
-                onChange={(event) => setForm((prev) => ({ ...prev, zone: event.target.value }))}
-                required
+            <div className="checkout-fulfillment-toggle field-full" role="radiogroup" aria-label="Fulfillment type">
+              <button
+                type="button"
+                className={`fulfillment-option ${fulfillmentType === 'delivery' ? 'fulfillment-option-active' : ''}`}
+                onClick={() => setFulfillmentType('delivery')}
               >
-                <option value="" disabled>
-                  Select zone
-                </option>
-                <option value="zone_a">Zone A</option>
-                <option value="zone_b">Zone B</option>
-                <option value="zone_c">Zone C</option>
-                <option value="outside">Outside</option>
-              </select>
-              <span>Delivery zone</span>
-            </label>
+                Delivery
+              </button>
+              <button
+                type="button"
+                className={`fulfillment-option ${fulfillmentType === 'self_pickup' ? 'fulfillment-option-active' : ''}`}
+                onClick={() => setFulfillmentType('self_pickup')}
+              >
+                Self Pickup
+              </button>
+            </div>
+
+            {fulfillmentType === 'self_pickup' ? (
+              <article className="pickup-info-card field-full">
+                <h4>Pickup Instructions</h4>
+                <p>Pick up from Wise Gourmet kitchen once your order is marked Ready for Pickup.</p>
+                <p className="muted">No delivery fee will be charged for this option.</p>
+              </article>
+            ) : null}
+
+            {fulfillmentType === 'delivery' ? (
+              <>
+                <h3 className="field-full" style={{ marginTop: 0 }}>Delivery Details</h3>
+
+                <label className="floating-field field-full">
+                  <textarea
+                    placeholder=" "
+                    value={form.fullText}
+                    onChange={(event) => setForm((prev) => ({ ...prev, fullText: event.target.value }))}
+                    required={fulfillmentType === 'delivery'}
+                  />
+                  <span>Full delivery address</span>
+                </label>
+
+                <label className="floating-field">
+                  <input
+                    placeholder=" "
+                    value={form.area}
+                    onChange={(event) => setForm((prev) => ({ ...prev, area: event.target.value }))}
+                  />
+                  <span>Area</span>
+                </label>
+
+                <label className="floating-field">
+                  <input
+                    placeholder=" "
+                    value={form.landmark}
+                    onChange={(event) => setForm((prev) => ({ ...prev, landmark: event.target.value }))}
+                  />
+                  <span>Landmark</span>
+                </label>
+
+                <label className="floating-field field-full">
+                  <textarea
+                    placeholder=" "
+                    value={form.notes}
+                    onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
+                  />
+                  <span>Notes</span>
+                </label>
+
+                <label className="floating-field field-full">
+                  <select
+                    value={form.zone}
+                    onChange={(event) => setForm((prev) => ({ ...prev, zone: event.target.value }))}
+                    required={fulfillmentType === 'delivery'}
+                  >
+                    <option value="" disabled>
+                      Select zone
+                    </option>
+                    {zones.map((zone) => (
+                      <option key={zone.key} value={zone.key}>
+                        {zone.label} (₦{Number(zone.fee || 0).toLocaleString()})
+                      </option>
+                    ))}
+                  </select>
+                  <span>Delivery zone</span>
+                </label>
+              </>
+            ) : null}
 
             <button className="btn checkout-pay-btn" type="submit" disabled={loading}>
               {loading ? 'Processing payment...' : 'Place order & Pay with Paystack'}
@@ -276,9 +331,17 @@ export default function CheckoutPage() {
             <span>₦{subtotal.toLocaleString()}</span>
           </p>
           <p className="summary-total-row">
-            Delivery fee ({getZoneLabel(order?.deliveryRule?.zone || form.zone)})
+            {(order?.fulfillmentType || fulfillmentType) === 'self_pickup'
+              ? 'Pickup fee'
+              : `Delivery fee (${getZoneLabel(order?.deliveryRule?.zone || form.zone, zones)})`}
             <span>₦{displayedDeliveryFee.toLocaleString()}</span>
           </p>
+          {(order?.fulfillmentType || fulfillmentType) === 'self_pickup' ? (
+            <p className="summary-total-row">
+              Fulfillment
+              <span>Self Pickup</span>
+            </p>
+          ) : null}
           <hr />
           <p className="summary-total grand-total">
             Total
@@ -304,9 +367,15 @@ export default function CheckoutPage() {
           </ul>
           <p><strong>Subtotal:</strong> ₦{Number(order.subtotal || 0).toLocaleString()}</p>
           <p><strong>Delivery fee:</strong> ₦{Number(order.deliveryFee || 0).toLocaleString()}</p>
-          <p><strong>Zone:</strong> {getZoneLabel(order.deliveryRule?.zone || form.zone)}</p>
+          <p>
+            <strong>Fulfillment:</strong>{' '}
+            {order.fulfillmentType === 'self_pickup' ? 'Self Pickup' : 'Delivery'}
+          </p>
+          {order.fulfillmentType !== 'self_pickup' ? (
+            <p><strong>Zone:</strong> {getZoneLabel(order.deliveryRule?.zone || form.zone, zones)}</p>
+          ) : null}
           
-          {order.deliveryPin && (
+          {order.deliveryPin && order.fulfillmentType !== 'self_pickup' && (
             <div style={{
               backgroundColor: '#f0f0f0',
               padding: '20px',
@@ -327,6 +396,13 @@ export default function CheckoutPage() {
               </p>
             </div>
           )}
+
+            {order.fulfillmentType === 'self_pickup' ? (
+              <div className="pickup-info-card" style={{ marginTop: '1rem' }}>
+                <h4>Pickup Flow</h4>
+                <p>Wait for status to move to Ready for Pickup, then collect from the kitchen counter.</p>
+              </div>
+            ) : null}
 
           <p><strong>Status:</strong> {order.status}</p>
           <p><strong>Order Amount:</strong> ₦{order.total ?? order.totalAmount ?? 'N/A'}</p>

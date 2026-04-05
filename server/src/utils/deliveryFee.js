@@ -50,7 +50,7 @@ const parseDistanceConfig = () => {
   }
 };
 
-const calculateDeliveryFee = ({ mode = 'zone', zone = 'outside', distanceKm = 0 }) => {
+const calculateDeliveryFee = ({ mode = 'zone', zone = 'outside', distanceKm = 0, zoneFees = null }) => {
   if (mode === 'distance') {
     const bands = parseDistanceConfig();
     const matched = bands.find((band) => distanceKm <= band.maxKm);
@@ -63,9 +63,9 @@ const calculateDeliveryFee = ({ mode = 'zone', zone = 'outside', distanceKm = 0 
     };
   }
 
-  const zoneFees = parseZoneConfig();
+  const resolvedZoneFees = zoneFees || parseZoneConfig();
   const normalizedZone = String(zone || 'outside').toLowerCase();
-  const fee = zoneFees[normalizedZone] ?? zoneFees.outside;
+  const fee = resolvedZoneFees[normalizedZone] ?? resolvedZoneFees.outside;
 
   return {
     fee,

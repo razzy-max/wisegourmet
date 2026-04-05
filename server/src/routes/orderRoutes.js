@@ -1,6 +1,7 @@
 const express = require('express');
 const {
   createOrderFromCart,
+  getDeliveryZones,
   getMyOrders,
   getOrder,
   getAllOrders,
@@ -18,6 +19,7 @@ const { protect, authorize } = require('../middleware/auth');
 const router = express.Router();
 
 router.post('/', protect, authorize('customer'), createOrderFromCart);
+router.get('/delivery-zones', protect, authorize('customer'), getDeliveryZones);
 router.get('/my', protect, authorize('customer'), getMyOrders);
 router.get('/rider/my', protect, authorize('rider'), getRiderOrders);
 router.get('/rider/queue', protect, authorize('rider'), getRiderQueue);

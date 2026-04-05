@@ -112,6 +112,13 @@ export default function AdminDashboardPage() {
             Change Password
           </Link>
         </article>
+        <article className="panel">
+          <h3>Delivery Zones</h3>
+          <p>Adjust zone fees and active delivery coverage for checkout.</p>
+          <Link to="/admin/zones" className="btn">
+            Manage Zones
+          </Link>
+        </article>
       </div>
     </section>
   );

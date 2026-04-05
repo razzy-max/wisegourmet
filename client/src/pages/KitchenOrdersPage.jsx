@@ -32,7 +32,12 @@ export default function KitchenOrdersPage() {
   useOrdersRealtime(load);
 
   const kitchenOrders = useMemo(
-    () => orders.filter((order) => KITCHEN_STATUSES.includes(order.status)),
+    () =>
+      orders.filter(
+        (order) =>
+          KITCHEN_STATUSES.includes(order.status) ||
+          (order.fulfillmentType === 'self_pickup' && order.status === 'ready_for_pickup')
+      ),
     [orders]
   );
 
@@ -67,12 +72,17 @@ export default function KitchenOrdersPage() {
             <h3>Order {order._id.slice(-6)}</h3>
             <p>Customer: {order.customer?.fullName || 'Unknown'}</p>
             <p>Status: {order.status}</p>
+            <p>Fulfillment: {order.fulfillmentType === 'self_pickup' ? 'Self pickup' : 'Delivery'}</p>
             <p>Total: ₦{Number(order.total || 0).toLocaleString()}</p>
             <p>
               Handled by:{' '}
               {order.kitchenHandledBy?.fullName ? order.kitchenHandledBy.fullName : 'Unclaimed yet'}
             </p>
-            <p>Address: {order.deliveryAddress?.fullText || 'Not provided'}</p>
+            <p>
+              {order.fulfillmentType === 'self_pickup'
+                ? 'Pickup at kitchen counter'
+                : `Address: ${order.deliveryAddress?.fullText || 'Not provided'}`}
+            </p>
 
             <div>
               <strong>Items</strong>
@@ -105,6 +115,17 @@ export default function KitchenOrdersPage() {
                   disabled={updatingOrderId === order._id}
                 >
                   {updatingOrderId === order._id ? 'Updating...' : 'Mark Ready for Pickup'}
+                </button>
+              ) : null}
+
+              {order.fulfillmentType === 'self_pickup' && order.status === 'ready_for_pickup' ? (
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={() => updateStatus(order._id, 'delivered', 'Customer collected self pickup order')}
+                  disabled={updatingOrderId === order._id}
+                >
+                  {updatingOrderId === order._id ? 'Updating...' : 'Mark Collected'}
                 </button>
               ) : null}
             </div>
