@@ -183,17 +183,18 @@ nav {
 }
 
 .cart-link-primary {
-  background: var(--wg-green);
+  background: linear-gradient(135deg, #3a6835 0%, #2c5d29 100%);
   color: #ffffff;
   border-radius: 24px;
   padding: 0.5rem 1.1rem;
   min-height: 44px;
-  box-shadow: 0 2px 10px rgba(58, 104, 53, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 8px 18px rgba(58, 104, 53, 0.26), 0 0 0 1px rgba(232, 160, 32, 0.12) inset;
 }
 
 .cart-link-primary:hover,
 .cart-link-primary.active {
-  background: var(--wg-green);
+  background: linear-gradient(135deg, #426f3c 0%, #315f2d 100%);
   color: #ffffff;
 }
 
@@ -221,12 +222,13 @@ nav {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: var(--wg-green);
+  background: linear-gradient(135deg, #3a6835 0%, #2c5d29 100%);
   color: #ffffff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 10px rgba(58, 104, 53, 0.24);
+  border: 1px solid rgba(232, 160, 32, 0.2);
+  box-shadow: 0 10px 18px rgba(58, 104, 53, 0.24), 0 0 0 2px rgba(232, 160, 32, 0.12) inset;
 }
 
 .cart-icon {
@@ -263,6 +265,62 @@ nav {
   min-width: 20px;
   height: 20px;
   font-size: 0.68rem;
+}
+
+.cart-toast {
+  position: fixed;
+  left: 50%;
+  top: 60vh;
+  transform: translate(-50%, -50%) scale(0.98);
+  z-index: 9999;
+  background: rgba(30, 30, 30, 0.88);
+  color: #ffffff;
+  border-radius: 50px;
+  padding: 12px 24px;
+  font-weight: 700;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.24);
+  pointer-events: none;
+  max-width: min(92vw, 420px);
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+
+.cart-toast-enter {
+  animation: cart-toast-in 150ms ease-in forwards;
+}
+
+.cart-toast-exit {
+  animation: cart-toast-out 300ms ease-out forwards;
+}
+
+@keyframes cart-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes cart-toast-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.97);
+  }
+}
+
+@media (max-width: 640px) {
+  .cart-toast {
+    top: 58vh;
+    padding: 12px 20px;
+    font-size: 0.95rem;
+  }
 }
 
 .cart-badge-drop {

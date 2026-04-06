@@ -76,11 +76,13 @@ export default function HomeMenuPage() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [message, setMessage] = useState('');
-  const [feedbackTick, setFeedbackTick] = useState(0);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastStage, setToastStage] = useState('idle');
   const [quantities, setQuantities] = useState({});
   const inFlightAddsRef = useRef(0);
   const refreshTimeoutRef = useRef(null);
+  const toastHoldTimerRef = useRef(null);
+  const toastExitTimerRef = useRef(null);
   const greeting =
     new Date().getHours() < 12
       ? 'Good morning'
@@ -99,6 +101,27 @@ export default function HomeMenuPage() {
       }
     }, 180);
   }, [refreshCartCount]);
+
+  const showToast = useCallback((text) => {
+    if (toastHoldTimerRef.current) {
+      clearTimeout(toastHoldTimerRef.current);
+    }
+
+    if (toastExitTimerRef.current) {
+      clearTimeout(toastExitTimerRef.current);
+    }
+
+    setToastMessage(text);
+    setToastStage('enter');
+
+    toastHoldTimerRef.current = setTimeout(() => {
+      setToastStage('exit');
+      toastExitTimerRef.current = setTimeout(() => {
+        setToastMessage('');
+        setToastStage('idle');
+      }, 300);
+    }, 2000);
+  }, []);
 
   const fetchData = useCallback(async ({ force = false } = {}) => {
     const cached = readMenuCache();
@@ -145,12 +168,12 @@ export default function HomeMenuPage() {
         categories: categoryRes.categories || [],
       });
     } catch (error) {
-      setMessage(error.message);
+      showToast(error.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     fetchData();
@@ -203,14 +226,12 @@ export default function HomeMenuPage() {
 
   const addToCart = async (item) => {
     if (!isAuthenticated || user.role !== 'customer') {
-      setMessage('Login as customer to add items to cart.');
-      window.scrollTo(0, 0);
+      showToast('Login as customer to add items to cart.');
       return;
     }
 
     const quantity = quantities[item._id] || 1;
-    setMessage(`${quantity} x ${item.name} added to cart`);
-    setFeedbackTick((value) => value + 1);
+    showToast(`${item.name} added to cart!`);
     adjustCartCount(quantity);
     triggerCartPulse();
     inFlightAddsRef.current += 1;
@@ -218,12 +239,23 @@ export default function HomeMenuPage() {
     try {
       await cartApi.add(item._id, quantity);
     } catch (error) {
-      setMessage(error.message);
+      showToast(error.message);
     } finally {
       inFlightAddsRef.current = Math.max(0, inFlightAddsRef.current - 1);
       scheduleCartCountRefresh();
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (toastHoldTimerRef.current) {
+        clearTimeout(toastHoldTimerRef.current);
+      }
+      if (toastExitTimerRef.current) {
+        clearTimeout(toastExitTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <section className="page-wrap">
@@ -249,10 +281,10 @@ export default function HomeMenuPage() {
           ))}
         </select>
       </div>
-      {message ? (
-        <p key={feedbackTick} className="message cart-feedback">
-          {message}
-        </p>
+      {toastMessage ? (
+        <div className={`cart-toast cart-toast-${toastStage}`} role="status" aria-live="polite">
+          <span>{toastMessage}</span>
+        </div>
       ) : null}
       {loading ? <LoadingSpinner label="Loading menu..." /> : null}
       {!loading && refreshing ? <p className="muted">Refreshing menu in the background...</p> : null}
