@@ -236,15 +236,6 @@ export default function CheckoutPage() {
               </button>
             </div>
 
-
-          <div className="checkout-confirmation-actions">
-            <Link to={`/orders/${order._id}`} className="btn checkout-confirmation-btn">
-              View My Order →
-            </Link>
-            <Link to="/" className="checkout-back-link">
-              Back to Menu
-            </Link>
-          </div>
             {fulfillmentType === 'self_pickup' ? (
               <article className="pickup-info-card field-full">
                 <h4>Pickup Instructions</h4>
