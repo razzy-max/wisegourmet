@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { menuApi } from '../api/menuApi';
 import { cartApi } from '../api/cartApi';
 import { useAuth } from '../context/AuthContext';
@@ -7,6 +7,8 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 const MENU_CACHE_TTL_MS = 90 * 1000;
 const MENU_CACHE_KEY_PREFIX = 'wg:menu:';
+const MENU_CACHE_KEY = `${MENU_CACHE_KEY_PREFIX}all`;
+let menuMemoryCache = null;
 
 const normalizeStatus = (item) => item.availabilityStatus || (item.isAvailable ? 'in_stock' : 'unavailable');
 
@@ -24,16 +26,17 @@ const statusOrder = {
 
 const formatCurrency = (value) => `₦${Number(value || 0).toLocaleString()}`;
 
-const getMenuCacheKey = (selectedCategory, search) =>
-  `${MENU_CACHE_KEY_PREFIX}${selectedCategory || 'all'}:${String(search || '').trim().toLowerCase()}`;
-
-const readMenuCache = (cacheKey) => {
+const readMenuCache = () => {
   if (typeof window === 'undefined') {
     return null;
   }
 
   try {
-    const raw = window.sessionStorage.getItem(cacheKey);
+    if (menuMemoryCache) {
+      return menuMemoryCache;
+    }
+
+    const raw = window.localStorage.getItem(MENU_CACHE_KEY);
     if (!raw) {
       return null;
     }
@@ -43,27 +46,22 @@ const readMenuCache = (cacheKey) => {
       return null;
     }
 
-    if (Date.now() - Number(parsed.ts || 0) > MENU_CACHE_TTL_MS) {
-      window.sessionStorage.removeItem(cacheKey);
-      return null;
-    }
-
-    return parsed.data || null;
+    menuMemoryCache = parsed;
+    return parsed;
   } catch {
     return null;
   }
 };
 
-const writeMenuCache = (cacheKey, payload) => {
+const writeMenuCache = (payload) => {
   if (typeof window === 'undefined') {
     return;
   }
 
   try {
-    window.sessionStorage.setItem(
-      cacheKey,
-      JSON.stringify({ ts: Date.now(), data: payload })
-    );
+    const wrapped = { ts: Date.now(), data: payload };
+    menuMemoryCache = wrapped;
+    window.localStorage.setItem(MENU_CACHE_KEY, JSON.stringify(wrapped));
   } catch {
     // Ignore storage failures; network fetch still works.
   }
@@ -77,6 +75,7 @@ export default function HomeMenuPage() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState('');
   const [feedbackTick, setFeedbackTick] = useState(0);
   const [quantities, setQuantities] = useState({});
@@ -101,23 +100,33 @@ export default function HomeMenuPage() {
     }, 180);
   }, [refreshCartCount]);
 
-  const fetchData = useCallback(async () => {
-    const cacheKey = getMenuCacheKey(selectedCategory, search);
-    const cached = readMenuCache(cacheKey);
-    const hasCachedData = Boolean(cached?.items && cached?.categories);
+  const fetchData = useCallback(async ({ force = false } = {}) => {
+    const cached = readMenuCache();
+    const hasCachedData = Boolean(cached?.data?.items && cached?.data?.categories);
+    const cacheIsFresh = hasCachedData && Date.now() - Number(cached.ts || 0) < MENU_CACHE_TTL_MS;
 
     if (hasCachedData) {
-      setItems(cached.items);
-      setCategories(cached.categories);
+      setItems(cached.data.items);
+      setCategories(cached.data.categories);
     }
 
-    setLoading(!hasCachedData);
+    if (!hasCachedData) {
+      setLoading(true);
+    } else {
+      setLoading(false);
+    }
+
+    if (cacheIsFresh && !force) {
+      return;
+    }
+
+    if (hasCachedData) {
+      setRefreshing(true);
+    }
+
     try {
       const [menuRes, categoryRes] = await Promise.all([
-        menuApi.list({
-          category: selectedCategory || undefined,
-          search: search || undefined,
-        }),
+        menuApi.list(),
         menuApi.categories(),
       ]);
       const orderedItems = [...(menuRes.items || [])].sort((a, b) => {
@@ -131,7 +140,7 @@ export default function HomeMenuPage() {
 
       setItems(orderedItems);
       setCategories(categoryRes.categories || []);
-      writeMenuCache(cacheKey, {
+      writeMenuCache({
         items: orderedItems,
         categories: categoryRes.categories || [],
       });
@@ -139,12 +148,43 @@ export default function HomeMenuPage() {
       setMessage(error.message);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, [search, selectedCategory]);
+  }, []);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const filteredItems = useMemo(() => {
+    const normalizedSearch = String(search || '').trim().toLowerCase();
+
+    return items
+      .filter((item) => {
+        if (selectedCategory && item.category?.slug !== selectedCategory) {
+          return false;
+        }
+
+        if (!normalizedSearch) {
+          return true;
+        }
+
+        const haystack = [item.name, item.description, item.category?.name]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+
+        return haystack.includes(normalizedSearch);
+      })
+      .sort((a, b) => {
+        const aRank = statusOrder[normalizeStatus(a)] ?? 99;
+        const bRank = statusOrder[normalizeStatus(b)] ?? 99;
+        if (aRank !== bRank) {
+          return aRank - bRank;
+        }
+        return String(a.name || '').localeCompare(String(b.name || ''));
+      });
+  }, [items, search, selectedCategory]);
 
   useEffect(() => {
     return () => {
@@ -215,8 +255,9 @@ export default function HomeMenuPage() {
         </p>
       ) : null}
       {loading ? <LoadingSpinner label="Loading menu..." /> : null}
+      {!loading && refreshing ? <p className="muted">Refreshing menu in the background...</p> : null}
       <div className="grid menu-grid">
-        {items.map((item) => (
+        {filteredItems.map((item) => (
           <article className="panel menu-card" key={item._id}>
             {item.imageUrl ? (
               <img className="menu-item-image" src={item.imageUrl} alt={item.name} loading="lazy" />
@@ -269,6 +310,12 @@ export default function HomeMenuPage() {
           </article>
         ))}
       </div>
+      {!loading && filteredItems.length === 0 ? (
+        <article className="panel empty-state" style={{ marginTop: '1rem' }}>
+          <p className="empty-icon" aria-hidden="true">🍽</p>
+          <p className="muted">No menu items match your search or category filter.</p>
+        </article>
+      ) : null}
     </section>
   );
 }
