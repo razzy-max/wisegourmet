@@ -1,6 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { orderApi } from '../api/orderApi';
 import { authApi } from '../api/authApi';
 import { useAuth } from '../context/AuthContext';
+
+const formatZoneLabel = (zoneKey) =>
+  String(zoneKey || '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+    .trim();
 
 const initialForm = {
   fullName: '',
@@ -17,6 +24,7 @@ const initialForm = {
 export default function ProfilePage() {
   const { logout } = useAuth();
   const [form, setForm] = useState(initialForm);
+  const [zones, setZones] = useState([]);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -46,9 +54,37 @@ export default function ProfilePage() {
     }
   };
 
+  const loadZones = async () => {
+    try {
+      const response = await orderApi.deliveryZones();
+      setZones(response.zones || []);
+    } catch {
+      setZones([]);
+    }
+  };
+
   useEffect(() => {
     loadProfile();
+    loadZones();
   }, []);
+
+  const zoneOptions = useMemo(() => {
+    const savedZone = form.savedAddress.zone;
+    const activeZones = zones.filter((zone) => zone.isActive !== false);
+
+    if (savedZone && !activeZones.some((zone) => zone.key === savedZone)) {
+      return [
+        {
+          key: savedZone,
+          label: `${formatZoneLabel(savedZone)} (saved)`,
+          isActive: false,
+        },
+        ...activeZones,
+      ];
+    }
+
+    return activeZones;
+  }, [form.savedAddress.zone, zones]);
 
   const startEditing = () => {
     setMessage('');
@@ -138,10 +174,15 @@ export default function ProfilePage() {
             }
           >
             <option value="">Select zone</option>
-            <option value="zone_a">Zone A</option>
-            <option value="zone_b">Zone B</option>
-            <option value="zone_c">Zone C</option>
-            <option value="outside">Outside</option>
+            {zoneOptions.map((zone) => (
+              <option
+                key={zone.key}
+                value={zone.key}
+                disabled={zone.isActive === false && zone.key !== form.savedAddress.zone}
+              >
+                {zone.label}
+              </option>
+            ))}
           </select>
         </label>
         <label className="field">
