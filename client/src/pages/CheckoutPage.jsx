@@ -404,6 +404,15 @@ export default function CheckoutPage() {
               </div>
             ) : null}
 
+            <div className="checkout-confirmation-actions">
+              <Link to={`/orders/${order._id}`} className="btn checkout-confirmation-btn">
+                View My Order →
+              </Link>
+              <Link to="/" className="checkout-back-link">
+                Back to Menu
+              </Link>
+            </div>
+
           <p><strong>Status:</strong> {order.status}</p>
           <p><strong>Order Amount:</strong> ₦{order.total ?? order.totalAmount ?? 'N/A'}</p>
         </div>
