@@ -76,6 +76,7 @@ export default function HomeMenuPage() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [menuError, setMenuError] = useState('');
   const [toastMessage, setToastMessage] = useState('');
   const [toastStage, setToastStage] = useState('idle');
   const [quantities, setQuantities] = useState({});
@@ -125,8 +126,13 @@ export default function HomeMenuPage() {
 
   const fetchData = useCallback(async ({ force = false } = {}) => {
     const cached = readMenuCache();
-    const hasCachedData = Boolean(cached?.data?.items && cached?.data?.categories);
+    const hasCachedData =
+      Array.isArray(cached?.data?.items) &&
+      Array.isArray(cached?.data?.categories);
+    const cachedItemCount = hasCachedData ? cached.data.items.length : 0;
     const cacheIsFresh = hasCachedData && Date.now() - Number(cached.ts || 0) < MENU_CACHE_TTL_MS;
+
+    setMenuError('');
 
     if (hasCachedData) {
       setItems(cached.data.items);
@@ -139,7 +145,8 @@ export default function HomeMenuPage() {
       setLoading(false);
     }
 
-    if (cacheIsFresh && !force) {
+    // Always revalidate if cache has no items so a transient failure does not look like a real empty menu.
+    if (cacheIsFresh && !force && cachedItemCount > 0) {
       return;
     }
 
@@ -168,6 +175,9 @@ export default function HomeMenuPage() {
         categories: categoryRes.categories || [],
       });
     } catch (error) {
+      if (!hasCachedData) {
+        setMenuError('Could not load menu. Check your internet connection and tap retry.');
+      }
       showToast(error.message);
     } finally {
       setLoading(false);
@@ -288,6 +298,15 @@ export default function HomeMenuPage() {
       ) : null}
       {loading ? <LoadingSpinner label="Loading menu..." /> : null}
       {!loading && refreshing ? <p className="muted">Refreshing menu in the background...</p> : null}
+      {!loading && menuError && filteredItems.length === 0 ? (
+        <article className="panel empty-state" style={{ marginTop: '1rem' }}>
+          <p className="empty-icon" aria-hidden="true">📶</p>
+          <p className="muted">{menuError}</p>
+          <button className="btn" type="button" onClick={() => fetchData({ force: true })}>
+            Retry
+          </button>
+        </article>
+      ) : null}
       <div className="grid menu-grid">
         {filteredItems.map((item) => (
           <article className="panel menu-card" key={item._id}>
@@ -342,7 +361,7 @@ export default function HomeMenuPage() {
           </article>
         ))}
       </div>
-      {!loading && filteredItems.length === 0 ? (
+      {!loading && !menuError && filteredItems.length === 0 ? (
         <article className="panel empty-state" style={{ marginTop: '1rem' }}>
           <p className="empty-icon" aria-hidden="true">🍽</p>
           <p className="muted">No menu items match your search or category filter.</p>
