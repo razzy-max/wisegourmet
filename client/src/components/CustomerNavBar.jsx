@@ -7,6 +7,8 @@ export default function CustomerNavBar() {
   const { logout, isAuthenticated } = useAuth();
   const { cartCount, cartPulse } = useCart();
   const [animateCart, setAnimateCart] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [canInstall, setCanInstall] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated || cartPulse === 0) return;
@@ -14,6 +16,45 @@ export default function CustomerNavBar() {
     const timer = setTimeout(() => setAnimateCart(false), 450);
     return () => clearTimeout(timer);
   }, [cartPulse, isAuthenticated]);
+
+  useEffect(() => {
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+    if (isStandalone) {
+      setCanInstall(false);
+      return undefined;
+    }
+
+    const handleBeforeInstallPrompt = (event) => {
+      event.preventDefault();
+      setDeferredPrompt(event);
+      setCanInstall(true);
+    };
+
+    const handleAppInstalled = () => {
+      setDeferredPrompt(null);
+      setCanInstall(false);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+
+    setDeferredPrompt(null);
+    setCanInstall(false);
+  };
 
   const renderCartIcon = (className = 'cart-icon') => (
     <span className={className} aria-hidden="true">
@@ -124,12 +165,22 @@ export default function CustomerNavBar() {
                 >
                   Support
                 </NavLink>
+                {canInstall ? (
+                  <button type="button" className="install-link" onClick={handleInstallClick}>
+                    Install App
+                  </button>
+                ) : null}
                 <button type="button" className="logout-link" onClick={logout}>
                   ⎋ Logout
                 </button>
               </>
             ) : (
               <>
+                {canInstall ? (
+                  <button type="button" className="install-link" onClick={handleInstallClick}>
+                    Install App
+                  </button>
+                ) : null}
                 <NavLink
                   to="/login"
                   className={({ isActive }) =>
@@ -152,16 +203,23 @@ export default function CustomerNavBar() {
 
           <div className="customer-nav-mobile-top">
             {isAuthenticated ? (
-              <Link to="/cart" className={animateCart ? 'mobile-cart-link cart-link-pop' : 'mobile-cart-link'}>
-                <span className="mobile-cart-button">
-                  {renderCartIcon('cart-icon cart-icon-mobile')}
-                </span>
-                {cartCount > 0 ? (
-                  <span key={`mobile-${cartCount}`} className="cart-badge cart-badge-mobile cart-badge-drop" aria-live="polite">
-                    {cartCount}
-                  </span>
+              <div className="mobile-top-actions">
+                {canInstall ? (
+                  <button type="button" className="mobile-install-link" onClick={handleInstallClick}>
+                    Install
+                  </button>
                 ) : null}
-              </Link>
+                <Link to="/cart" className={animateCart ? 'mobile-cart-link cart-link-pop' : 'mobile-cart-link'}>
+                  <span className="mobile-cart-button">
+                    {renderCartIcon('cart-icon cart-icon-mobile')}
+                  </span>
+                  {cartCount > 0 ? (
+                    <span key={`mobile-${cartCount}`} className="cart-badge cart-badge-mobile cart-badge-drop" aria-live="polite">
+                      {cartCount}
+                    </span>
+                  ) : null}
+                </Link>
+              </div>
             ) : (
               <div className="mobile-guest-nav-row">
                 <NavLink
@@ -173,6 +231,11 @@ export default function CustomerNavBar() {
                 >
                   Menu
                 </NavLink>
+                {canInstall ? (
+                  <button type="button" className="mobile-install-link" onClick={handleInstallClick}>
+                    Install
+                  </button>
+                ) : null}
                 <div className="mobile-auth-actions">
                   <Link to="/login" className="mobile-auth-link mobile-auth-link-ghost">
                     Login
