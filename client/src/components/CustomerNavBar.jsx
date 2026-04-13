@@ -222,6 +222,15 @@ export default function CustomerNavBar() {
               </div>
             ) : (
               <div className="mobile-guest-nav-row">
+                <NavLink
+                  to="/"
+                  end
+                  className={({ isActive }) =>
+                    isActive ? 'mobile-menu-pill mobile-menu-pill-active' : 'mobile-menu-pill'
+                  }
+                >
+                  Menu
+                </NavLink>
                 {canInstall ? (
                   <button type="button" className="mobile-install-link" onClick={handleInstallClick}>
                     Install
