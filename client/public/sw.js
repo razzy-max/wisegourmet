@@ -1,4 +1,5 @@
-const CACHE_NAME = 'wise-gourmet-v1';
+const CACHE_NAME = 'wise-gourmet-v2';
+const CACHE_PREFIX = 'wise-gourmet-v';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -20,7 +21,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((key) => key !== CACHE_NAME)
+          .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
           .map((key) => caches.delete(key))
       )
     )
@@ -35,8 +36,31 @@ self.addEventListener('fetch', (event) => {
 
   const requestUrl = new URL(event.request.url);
 
-  // Only cache same-origin requests; API and external requests stay network-first.
   if (requestUrl.origin !== self.location.origin) {
+    return;
+  }
+
+  // Never cache API responses.
+  if (requestUrl.pathname.startsWith('/api/')) {
+    return;
+  }
+
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
+          }
+          return networkResponse;
+        })
+        .catch(async () => {
+          const cachedPage = await caches.match(event.request);
+          return cachedPage || caches.match('/index.html');
+        })
+    );
+
     return;
   }
 
@@ -56,8 +80,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
 
           return networkResponse;
-        })
-        .catch(() => caches.match('/index.html'));
+        });
     })
   );
 });
