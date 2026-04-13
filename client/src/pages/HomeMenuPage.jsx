@@ -192,6 +192,10 @@ export default function HomeMenuPage() {
         return String(a.name || '').localeCompare(String(b.name || ''));
       });
 
+      if (orderedItems.length === 0 && !hasCachedData) {
+        throw new Error('Menu is temporarily unavailable. Please tap retry.');
+      }
+
       let nextCategories = cached?.data?.categories || [];
 
       if (categoryResult.status === 'fulfilled') {

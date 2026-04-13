@@ -13,6 +13,8 @@ export async function apiRequest(path, options = {}) {
   try {
     response = await fetch(`${API_BASE}${path}`, {
       method: options.method || 'GET',
+      cache: 'no-store',
+      credentials: 'omit',
       headers: {
         'Content-Type': 'application/json',
         ...(options.headers || {}),
