@@ -155,10 +155,16 @@ export default function HomeMenuPage() {
     }
 
     try {
-      const [menuRes, categoryRes] = await Promise.all([
+      const [menuResult, categoryResult] = await Promise.allSettled([
         menuApi.list(),
         menuApi.categories(),
       ]);
+
+      if (menuResult.status !== 'fulfilled') {
+        throw menuResult.reason;
+      }
+
+      const menuRes = menuResult.value;
       const orderedItems = [...(menuRes.items || [])].sort((a, b) => {
         const aRank = statusOrder[normalizeStatus(a)] ?? 99;
         const bRank = statusOrder[normalizeStatus(b)] ?? 99;
@@ -168,11 +174,19 @@ export default function HomeMenuPage() {
         return String(a.name || '').localeCompare(String(b.name || ''));
       });
 
+      let nextCategories = cached?.data?.categories || [];
+
+      if (categoryResult.status === 'fulfilled') {
+        nextCategories = categoryResult.value.categories || [];
+      } else if (!hasCachedData) {
+        showToast('Menu categories are taking longer than expected.');
+      }
+
       setItems(orderedItems);
-      setCategories(categoryRes.categories || []);
+      setCategories(nextCategories);
       writeMenuCache({
         items: orderedItems,
-        categories: categoryRes.categories || [],
+        categories: nextCategories,
       });
     } catch (error) {
       if (!hasCachedData) {
