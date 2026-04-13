@@ -96,12 +96,6 @@ nav {
   gap: 0.5rem;
 }
 
-.mobile-top-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
 .mobile-menu-pill {
   text-decoration: none;
   border-radius: 999px;
@@ -179,40 +173,6 @@ nav {
 
 .logout-link:hover {
   color: #ffffff;
-}
-
-.install-link {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #f4f9f3;
-  border-radius: 999px;
-  cursor: pointer;
-  font-weight: 700;
-  min-height: 40px;
-  padding: 0 0.8rem;
-}
-
-.install-link:hover {
-  background: rgba(255, 255, 255, 0.24);
-}
-
-.mobile-install-link {
-  text-decoration: none;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  min-height: 38px;
-  padding: 0 0.8rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #f4f9f3;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.38);
-}
-
-.mobile-install-link:hover {
-  background: rgba(255, 255, 255, 0.24);
 }
 
 .cart-link {
