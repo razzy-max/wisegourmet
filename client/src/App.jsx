@@ -10,6 +10,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import HomeMenuPage from './pages/HomeMenuPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import InstallPage from './pages/InstallPage';
 import OrderDetailsPage from './pages/OrderDetailsPage';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
@@ -63,6 +64,11 @@ function App() {
       return;
     }
 
+    if (path === '/install') {
+      document.title = 'Install App — Wise Gourmet';
+      return;
+    }
+
     if (path.startsWith('/cart')) {
       document.title = 'Cart — Wise Gourmet';
       return;
@@ -97,6 +103,7 @@ function App() {
       <div key={location.pathname} className="route-fade">
         <Routes>
         <Route path="/" element={<HomeMenuPage />} />
+        <Route path="/install" element={<InstallPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/admin/login" element={<Navigate to="/login" replace />} />
         <Route path="/staff/login" element={<Navigate to="/login" replace />} />

@@ -1,0 +1,200 @@
+.install-container {
+  max-width: 500px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.install-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.install-logo {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+  display: inline-block;
+}
+
+.install-header h1 {
+  font-size: 2rem;
+  color: #253126;
+  margin: 0 0 0.5rem 0;
+}
+
+.install-header p {
+  color: #5f6d60;
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.install-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 2rem 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid #ece8de;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.install-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  display: inline-block;
+}
+
+.install-icon-success {
+  font-size: 3.5rem;
+  color: #3a6835;
+}
+
+.install-icon-android {
+  color: #3ddc84;
+}
+
+.install-icon-ios {
+  color: #555555;
+}
+
+.install-icon-desktop {
+  color: #5f6d60;
+}
+
+.install-card h2 {
+  font-size: 1.5rem;
+  color: #253126;
+  margin: 0.5rem 0 1rem 0;
+}
+
+.install-card p {
+  color: #5f6d60;
+  margin: 0 0 1.5rem 0;
+  line-height: 1.6;
+}
+
+.install-steps {
+  text-align: left;
+  color: #253126;
+  margin: 1.5rem 0;
+  padding-left: 1.5rem;
+  line-height: 1.8;
+}
+
+.install-steps li {
+  margin-bottom: 0.75rem;
+}
+
+.install-steps strong {
+  font-weight: 700;
+  color: #3a6835;
+}
+
+.install-tip {
+  background: #f0f4ed;
+  border-left: 3px solid #3a6835;
+  padding: 1rem;
+  text-align: left;
+  border-radius: 8px;
+  margin: 1.5rem 0;
+  font-size: 0.95rem;
+  color: #253126;
+}
+
+.install-hint {
+  font-size: 0.9rem;
+  color: #5f6d60;
+  line-height: 1.7;
+}
+
+.install-button {
+  display: inline-block;
+  min-height: 48px;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 150ms ease;
+  margin: 0.5rem;
+}
+
+.install-button-primary {
+  background: linear-gradient(135deg, #3a6835 0%, #2c5d29 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(58, 104, 53, 0.24);
+}
+
+.install-button-primary:hover {
+  background: linear-gradient(135deg, #426f3c 0%, #315f2d 100%);
+  box-shadow: 0 6px 16px rgba(58, 104, 53, 0.32);
+  transform: translateY(-2px);
+}
+
+.install-button-secondary {
+  background: #f0f4ed;
+  color: #3a6835;
+  border: 1px solid #dde2d7;
+}
+
+.install-button-secondary:hover {
+  background: #e8ede2;
+  border-color: #d0d5ca;
+}
+
+.install-button-ghost {
+  background: transparent;
+  color: #5f6d60;
+  border: 1px solid #dde2d7;
+}
+
+.install-button-ghost:hover {
+  background: #f8fafc;
+  color: #3a6835;
+}
+
+.install-card-android {
+  border-color: #e8f5e9;
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f0 100%);
+}
+
+.install-card-ios {
+  border-color: #f0f0f0;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
+}
+
+.install-card-desktop {
+  border-color: #ede8de;
+  background: linear-gradient(135deg, #ffffff 0%, #faf9f7 100%);
+}
+
+.install-success {
+  border-color: #c8e6c9;
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f0 100%);
+}
+
+@media (max-width: 640px) {
+  .install-container {
+    margin: 1rem auto;
+  }
+
+  .install-header {
+    margin-bottom: 2rem;
+  }
+
+  .install-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .install-card {
+    padding: 1.5rem 1rem;
+  }
+
+  .install-logo {
+    font-size: 3rem;
+  }
+
+  .install-icon {
+    font-size: 2.5rem;
+  }
+}
