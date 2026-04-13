@@ -26,6 +26,15 @@ const statusOrder = {
 
 const formatCurrency = (value) => `₦${Number(value || 0).toLocaleString()}`;
 
+const clearMenuCache = () => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  menuMemoryCache = null;
+  window.localStorage.removeItem(MENU_CACHE_KEY);
+};
+
 const readMenuCache = () => {
   if (typeof window === 'undefined') {
     return null;
@@ -43,6 +52,15 @@ const readMenuCache = () => {
 
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+
+    const cachedItems = Array.isArray(parsed?.data?.items) ? parsed.data.items : null;
+    const cachedCategories = Array.isArray(parsed?.data?.categories) ? parsed.data.categories : null;
+
+    // Recover from previously poisoned empty cache snapshots.
+    if (cachedItems && cachedCategories && cachedItems.length === 0 && cachedCategories.length === 0) {
+      clearMenuCache();
       return null;
     }
 
@@ -189,7 +207,7 @@ export default function HomeMenuPage() {
         categories: nextCategories,
       });
     } catch (error) {
-      if (!hasCachedData) {
+      if (!hasCachedData || cachedItemCount === 0) {
         setMenuError('Could not load menu. Check your internet connection and tap retry.');
       }
       showToast(error.message);
