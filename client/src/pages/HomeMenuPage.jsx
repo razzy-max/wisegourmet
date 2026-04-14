@@ -144,17 +144,17 @@ export default function HomeMenuPage() {
 
   const fetchData = useCallback(async ({ force = false } = {}) => {
     const cached = readMenuCache();
-    const hasCachedData =
-      Array.isArray(cached?.data?.items) &&
-      Array.isArray(cached?.data?.categories);
-    const cachedItemCount = hasCachedData ? cached.data.items.length : 0;
+    const cachedItems = Array.isArray(cached?.data?.items) ? cached.data.items : [];
+    const cachedCategories = Array.isArray(cached?.data?.categories) ? cached.data.categories : [];
+    const cachedItemCount = cachedItems.length;
+    const hasCachedData = cachedItemCount > 0;
     const cacheIsFresh = hasCachedData && Date.now() - Number(cached.ts || 0) < MENU_CACHE_TTL_MS;
 
     setMenuError('');
 
     if (hasCachedData) {
-      setItems(cached.data.items);
-      setCategories(cached.data.categories);
+      setItems(cachedItems);
+      setCategories(cachedCategories);
     }
 
     if (!hasCachedData) {
@@ -192,7 +192,7 @@ export default function HomeMenuPage() {
         return String(a.name || '').localeCompare(String(b.name || ''));
       });
 
-      let nextCategories = cached?.data?.categories || [];
+      let nextCategories = cachedCategories;
 
       if (categoryResult.status === 'fulfilled') {
         nextCategories = categoryResult.value.categories || [];
@@ -303,7 +303,7 @@ export default function HomeMenuPage() {
     <section className="page-wrap">
       <div className="menu-hero">
         <div className="menu-hero-overlay">
-          <p>{greeting} ≡ƒæï</p>
+          <p>{greeting}</p>
           <h2>What are you craving today?</h2>
         </div>
       </div>
@@ -332,7 +332,7 @@ export default function HomeMenuPage() {
       {!loading && refreshing ? <p className="muted">Refreshing menu in the background...</p> : null}
       {!loading && menuError && filteredItems.length === 0 ? (
         <article className="panel empty-state" style={{ marginTop: '1rem' }}>
-          <p className="empty-icon" aria-hidden="true">≡ƒô╢</p>
+          <p className="empty-icon" aria-hidden="true">!</p>
           <p className="muted">{menuError}</p>
           <button className="btn" type="button" onClick={() => fetchData({ force: true })}>
             Retry
@@ -348,7 +348,7 @@ export default function HomeMenuPage() {
               <div className="menu-item-image-placeholder">Food Image</div>
             )}
             <div className="menu-meta-row">
-              <span className="menu-category-pill">≡ƒÅ╖ {item.category?.name || 'General'}</span>
+              <span className="menu-category-pill"># {item.category?.name || 'General'}</span>
               <span className="menu-status-inline">
                 <span className={`status-dot ${normalizeStatus(item) === 'in_stock' ? 'in-stock' : 'offline'}`} />
                 {statusLabelMap[normalizeStatus(item)] || 'Unknown'}
@@ -395,7 +395,7 @@ export default function HomeMenuPage() {
       </div>
       {!loading && !menuError && filteredItems.length === 0 ? (
         <article className="panel empty-state" style={{ marginTop: '1rem' }}>
-          <p className="empty-icon" aria-hidden="true">≡ƒì╜</p>
+          <p className="empty-icon" aria-hidden="true">-</p>
           <p className="muted">No menu items match your search or category filter.</p>
         </article>
       ) : null}
