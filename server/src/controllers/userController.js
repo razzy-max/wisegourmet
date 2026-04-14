@@ -145,10 +145,14 @@ const getNotificationConfig = asyncHandler(async (_req, res) => {
 const getNotificationStatus = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).select('pushSubscriptions');
   const count = Array.isArray(user?.pushSubscriptions) ? user.pushSubscriptions.length : 0;
+  const endpoint = String(req.query.endpoint || '').trim();
+  const subscribed = endpoint
+    ? Array.isArray(user?.pushSubscriptions) && user.pushSubscriptions.some((item) => item.endpoint === endpoint)
+    : count > 0;
 
   res.json({
     enabled: isPushConfigured(),
-    subscribed: count > 0,
+    subscribed,
     subscriptionCount: count,
   });
 });
@@ -164,6 +168,15 @@ const subscribeNotifications = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error('Invalid push subscription payload');
   }
+
+  await User.updateMany(
+    { _id: { $ne: req.user._id } },
+    {
+      $pull: {
+        pushSubscriptions: { endpoint: subscription.endpoint },
+      },
+    }
+  );
 
   await User.updateOne(
     { _id: req.user._id },

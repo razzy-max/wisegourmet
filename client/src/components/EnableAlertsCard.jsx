@@ -71,10 +71,13 @@ export default function EnableAlertsCard() {
     }
 
     try {
-      const [configRes, statusRes] = await Promise.all([
+      const [configRes, registration] = await Promise.all([
         userApi.notificationConfig(),
-        userApi.notificationStatus(),
+        navigator.serviceWorker.ready,
       ]);
+
+      const deviceSubscription = await registration.pushManager.getSubscription();
+      const statusRes = await userApi.notificationStatus(deviceSubscription?.endpoint || '');
 
       setEnabled(Boolean(configRes.enabled));
       setPublicKey(String(configRes.publicKey || ''));

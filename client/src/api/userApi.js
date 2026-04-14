@@ -22,8 +22,9 @@ export const userApi = {
   notificationConfig() {
     return apiRequest('/users/notifications/config');
   },
-  notificationStatus() {
-    return apiRequest('/users/notifications/status');
+  notificationStatus(endpoint = '') {
+    const query = endpoint ? `?endpoint=${encodeURIComponent(endpoint)}` : '';
+    return apiRequest(`/users/notifications/status${query}`);
   },
   subscribeNotifications(subscription) {
     return apiRequest('/users/notifications/subscribe', {
