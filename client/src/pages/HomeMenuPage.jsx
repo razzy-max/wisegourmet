@@ -1,9 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { menuApi } from '../api/menuApi';
 import { cartApi } from '../api/cartApi';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import LoadingSpinner from '../components/LoadingSpinner';
+
+const MENU_CACHE_TTL_MS = 90 * 1000;
+const MENU_CACHE_KEY_PREFIX = 'wg:menu:';
+const MENU_CACHE_KEY = `${MENU_CACHE_KEY_PREFIX}all`;
+let menuMemoryCache = null;
 
 const normalizeStatus = (item) => item.availabilityStatus || (item.isAvailable ? 'in_stock' : 'unavailable');
 
@@ -21,6 +26,65 @@ const statusOrder = {
 
 const formatCurrency = (value) => `₦${Number(value || 0).toLocaleString()}`;
 
+const clearMenuCache = () => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  menuMemoryCache = null;
+  window.localStorage.removeItem(MENU_CACHE_KEY);
+};
+
+const readMenuCache = () => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    if (menuMemoryCache) {
+      return menuMemoryCache;
+    }
+
+    const raw = window.localStorage.getItem(MENU_CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+
+    const cachedItems = Array.isArray(parsed?.data?.items) ? parsed.data.items : null;
+    const cachedCategories = Array.isArray(parsed?.data?.categories) ? parsed.data.categories : null;
+
+    // Recover from previously poisoned empty cache snapshots.
+    if (cachedItems && cachedCategories && cachedItems.length === 0 && cachedCategories.length === 0) {
+      clearMenuCache();
+      return null;
+    }
+
+    menuMemoryCache = parsed;
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const writeMenuCache = (payload) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    const wrapped = { ts: Date.now(), data: payload };
+    menuMemoryCache = wrapped;
+    window.localStorage.setItem(MENU_CACHE_KEY, JSON.stringify(wrapped));
+  } catch {
+    // Ignore storage failures; network fetch still works.
+  }
+};
+
 export default function HomeMenuPage() {
   const { isAuthenticated, user } = useAuth();
   const { refreshCartCount, adjustCartCount, triggerCartPulse } = useCart();
@@ -29,6 +93,7 @@ export default function HomeMenuPage() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [menuError, setMenuError] = useState('');
   const [toastMessage, setToastMessage] = useState('');
   const [toastStage, setToastStage] = useState('idle');
@@ -78,9 +143,34 @@ export default function HomeMenuPage() {
   }, []);
 
   const fetchData = useCallback(async ({ force = false } = {}) => {
+    const cached = readMenuCache();
+    const hasCachedData =
+      Array.isArray(cached?.data?.items) &&
+      Array.isArray(cached?.data?.categories);
+    const cachedItemCount = hasCachedData ? cached.data.items.length : 0;
+    const cacheIsFresh = hasCachedData && Date.now() - Number(cached.ts || 0) < MENU_CACHE_TTL_MS;
+
     setMenuError('');
 
-    setLoading(true);
+    if (hasCachedData) {
+      setItems(cached.data.items);
+      setCategories(cached.data.categories);
+    }
+
+    if (!hasCachedData) {
+      setLoading(true);
+    } else {
+      setLoading(false);
+    }
+
+    // Always revalidate if cache has no items so a transient failure does not look like a real empty menu.
+    if (cacheIsFresh && !force && cachedItemCount > 0) {
+      return;
+    }
+
+    if (hasCachedData) {
+      setRefreshing(true);
+    }
 
     try {
       const [menuResult, categoryResult] = await Promise.allSettled([
@@ -102,19 +192,28 @@ export default function HomeMenuPage() {
         return String(a.name || '').localeCompare(String(b.name || ''));
       });
 
-      if (orderedItems.length === 0) {
-        throw new Error('Menu is temporarily unavailable. Please tap retry.');
-      }
+      let nextCategories = cached?.data?.categories || [];
 
-      const nextCategories = categoryResult.status === 'fulfilled' ? categoryResult.value.categories || [] : [];
+      if (categoryResult.status === 'fulfilled') {
+        nextCategories = categoryResult.value.categories || [];
+      } else if (!hasCachedData) {
+        showToast('Menu categories are taking longer than expected.');
+      }
 
       setItems(orderedItems);
       setCategories(nextCategories);
+      writeMenuCache({
+        items: orderedItems,
+        categories: nextCategories,
+      });
     } catch (error) {
-      setMenuError('Could not load menu. Check your internet connection and tap retry.');
+      if (!hasCachedData || cachedItemCount === 0) {
+        setMenuError('Could not load menu. Check your internet connection and tap retry.');
+      }
       showToast(error.message);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [showToast]);
 
@@ -204,7 +303,7 @@ export default function HomeMenuPage() {
     <section className="page-wrap">
       <div className="menu-hero">
         <div className="menu-hero-overlay">
-          <p>{greeting} 👋</p>
+          <p>{greeting} ≡ƒæï</p>
           <h2>What are you craving today?</h2>
         </div>
       </div>
@@ -230,9 +329,10 @@ export default function HomeMenuPage() {
         </div>
       ) : null}
       {loading ? <LoadingSpinner label="Loading menu..." /> : null}
+      {!loading && refreshing ? <p className="muted">Refreshing menu in the background...</p> : null}
       {!loading && menuError && filteredItems.length === 0 ? (
         <article className="panel empty-state" style={{ marginTop: '1rem' }}>
-          <p className="empty-icon" aria-hidden="true">📶</p>
+          <p className="empty-icon" aria-hidden="true">≡ƒô╢</p>
           <p className="muted">{menuError}</p>
           <button className="btn" type="button" onClick={() => fetchData({ force: true })}>
             Retry
@@ -248,7 +348,7 @@ export default function HomeMenuPage() {
               <div className="menu-item-image-placeholder">Food Image</div>
             )}
             <div className="menu-meta-row">
-              <span className="menu-category-pill">🏷 {item.category?.name || 'General'}</span>
+              <span className="menu-category-pill">≡ƒÅ╖ {item.category?.name || 'General'}</span>
               <span className="menu-status-inline">
                 <span className={`status-dot ${normalizeStatus(item) === 'in_stock' ? 'in-stock' : 'offline'}`} />
                 {statusLabelMap[normalizeStatus(item)] || 'Unknown'}
@@ -293,9 +393,9 @@ export default function HomeMenuPage() {
           </article>
         ))}
       </div>
-      {!loading && !menuError && items.length > 0 && filteredItems.length === 0 ? (
+      {!loading && !menuError && filteredItems.length === 0 ? (
         <article className="panel empty-state" style={{ marginTop: '1rem' }}>
-          <p className="empty-icon" aria-hidden="true">🍽</p>
+          <p className="empty-icon" aria-hidden="true">≡ƒì╜</p>
           <p className="muted">No menu items match your search or category filter.</p>
         </article>
       ) : null}
