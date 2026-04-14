@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supportApi } from '../api/supportApi';
 import LoadingSpinner from '../components/LoadingSpinner';
+import EnableAlertsCard from '../components/EnableAlertsCard';
 
 const getTicketStatusBadge = (status) => {
   const badges = {
@@ -81,6 +82,7 @@ export default function SupportInboxPage() {
 
   return (
     <section className="page-wrap">
+      <EnableAlertsCard />
       <h1>Support Inbox</h1>
       <div className="row" style={{ marginBottom: '0.75rem' }}>
         <button

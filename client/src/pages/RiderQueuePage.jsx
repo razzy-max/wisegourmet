@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { orderApi } from '../api/orderApi';
 import { useOrdersRealtime } from '../hooks/useOrdersRealtime';
 import LoadingSpinner from '../components/LoadingSpinner';
+import EnableAlertsCard from '../components/EnableAlertsCard';
 
 export default function RiderQueuePage() {
   const [queueOrders, setQueueOrders] = useState([]);
@@ -106,6 +107,7 @@ export default function RiderQueuePage() {
 
   return (
     <section className="page-wrap">
+      <EnableAlertsCard />
       <h1>Rider Dispatch Queue</h1>
       {message ? <p className="message">{message}</p> : null}
       {error ? <p className="error">{error}</p> : null}

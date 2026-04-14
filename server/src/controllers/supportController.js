@@ -1,5 +1,6 @@
 const SupportTicket = require('../models/SupportTicket');
 const asyncHandler = require('../utils/asyncHandler');
+const { sendPushToRoles } = require('../utils/pushNotifications');
 
 const populateTicket = (query) => {
   return query
@@ -147,6 +148,13 @@ const createTicket = asyncHandler(async (req, res) => {
   const ticketDoc = await hydrated;
   notifySupportTicketChanged(req, ticketDoc);
 
+  await sendPushToRoles(['support'], {
+    title: 'New Support Ticket',
+    body: `Ticket #${String(ticket._id).slice(-6)}: ${ticket.subject}`,
+    url: '/admin/support',
+    tag: `support-ticket-${String(ticket._id)}`,
+  });
+
   res.status(201).json({ ticket: appendLegacyMessages(ticketDoc) });
 });
 
@@ -205,6 +213,15 @@ const addTicketMessage = asyncHandler(async (req, res) => {
 
   const hydrated = await addMessageToTicket(ticket, req.user, { text, attachments });
   notifySupportTicketChanged(req, hydrated);
+
+  if (req.user.role === 'customer') {
+    await sendPushToRoles(['support'], {
+      title: 'Customer Replied to Ticket',
+      body: `Ticket #${String(ticket._id).slice(-6)} has a new customer reply.`,
+      url: `/support/tickets/${String(ticket._id)}`,
+      tag: `support-reply-${String(ticket._id)}`,
+    });
+  }
 
   res.json({ ticket: appendLegacyMessages(hydrated) });
 });

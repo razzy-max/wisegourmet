@@ -19,4 +19,22 @@ export const userApi = {
       body: { newPassword },
     });
   },
+  notificationConfig() {
+    return apiRequest('/users/notifications/config');
+  },
+  notificationStatus() {
+    return apiRequest('/users/notifications/status');
+  },
+  subscribeNotifications(subscription) {
+    return apiRequest('/users/notifications/subscribe', {
+      method: 'POST',
+      body: { subscription },
+    });
+  },
+  unsubscribeNotifications(endpoint = '') {
+    return apiRequest('/users/notifications/unsubscribe', {
+      method: 'POST',
+      body: { endpoint },
+    });
+  },
 };

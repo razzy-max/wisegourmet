@@ -419,6 +419,24 @@ nav {
   box-shadow: var(--wg-shadow);
 }
 
+.alerts-optin-card {
+  margin-bottom: 1rem;
+  border-color: #d9e9d6;
+  background: linear-gradient(135deg, #ffffff 0%, #f6fbf5 100%);
+}
+
+.alerts-optin-card h3 {
+  margin: 0 0 0.35rem;
+}
+
+.alerts-optin-actions {
+  margin-top: 0.55rem;
+}
+
+.alerts-optin-message {
+  margin-top: 0.55rem;
+}
+
 .narrow {
   max-width: 460px;
 }

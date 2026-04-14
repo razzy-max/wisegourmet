@@ -1,5 +1,26 @@
 const User = require('../models/User');
 const asyncHandler = require('../utils/asyncHandler');
+const { isPushConfigured, getPushPublicKey } = require('../utils/pushNotifications');
+
+const normalizeSubscription = (subscription) => {
+  if (!subscription || typeof subscription !== 'object') {
+    return null;
+  }
+
+  const endpoint = String(subscription.endpoint || '').trim();
+  const p256dh = String(subscription?.keys?.p256dh || '').trim();
+  const auth = String(subscription?.keys?.auth || '').trim();
+
+  if (!endpoint || !p256dh || !auth) {
+    return null;
+  }
+
+  return {
+    endpoint,
+    expirationTime: subscription.expirationTime ? new Date(subscription.expirationTime) : null,
+    keys: { p256dh, auth },
+  };
+};
 
 const listRiders = asyncHandler(async (_req, res) => {
   const riders = await User.find({ role: 'rider', isActive: true })
@@ -114,10 +135,93 @@ const resetTeamMemberPassword = asyncHandler(async (req, res) => {
   });
 });
 
+const getNotificationConfig = asyncHandler(async (_req, res) => {
+  res.json({
+    enabled: isPushConfigured(),
+    publicKey: getPushPublicKey(),
+  });
+});
+
+const getNotificationStatus = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select('pushSubscriptions');
+  const count = Array.isArray(user?.pushSubscriptions) ? user.pushSubscriptions.length : 0;
+
+  res.json({
+    enabled: isPushConfigured(),
+    subscribed: count > 0,
+    subscriptionCount: count,
+  });
+});
+
+const subscribeNotifications = asyncHandler(async (req, res) => {
+  if (!isPushConfigured()) {
+    res.status(503);
+    throw new Error('Push notifications are not configured');
+  }
+
+  const subscription = normalizeSubscription(req.body.subscription);
+  if (!subscription) {
+    res.status(400);
+    throw new Error('Invalid push subscription payload');
+  }
+
+  await User.updateOne(
+    { _id: req.user._id },
+    {
+      $pull: {
+        pushSubscriptions: { endpoint: subscription.endpoint },
+      },
+    }
+  );
+
+  await User.updateOne(
+    { _id: req.user._id },
+    {
+      $push: {
+        pushSubscriptions: {
+          ...subscription,
+          userAgent: String(req.headers['user-agent'] || ''),
+          createdAt: new Date(),
+        },
+      },
+    }
+  );
+
+  res.json({ ok: true });
+});
+
+const unsubscribeNotifications = asyncHandler(async (req, res) => {
+  const endpoint = String(req.body.endpoint || '').trim();
+
+  if (endpoint) {
+    await User.updateOne(
+      { _id: req.user._id },
+      {
+        $pull: {
+          pushSubscriptions: { endpoint },
+        },
+      }
+    );
+  } else {
+    await User.updateOne(
+      { _id: req.user._id },
+      {
+        $set: { pushSubscriptions: [] },
+      }
+    );
+  }
+
+  res.json({ ok: true });
+});
+
 module.exports = {
   listRiders,
   listTeamMembers,
   createTeamMember,
   deleteTeamMember,
   resetTeamMemberPassword,
+  getNotificationConfig,
+  getNotificationStatus,
+  subscribeNotifications,
+  unsubscribeNotifications,
 };

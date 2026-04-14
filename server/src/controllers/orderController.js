@@ -5,6 +5,7 @@ const DeliveryZone = require('../models/DeliveryZone');
 const asyncHandler = require('../utils/asyncHandler');
 const { calculateDeliveryFee, DEFAULT_ZONE_FEES } = require('../utils/deliveryFee');
 const { ORDER_STATUS, canTransition } = require('../utils/orderStatus');
+const { sendPushToRoles, sendPushToUserIds } = require('../utils/pushNotifications');
 
 const STAFF_ALLOWED_STATUSES = new Set([
   ORDER_STATUS.CONFIRMED,
@@ -41,6 +42,27 @@ const notifyOrderChanged = (req, order) => {
 
   io.emit('orders:changed', payload);
   io.to(`order:${String(order._id)}`).emit('order:changed', payload);
+};
+
+const getStatusLabel = (status) =>
+  String(status || '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
+const getCustomerId = (order) => String(order?.customer?._id || order?.customer || '');
+
+const sendCustomerStatusPush = async (order) => {
+  const customerId = getCustomerId(order);
+  if (!customerId || !order?._id) {
+    return;
+  }
+
+  await sendPushToUserIds([customerId], {
+    title: 'Order Status Updated',
+    body: `Order #${String(order._id).slice(-6)} is now ${getStatusLabel(order.status)}.`,
+    url: `/orders/${String(order._id)}`,
+    tag: `order-status-${String(order._id)}`,
+  });
 };
 
 const getZoneFeeMap = async () => {
@@ -188,6 +210,13 @@ const createOrderFromCart = asyncHandler(async (req, res) => {
 
   notifyOrderChanged(req, hydrated);
 
+  await sendPushToRoles(['staff'], {
+    title: 'New Order Placed',
+    body: `Order #${String(order._id).slice(-6)} was placed and is awaiting processing.`,
+    url: '/admin/orders',
+    tag: `new-order-${String(order._id)}`,
+  });
+
   res.status(201).json({ order: hydrated });
 });
 
@@ -304,6 +333,8 @@ const acceptRiderOrder = asyncHandler(async (req, res) => {
 
   notifyOrderChanged(req, hydrated);
 
+  await sendCustomerStatusPush(hydrated);
+
   res.json({ order: hydrated });
 });
 
@@ -343,6 +374,13 @@ const assignRider = asyncHandler(async (req, res) => {
     .populate('statusTimeline.changedBy', 'fullName role');
 
   notifyOrderChanged(req, hydrated);
+
+  await sendPushToUserIds([String(rider._id)], {
+    title: 'New Delivery Assignment',
+    body: `Order #${String(order._id).slice(-6)} was assigned to you.`,
+    url: `/orders/${String(order._id)}`,
+    tag: `rider-assigned-${String(order._id)}`,
+  });
 
   res.json({ order: hydrated });
 });
@@ -496,6 +534,15 @@ const verifyPayment = asyncHandler(async (req, res) => {
 
   notifyOrderChanged(req, hydrated);
 
+  await sendCustomerStatusPush(hydrated);
+
+  await sendPushToRoles(['staff'], {
+    title: 'Order Confirmed and Paid',
+    body: `Order #${String(order._id).slice(-6)} payment verified and ready for kitchen flow.`,
+    url: '/staff/kitchen',
+    tag: `order-confirmed-${String(order._id)}`,
+  });
+
   res.json({ order: hydrated });
 });
 
@@ -566,6 +613,17 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
 
   notifyOrderChanged(req, hydrated);
 
+  await sendCustomerStatusPush(hydrated);
+
+  if (status === ORDER_STATUS.READY_FOR_PICKUP && order.fulfillmentType === 'delivery') {
+    await sendPushToRoles(['rider'], {
+      title: 'Delivery Ready for Pickup',
+      body: `Order #${String(order._id).slice(-6)} is ready for rider pickup.`,
+      url: '/rider/queue',
+      tag: `delivery-ready-${String(order._id)}`,
+    });
+  }
+
   res.json({ order: hydrated });
 });
 
@@ -616,6 +674,8 @@ const verifyDeliveryPin = asyncHandler(async (req, res) => {
     .populate('statusTimeline.changedBy', 'fullName role');
 
   notifyOrderChanged(req, hydrated);
+
+  await sendCustomerStatusPush(hydrated);
 
   res.json({ order: hydrated });
 });
@@ -677,6 +737,8 @@ const verifySelfPickupPin = asyncHandler(async (req, res) => {
     .populate('statusTimeline.changedBy', 'fullName role');
 
   notifyOrderChanged(req, hydrated);
+
+  await sendCustomerStatusPush(hydrated);
 
   res.json({ order: hydrated });
 });

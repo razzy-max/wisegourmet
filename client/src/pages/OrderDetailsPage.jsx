@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { orderApi } from '../api/orderApi';
 import { useOrdersRealtime } from '../hooks/useOrdersRealtime';
 import LoadingSpinner from '../components/LoadingSpinner';
+import EnableAlertsCard from '../components/EnableAlertsCard';
 import { getStatusLabel, getStatusBadgeClass, getStepperCircleClass } from '../utils/statusHelpers';
 
 const dedupeTimeline = (timeline = []) => {
@@ -109,6 +110,8 @@ export default function OrderDetailsPage() {
 
   return (
     <section className="page-wrap">
+      <EnableAlertsCard />
+
       {/* Header */}
       <div className="order-details-header">
         <div className="order-details-title">

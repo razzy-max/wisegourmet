@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useOrdersRealtime } from '../hooks/useOrdersRealtime';
 import { getStatusLabel, getStatusBadgeClass } from '../utils/statusHelpers';
 import LoadingSpinner from '../components/LoadingSpinner';
+import EnableAlertsCard from '../components/EnableAlertsCard';
 
 const getStatusTone = (status) => {
   if (['arrived', 'picked_up', 'delivered'].includes(status)) {
@@ -76,6 +77,7 @@ export default function AdminOrdersPage() {
 
   return (
     <section className="page-wrap">
+      <EnableAlertsCard />
       <h1>{user?.role === 'rider' ? 'My Dispatch Orders' : 'Admin Orders'}</h1>
       <p className="muted">Live order monitoring. Tap any order for full details.</p>
 
