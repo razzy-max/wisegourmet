@@ -172,3 +172,16 @@ Every status change is stored in `statusTimeline` so the order history stays aud
 - The app is intentionally structured to show a believable restaurant operations workflow, not just a static storefront.
 - The same platform covers customer orders, kitchen operations, delivery dispatch, and support resolution.
 - The install and notification features are meant to demonstrate a modern app-like experience on mobile without an app store release.
+
+## Demo Script
+
+Use this if you need a quick presentation flow:
+
+1. Open the menu and show that the customer experience feels like a mobile app, not just a website.
+2. Add items to the cart, place an order, and point out the delivery or self-pickup flow.
+3. Switch to an admin, staff, or rider view to show how the same system supports the whole operation.
+4. Open a support ticket and show how messages stay threaded and trackable.
+5. Show the `/install` page and explain that the app can be saved to the phone home screen.
+6. Mention that alerts can be enabled per role so customers, kitchen staff, riders, and support all receive the right updates.
+
+One-line pitch: Wise Gourmet turns restaurant ordering, operations, support, and mobile installability into one app-like workflow.
