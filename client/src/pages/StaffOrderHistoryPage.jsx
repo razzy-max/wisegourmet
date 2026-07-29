@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { orderApi } from '../api/orderApi';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { getStatusLabel, getStatusBadgeClass } from '../utils/statusHelpers';
 
 export default function StaffOrderHistoryPage() {
   const [orders, setOrders] = useState([]);
@@ -59,9 +60,13 @@ export default function StaffOrderHistoryPage() {
         <div className="grid">
           {completedOrders.map((order) => (
             <article className="panel" key={order._id}>
-              <h4>Order {order._id.slice(-6)}</h4>
+              <div className="zone-card-top">
+                <h4>Order {order._id.slice(-6)}</h4>
+                <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
+                  {getStatusLabel(order.status)}
+                </span>
+              </div>
               <p>Customer: {order.customer?.fullName || 'Unknown'}</p>
-              <p>Status: {order.status}</p>
               <p>Total: ₦{Number(order.total || 0).toLocaleString()}</p>
               <p className="muted">
                 {new Date(order.createdAt).toLocaleDateString()} {new Date(order.createdAt).toLocaleTimeString()}

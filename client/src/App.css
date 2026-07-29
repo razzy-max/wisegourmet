@@ -3,12 +3,20 @@
 :root {
   --wg-green: #3a6835;
   --wg-green-dark: #2e542a;
+  --wg-green-light: #eef5ea;
   --wg-amber: #e8a020;
+  --wg-amber-dark: #b97a00;
+  --wg-teal: #1f7a8c;
+  --wg-red: #ba3932;
   --wg-bg: #faf8f4;
   --wg-card: #ffffff;
   --wg-text: #253126;
   --wg-muted: #5f6d60;
   --wg-shadow: 0 2px 16px rgba(0, 0, 0, 0.07);
+  --wg-shadow-hover: 0 8px 24px rgba(22, 42, 20, 0.14);
+  --wg-radius-sm: 8px;
+  --wg-radius-md: 12px;
+  --wg-radius-lg: 16px;
 }
 
 h1,
@@ -414,9 +422,32 @@ nav {
 .panel {
   background: var(--wg-card);
   border: 1px solid #ece8de;
-  border-radius: 16px;
+  border-radius: var(--wg-radius-lg);
   padding: 1rem;
   box-shadow: var(--wg-shadow);
+}
+
+.page-wrap > .panel + .panel {
+  margin-top: 1rem;
+}
+
+.grid > article.panel {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.grid > article.panel:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--wg-shadow-hover);
+}
+
+.pin-entry {
+  margin-top: 0.75rem;
+  width: 100%;
+}
+
+.pin-entry-row .pin-entry-input {
+  flex: 1;
+  min-width: 100px;
 }
 
 .alerts-optin-card {
@@ -848,11 +879,12 @@ select:hover {
 
 .btn {
   border: none;
-  background: #2a7a40;
+  background: var(--wg-green);
   color: #ffffff;
-  border-radius: 10px;
+  border-radius: var(--wg-radius-sm);
   padding: 0.6rem 0.85rem;
   cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
   text-decoration: none;
   display: inline-block;
   transition: all 0.18s ease;
@@ -863,9 +895,9 @@ select:hover {
 }
 
 .btn:hover:not(:disabled) {
-  background: #1f5a2f;
+  background: var(--wg-green-dark);
   transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(42, 122, 64, 0.25);
+  box-shadow: 0 2px 6px rgba(58, 104, 53, 0.25);
 }
 
 .btn:active:not(:disabled) {
@@ -886,8 +918,8 @@ select:hover {
 }
 
 .btn-ghost:hover:not(:disabled) {
-  background: rgba(42, 122, 64, 0.08);
-  border-color: #2a7a40;
+  background: var(--wg-green-light);
+  border-color: var(--wg-green);
 }
 
 .btn-ghost:disabled {
@@ -902,7 +934,7 @@ select:hover {
 }
 
 .btn-danger {
-  background: #ba3932;
+  background: var(--wg-red);
 }
 
 .btn-danger:hover:not(:disabled) {
@@ -1248,6 +1280,7 @@ select:hover {
   height: 8px;
   border-radius: 50%;
   background: #9ca3af;
+  flex-shrink: 0;
 }
 
 .status-dot.in-stock {
@@ -1534,13 +1567,6 @@ select:hover {
 
 .order-card.tone-active {
   border-left-color: var(--wg-amber);
-}
-
-.status-badge {
-  border-radius: 999px;
-  padding: 0.25rem 0.55rem;
-  font-size: 0.8rem;
-  font-weight: 700;
 }
 
 .status-success {
@@ -2043,43 +2069,43 @@ select:hover {
 }
 
 .status-pending {
-  background: #fff3cd;
-  color: #856400;
+  background: #e8e8e8;
+  color: #555555;
 }
 
 .status-confirmed {
-  background: #d1ecf1;
-  color: #0c5460;
+  background: #fdecc8;
+  color: var(--wg-amber-dark);
 }
 
 .status-preparing {
-  background: #d1ecf1;
-  color: #0c5460;
+  background: #fdecc8;
+  color: var(--wg-amber-dark);
 }
 
 .status-ready {
-  background: #d1ecf1;
-  color: #0c5460;
+  background: #d7eef1;
+  color: #0d4a55;
 }
 
 .status-picked {
-  background: #d4edda;
-  color: #155724;
+  background: #d7eef1;
+  color: #0d4a55;
 }
 
 .status-way {
-  background: #d1ecf1;
-  color: #0c5460;
+  background: #d7eef1;
+  color: #0d4a55;
 }
 
 .status-arrived {
-  background: #d4edda;
-  color: #155724;
+  background: #d7eef1;
+  color: #0d4a55;
 }
 
 .status-delivered {
-  background: #d4edda;
-  color: #155724;
+  background: #dcefd9;
+  color: #245127;
 }
 
 .status-cancelled {
@@ -2592,13 +2618,6 @@ select:hover {
   gap: 0.5rem;
   font-size: 0.9rem;
   color: var(--wg-text);
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
 }
 
 /* ===== ADMIN PASSWORD PAGE ===== */

@@ -1,7 +1,7 @@
 import { authStorage } from '../utils/authStorage';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api').replace(/\/$/, '');
-const API_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS || 12000);
+const API_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS || 25000);
 
 export async function apiRequest(path, options = {}) {
   const token = authStorage.getToken();

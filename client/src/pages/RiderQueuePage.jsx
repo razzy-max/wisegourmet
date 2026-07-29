@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { orderApi } from '../api/orderApi';
 import { useOrdersRealtime } from '../hooks/useOrdersRealtime';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EnableAlertsCard from '../components/EnableAlertsCard';
+import PinEntryForm from '../components/PinEntryForm';
+import { getStatusLabel, getStatusBadgeClass } from '../utils/statusHelpers';
 
 export default function RiderQueuePage() {
+  const location = useLocation();
   const [queueOrders, setQueueOrders] = useState([]);
   const [myOrders, setMyOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +42,16 @@ export default function RiderQueuePage() {
   }, [load]);
 
   useOrdersRealtime(load);
+
+  useEffect(() => {
+    if (!location.hash) {
+      return;
+    }
+    const target = document.querySelector(location.hash);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [location.hash]);
 
   const activeOrders = useMemo(
     () =>
@@ -118,10 +132,14 @@ export default function RiderQueuePage() {
         <div className="grid">
           {queueOrders.map((order) => (
             <article className="panel" key={order._id}>
-              <h4>Order {order._id.slice(-6)}</h4>
+              <div className="zone-card-top">
+                <h4>Order {order._id.slice(-6)}</h4>
+                <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
+                  {getStatusLabel(order.status)}
+                </span>
+              </div>
               <p>Customer: {order.customer?.fullName || 'Unknown'}</p>
               <p>Phone: {order.customer?.phone || 'Not provided'}</p>
-              <p>Status: {order.status}</p>
               <p>
                 Accepted by:{' '}
                 {order.assignedRider?.fullName ? order.assignedRider.fullName : 'Available for pickup'}
@@ -146,8 +164,12 @@ export default function RiderQueuePage() {
         <div className="grid">
           {activeOrders.map((order) => (
             <article className="panel" key={order._id}>
-              <h4>Order {order._id.slice(-6)}</h4>
-              <p>Status: {order.status}</p>
+              <div className="zone-card-top">
+                <h4>Order {order._id.slice(-6)}</h4>
+                <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
+                  {getStatusLabel(order.status)}
+                </span>
+              </div>
               <p>Customer: {order.customer?.fullName || 'Unknown'}</p>
               <p>Phone: {order.customer?.phone || 'Not provided'}</p>
               <p>Being handled by: {order.assignedRider?.fullName || 'You'}</p>
@@ -177,33 +199,16 @@ export default function RiderQueuePage() {
               </div>
 
               {order.status === 'arrived' ? (
-                <div style={{ marginTop: '0.75rem' }}>
-                  <p className="muted">Customer must provide PIN to complete delivery</p>
-                  <div className="row">
-                    <input
-                      type="password"
-                      placeholder="Enter customer PIN"
-                      maxLength="4"
-                      value={pinInputs[order._id] || ''}
-                      onChange={(event) =>
-                        setPinInputs((prev) => ({
-                          ...prev,
-                          [order._id]: event.target.value,
-                        }))
-                      }
-                      style={{ flex: 1, minWidth: '80px' }}
-                      disabled={verifyingPinOrderId === order._id}
-                    />
-                    <button
-                      className="btn"
-                      type="button"
-                      onClick={() => verifyDeliveryPin(order._id)}
-                      disabled={verifyingPinOrderId === order._id}
-                    >
-                      {verifyingPinOrderId === order._id ? 'Verifying...' : 'Verify & Deliver'}
-                    </button>
-                  </div>
-                </div>
+                <PinEntryForm
+                  helperText="Customer must provide PIN to complete delivery"
+                  placeholder="Enter customer PIN"
+                  value={pinInputs[order._id] || ''}
+                  onChange={(value) => setPinInputs((prev) => ({ ...prev, [order._id]: value }))}
+                  onSubmit={() => verifyDeliveryPin(order._id)}
+                  submitting={verifyingPinOrderId === order._id}
+                  submitLabel="Verify & Deliver"
+                  submittingLabel="Verifying..."
+                />
               ) : null}
             </article>
           ))}

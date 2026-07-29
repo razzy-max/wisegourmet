@@ -41,7 +41,6 @@ function PromoSlideContent({ promotion, onApplyCombo }) {
   );
 }
 
-const MENU_CACHE_TTL_MS = 10 * 60 * 1000;
 const MENU_CACHE_KEY_PREFIX = 'wg:menu:';
 const MENU_CACHE_KEY = `${MENU_CACHE_KEY_PREFIX}all`;
 let menuMemoryCache = null;
@@ -176,13 +175,12 @@ export default function HomeMenuPage() {
     }, 2000);
   }, []);
 
-  const fetchData = useCallback(async ({ force = false } = {}) => {
+  const fetchData = useCallback(async () => {
     const cached = readMenuCache();
     const cachedItems = Array.isArray(cached?.data?.items) ? cached.data.items : [];
     const cachedCategories = Array.isArray(cached?.data?.categories) ? cached.data.categories : [];
     const cachedItemCount = cachedItems.length;
     const hasCachedData = cachedItemCount > 0;
-    const cacheIsFresh = hasCachedData && Date.now() - Number(cached.ts || 0) < MENU_CACHE_TTL_MS;
 
     setMenuError('');
 
@@ -195,16 +193,12 @@ export default function HomeMenuPage() {
       setLoading(true);
     } else {
       setLoading(false);
-    }
-
-    // Always revalidate if cache has no items so a transient failure does not look like a real empty menu.
-    if (cacheIsFresh && !force && cachedItemCount > 0) {
-      return;
-    }
-
-    if (hasCachedData) {
       setRefreshing(true);
     }
+
+    // The cache above is only for an instant first paint — the menu payload is small now
+    // (no embedded images), so we always revalidate against the server rather than trusting
+    // a time-based cache, which could otherwise show a stale menu after an admin change.
 
     try {
       const [menuResult, categoryResult] = await Promise.allSettled([
@@ -256,7 +250,7 @@ export default function HomeMenuPage() {
   }, [fetchData]);
 
   const handleMenuChanged = useCallback(() => {
-    fetchData({ force: true });
+    fetchData();
   }, [fetchData]);
 
   useMenuRealtime(handleMenuChanged);
@@ -444,7 +438,7 @@ export default function HomeMenuPage() {
         <article className="panel empty-state" style={{ marginTop: '1rem' }}>
           <p className="empty-icon" aria-hidden="true">!</p>
           <p className="muted">{menuError}</p>
-          <button className="btn" type="button" onClick={() => fetchData({ force: true })}>
+          <button className="btn" type="button" onClick={() => fetchData()}>
             Retry
           </button>
         </article>

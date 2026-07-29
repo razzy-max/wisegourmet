@@ -3,6 +3,8 @@ import { orderApi } from '../api/orderApi';
 import { useOrdersRealtime } from '../hooks/useOrdersRealtime';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EnableAlertsCard from '../components/EnableAlertsCard';
+import PinEntryForm from '../components/PinEntryForm';
+import { getStatusLabel, getStatusBadgeClass } from '../utils/statusHelpers';
 
 const KITCHEN_STATUSES = ['confirmed', 'preparing'];
 
@@ -96,9 +98,13 @@ export default function KitchenOrdersPage() {
       <div className="grid">
         {kitchenOrders.map((order) => (
           <article className="panel" key={order._id}>
-            <h3>Order {order._id.slice(-6)}</h3>
+            <div className="zone-card-top">
+              <h3>Order {order._id.slice(-6)}</h3>
+              <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
+                {getStatusLabel(order.status)}
+              </span>
+            </div>
             <p>Customer: {order.customer?.fullName || 'Unknown'}</p>
-            <p>Status: {order.status}</p>
             <p>Fulfillment: {order.fulfillmentType === 'self_pickup' ? 'Self pickup' : 'Delivery'}</p>
             <p>Total: ₦{Number(order.total || 0).toLocaleString()}</p>
             <p>
@@ -146,33 +152,16 @@ export default function KitchenOrdersPage() {
               ) : null}
 
               {order.fulfillmentType === 'self_pickup' && order.status === 'ready_for_pickup' ? (
-                <div style={{ marginTop: '0.75rem', width: '100%' }}>
-                  <p className="muted">Verify customer Pickup PIN before completing collection.</p>
-                  <div className="row">
-                    <input
-                      type="password"
-                      maxLength="4"
-                      placeholder="Enter pickup PIN"
-                      value={pickupPins[order._id] || ''}
-                      onChange={(event) =>
-                        setPickupPins((prev) => ({
-                          ...prev,
-                          [order._id]: event.target.value,
-                        }))
-                      }
-                      style={{ flex: 1, minWidth: '110px' }}
-                      disabled={verifyingPickupOrderId === order._id}
-                    />
-                    <button
-                      className="btn"
-                      type="button"
-                      onClick={() => verifyPickupPin(order._id)}
-                      disabled={verifyingPickupOrderId === order._id}
-                    >
-                      {verifyingPickupOrderId === order._id ? 'Verifying...' : 'Verify & Complete Pickup'}
-                    </button>
-                  </div>
-                </div>
+                <PinEntryForm
+                  helperText="Verify customer Pickup PIN before completing collection."
+                  placeholder="Enter pickup PIN"
+                  value={pickupPins[order._id] || ''}
+                  onChange={(value) => setPickupPins((prev) => ({ ...prev, [order._id]: value }))}
+                  onSubmit={() => verifyPickupPin(order._id)}
+                  submitting={verifyingPickupOrderId === order._id}
+                  submitLabel="Verify & Complete Pickup"
+                  submittingLabel="Verifying..."
+                />
               ) : null}
             </div>
           </article>
