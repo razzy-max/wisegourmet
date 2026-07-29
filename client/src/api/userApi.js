@@ -1,6 +1,12 @@
 import { apiRequest } from './http';
 
 export const userApi = {
+  listCustomers() {
+    return apiRequest('/users/customers');
+  },
+  sendReEngagementMessage(payload) {
+    return apiRequest('/users/customers/notify', { method: 'POST', body: payload });
+  },
   riders() {
     return apiRequest('/users/riders');
   },

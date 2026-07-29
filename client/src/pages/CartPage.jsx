@@ -6,6 +6,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 export default function CartPage() {
   const [cart, setCart] = useState({ items: [] });
+  const [discount, setDiscount] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { refreshCartCount } = useCart();
@@ -15,6 +16,7 @@ export default function CartPage() {
     try {
       const response = await cartApi.get();
       setCart(response.cart || { items: [] });
+      setDiscount(response.discount?.discountAmount ? response.discount : null);
       setError('');
     } catch (err) {
       setError(err.message);
@@ -27,10 +29,13 @@ export default function CartPage() {
     load();
   }, []);
 
-  const total = useMemo(
+  const subtotal = useMemo(
     () => cart.items.reduce((sum, item) => sum + item.priceSnapshot * item.quantity, 0),
     [cart.items]
   );
+
+  const discountAmount = discount?.discountAmount || 0;
+  const total = subtotal - discountAmount;
 
   const hasItems = cart.items.length > 0;
 
@@ -44,6 +49,11 @@ export default function CartPage() {
     await cartApi.update(itemId, Math.max(1, Number(quantity) || 1));
     await load();
     await refreshCartCount();
+  };
+
+  const removeAppliedDeal = async () => {
+    await cartApi.clearPromotion();
+    await load();
   };
 
   return (
@@ -118,7 +128,18 @@ export default function CartPage() {
               ))}
             </div>
             <hr />
-            <p className="summary-total-row">Subtotal <span>₦{total.toLocaleString()}</span></p>
+            <p className="summary-total-row">Subtotal <span>₦{subtotal.toLocaleString()}</span></p>
+            {discountAmount > 0 ? (
+              <>
+                <p className="summary-total-row summary-discount-row">
+                  Combo Deal — {cart.appliedPromotion?.title} ({cart.appliedPromotion?.discountPercent}% off)
+                  <span>-₦{discountAmount.toLocaleString()}</span>
+                </p>
+                <button className="btn btn-ghost cart-remove-deal-btn" type="button" onClick={removeAppliedDeal}>
+                  Remove deal
+                </button>
+              </>
+            ) : null}
             <p className="summary-total grand-total">Total <span>₦{total.toLocaleString()}</span></p>
             <Link to="/checkout" className="btn cart-checkout-btn">
               Proceed to Checkout
@@ -130,7 +151,7 @@ export default function CartPage() {
       {hasItems ? (
         <div className="cart-mobile-bar">
           <p>
-            Subtotal <strong>₦{total.toLocaleString()}</strong>
+            Total <strong>₦{total.toLocaleString()}</strong>
           </p>
           <Link to="/checkout" className="btn">Checkout</Link>
         </div>

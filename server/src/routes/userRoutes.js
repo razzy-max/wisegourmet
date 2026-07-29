@@ -1,5 +1,7 @@
 const express = require('express');
 const {
+	listCustomers,
+	sendReEngagementMessage,
 	listRiders,
 	listTeamMembers,
 	createTeamMember,
@@ -14,6 +16,8 @@ const { protect, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
+router.get('/customers', protect, authorize('admin'), listCustomers);
+router.post('/customers/notify', protect, authorize('admin'), sendReEngagementMessage);
 router.get('/riders', protect, authorize('admin', 'staff'), listRiders);
 router.get('/team', protect, authorize('admin'), listTeamMembers);
 router.post('/team', protect, authorize('admin'), createTeamMember);

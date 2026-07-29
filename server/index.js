@@ -1,8 +1,10 @@
+const dotenv = require('dotenv');
+dotenv.config();
+
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
 const morgan = require('morgan');
-const dotenv = require('dotenv');
 const { Server } = require('socket.io');
 const connectDB = require('./src/config/db');
 const authRoutes = require('./src/routes/authRoutes');
@@ -12,10 +14,10 @@ const orderRoutes = require('./src/routes/orderRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 const supportRoutes = require('./src/routes/supportRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
+const promotionRoutes = require('./src/routes/promotionRoutes');
+const heroBackgroundRoutes = require('./src/routes/heroBackgroundRoutes');
 const { notFound, errorHandler } = require('./src/middleware/error');
 const ensureDemoData = require('./src/utils/bootstrapDemoData');
-
-dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
@@ -77,6 +79,8 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/promotions', promotionRoutes);
+app.use('/api/hero-background', heroBackgroundRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

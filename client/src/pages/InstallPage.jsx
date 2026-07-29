@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import EnableAlertsCard from '../components/EnableAlertsCard';
 import './InstallPage.css';
 
 export default function InstallPage() {
@@ -70,6 +71,7 @@ export default function InstallPage() {
             Go to Menu
           </button>
         </div>
+        <EnableAlertsCard />
       </div>
     );
   }
@@ -152,6 +154,8 @@ export default function InstallPage() {
           </div>
         )}
       </div>
+
+      <EnableAlertsCard />
     </div>
   );
 }

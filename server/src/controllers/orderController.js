@@ -6,6 +6,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const { calculateDeliveryFee, DEFAULT_ZONE_FEES } = require('../utils/deliveryFee');
 const { ORDER_STATUS, canTransition } = require('../utils/orderStatus');
 const { sendPushToRoles, sendPushToUserIds } = require('../utils/pushNotifications');
+const { computeComboDiscount, reconcileAppliedPromotion } = require('../utils/comboDiscount');
 
 const STAFF_ALLOWED_STATUSES = new Set([
   ORDER_STATUS.CONFIRMED,
@@ -134,6 +135,9 @@ const createOrderFromCart = asyncHandler(async (req, res) => {
     throw new Error('One or more cart items are unavailable');
   }
 
+  reconcileAppliedPromotion(cart);
+  const { discountAmount } = computeComboDiscount(cart.items, cart.appliedPromotion);
+
   const items = cart.items.map((item) => ({
     menuItem: item.menuItem._id,
     name: item.nameSnapshot,
@@ -161,7 +165,7 @@ const createOrderFromCart = asyncHandler(async (req, res) => {
     });
   }
 
-  const total = subtotal + Number(feeResult.fee || 0);
+  const total = subtotal - discountAmount + Number(feeResult.fee || 0);
 
   // Generate random PIN for delivery verification
   const deliveryPin = Math.floor(1000 + Math.random() * 9000).toString();
@@ -170,6 +174,14 @@ const createOrderFromCart = asyncHandler(async (req, res) => {
     customer: req.user._id,
     items,
     subtotal,
+    discount: cart.appliedPromotion
+      ? {
+          promotion: cart.appliedPromotion.promotion,
+          title: cart.appliedPromotion.title,
+          percent: cart.appliedPromotion.discountPercent,
+          amount: discountAmount,
+        }
+      : null,
     deliveryFee: feeResult.fee,
     total,
     fulfillmentType,
@@ -201,6 +213,7 @@ const createOrderFromCart = asyncHandler(async (req, res) => {
   });
 
   cart.items = [];
+  cart.appliedPromotion = null;
   await cart.save();
 
   const hydrated = await Order.findById(order._id)

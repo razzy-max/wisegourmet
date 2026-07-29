@@ -26,6 +26,28 @@ const statusTimelineSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const orderDiscountSchema = new mongoose.Schema(
+  {
+    promotion: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Promotion',
+    },
+    title: {
+      type: String,
+      default: '',
+    },
+    percent: {
+      type: Number,
+      default: 0,
+    },
+    amount: {
+      type: Number,
+      default: 0,
+    },
+  },
+  { _id: false }
+);
+
 const orderItemSchema = new mongoose.Schema(
   {
     menuItem: {
@@ -63,6 +85,10 @@ const orderSchema = new mongoose.Schema(
     subtotal: {
       type: Number,
       required: true,
+    },
+    discount: {
+      type: orderDiscountSchema,
+      default: null,
     },
     deliveryFee: {
       type: Number,

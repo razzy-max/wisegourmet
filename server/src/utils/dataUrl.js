@@ -13,4 +13,7 @@ const parseDataUrl = (value) => {
   return { contentType: match[1], base64: match[2] };
 };
 
-module.exports = { parseDataUrl };
+const buildMenuItemImageUrl = (req, item) =>
+  item?.imageContentType ? `${req.protocol}://${req.get('host')}/api/menu/${item._id}/image` : item?.imageUrl || '';
+
+module.exports = { parseDataUrl, buildMenuItemImageUrl };

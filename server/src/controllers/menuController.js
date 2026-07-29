@@ -3,7 +3,7 @@ const Category = require('../models/Category');
 const MenuItem = require('../models/MenuItem');
 const asyncHandler = require('../utils/asyncHandler');
 const slugify = require('../utils/slugify');
-const { parseDataUrl } = require('../utils/dataUrl');
+const { parseDataUrl, buildMenuItemImageUrl } = require('../utils/dataUrl');
 
 const notifyMenuChanged = (req) => {
   const io = req.app.get('io');
@@ -12,12 +12,9 @@ const notifyMenuChanged = (req) => {
   }
 };
 
-const buildImageUrl = (req, item) =>
-  item.imageContentType ? `${req.protocol}://${req.get('host')}/api/menu/${item._id}/image` : item.imageUrl || '';
-
 const serializeMenuItem = (req, doc) => {
   const item = doc.toObject ? doc.toObject() : { ...doc };
-  item.imageUrl = buildImageUrl(req, item);
+  item.imageUrl = buildMenuItemImageUrl(req, item);
   delete item.imageContentType;
   delete item.imageData;
   return item;

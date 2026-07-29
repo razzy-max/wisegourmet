@@ -1,10 +1,45 @@
 ﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { menuApi } from '../api/menuApi';
 import { cartApi } from '../api/cartApi';
+import { promotionApi } from '../api/promotionApi';
+import { heroBackgroundApi } from '../api/heroBackgroundApi';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useMenuRealtime } from '../hooks/useMenuRealtime';
+import { usePromotionsRealtime } from '../hooks/usePromotionsRealtime';
+import { useHeroBackgroundRealtime } from '../hooks/useHeroBackgroundRealtime';
+import { buildGreeting } from '../utils/greeting';
 import LoadingSpinner from '../components/LoadingSpinner';
+import PromoCarousel from '../components/PromoCarousel';
+import EnableAlertsCard from '../components/EnableAlertsCard';
+
+function PromoSlideContent({ promotion, onApplyCombo }) {
+  const isInternalLink = promotion.ctaLink?.startsWith('/');
+  const isCombo = promotion.ctaType === 'combo';
+
+  return (
+    <>
+      <h2>{promotion.title}</h2>
+      {promotion.subtitle ? <p>{promotion.subtitle}</p> : null}
+      {isCombo ? (
+        <button type="button" className="btn promo-cta" onClick={() => onApplyCombo(promotion)}>
+          {promotion.ctaLabel || 'Get This Deal'}
+        </button>
+      ) : promotion.ctaLabel && promotion.ctaLink ? (
+        isInternalLink ? (
+          <Link className="btn promo-cta" to={promotion.ctaLink}>
+            {promotion.ctaLabel}
+          </Link>
+        ) : (
+          <a className="btn promo-cta" href={promotion.ctaLink} target="_blank" rel="noopener noreferrer">
+            {promotion.ctaLabel}
+          </a>
+        )
+      ) : null}
+    </>
+  );
+}
 
 const MENU_CACHE_TTL_MS = 10 * 60 * 1000;
 const MENU_CACHE_KEY_PREFIX = 'wg:menu:';
@@ -89,6 +124,7 @@ const writeMenuCache = (payload) => {
 export default function HomeMenuPage() {
   const { isAuthenticated, user } = useAuth();
   const { refreshCartCount, adjustCartCount, triggerCartPulse } = useCart();
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -103,12 +139,9 @@ export default function HomeMenuPage() {
   const refreshTimeoutRef = useRef(null);
   const toastHoldTimerRef = useRef(null);
   const toastExitTimerRef = useRef(null);
-  const greeting =
-    new Date().getHours() < 12
-      ? 'Good morning'
-      : new Date().getHours() < 17
-        ? 'Good afternoon'
-        : 'Good evening';
+  const [promotions, setPromotions] = useState([]);
+  const [heroBackground, setHeroBackground] = useState({ imageUrl: '' });
+  const greeting = buildGreeting({ isAuthenticated, fullName: user?.fullName });
 
   const scheduleCartCountRefresh = useCallback(() => {
     if (refreshTimeoutRef.current) {
@@ -228,6 +261,65 @@ export default function HomeMenuPage() {
 
   useMenuRealtime(handleMenuChanged);
 
+  const fetchPromotions = useCallback(async () => {
+    try {
+      const response = await promotionApi.list();
+      setPromotions(response.promotions || []);
+    } catch {
+      setPromotions([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPromotions();
+  }, [fetchPromotions]);
+
+  usePromotionsRealtime(fetchPromotions);
+
+  const fetchHeroBackground = useCallback(async () => {
+    try {
+      const response = await heroBackgroundApi.get();
+      setHeroBackground({ imageUrl: response.imageUrl || '' });
+    } catch {
+      setHeroBackground({ imageUrl: '' });
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchHeroBackground();
+  }, [fetchHeroBackground]);
+
+  useHeroBackgroundRealtime(fetchHeroBackground);
+
+  const handleApplyCombo = useCallback(
+    async (promotion) => {
+      if (!isAuthenticated || user.role !== 'customer') {
+        showToast('Login as customer to grab this deal.');
+        return;
+      }
+
+      try {
+        await cartApi.applyPromotion(promotion._id);
+        await refreshCartCount();
+        showToast(`${promotion.title} applied to your cart!`);
+        navigate('/cart');
+      } catch (error) {
+        showToast(error.message);
+      }
+    },
+    [isAuthenticated, user, refreshCartCount, showToast, navigate]
+  );
+
+  const slides = useMemo(
+    () =>
+      promotions.map((promotion) => ({
+        id: promotion._id,
+        imageUrl: promotion.imageUrl,
+        content: <PromoSlideContent promotion={promotion} onApplyCombo={handleApplyCombo} />,
+      })),
+    [promotions, handleApplyCombo]
+  );
+
   const filteredItems = useMemo(() => {
     const normalizedSearch = String(search || '').trim().toLowerCase();
 
@@ -308,12 +400,23 @@ export default function HomeMenuPage() {
 
   return (
     <section className="page-wrap">
-      <div className="menu-hero">
+      <div
+        className="menu-hero"
+        style={
+          heroBackground.imageUrl
+            ? {
+                backgroundImage: `linear-gradient(rgba(27, 48, 24, 0.55), rgba(27, 48, 24, 0.55)), url(${heroBackground.imageUrl})`,
+              }
+            : undefined
+        }
+      >
         <div className="menu-hero-overlay">
           <p>{greeting}</p>
           <h2>What are you craving today?</h2>
         </div>
       </div>
+      <PromoCarousel slides={slides} />
+      <EnableAlertsCard />
       <h1>Menu</h1>
       <div className="panel controls">
         <input

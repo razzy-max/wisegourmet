@@ -1,6 +1,7 @@
 const User = require('../models/User');
+const Order = require('../models/Order');
 const asyncHandler = require('../utils/asyncHandler');
-const { isPushConfigured, getPushPublicKey } = require('../utils/pushNotifications');
+const { isPushConfigured, getPushPublicKey, sendPushToUserIds } = require('../utils/pushNotifications');
 
 const normalizeSubscription = (subscription) => {
   if (!subscription || typeof subscription !== 'object') {
@@ -36,6 +37,58 @@ const listTeamMembers = asyncHandler(async (_req, res) => {
     .sort({ createdAt: -1 });
 
   res.json({ users });
+});
+
+const listCustomers = asyncHandler(async (_req, res) => {
+  const customers = await User.find({ role: 'customer' })
+    .select('fullName email phone isActive createdAt')
+    .sort({ fullName: 1 })
+    .lean();
+
+  const orderStats = await Order.aggregate([
+    { $group: { _id: '$customer', lastOrderAt: { $max: '$createdAt' }, orderCount: { $sum: 1 } } },
+  ]);
+  const statsByCustomerId = new Map(orderStats.map((stat) => [String(stat._id), stat]));
+
+  const results = customers.map((customer) => {
+    const stats = statsByCustomerId.get(String(customer._id));
+    return {
+      ...customer,
+      lastOrderAt: stats?.lastOrderAt || null,
+      orderCount: stats?.orderCount || 0,
+    };
+  });
+
+  res.json({ customers: results });
+});
+
+const sendReEngagementMessage = asyncHandler(async (req, res) => {
+  const { userIds, title, body } = req.body;
+
+  if (!Array.isArray(userIds) || userIds.length === 0) {
+    res.status(400);
+    throw new Error('userIds must be a non-empty array');
+  }
+
+  if (!body || !String(body).trim()) {
+    res.status(400);
+    throw new Error('Message body is required');
+  }
+
+  const users = await User.find({ _id: { $in: userIds }, role: 'customer' }).select('_id pushSubscriptions');
+  const eligibleIds = users.filter((user) => user.pushSubscriptions.length > 0).map((user) => String(user._id));
+  const noSubscription = users.length - eligibleIds.length;
+
+  if (eligibleIds.length > 0) {
+    await sendPushToUserIds(eligibleIds, {
+      title: title || 'Wise Gourmet',
+      body: String(body).trim(),
+      url: '/',
+      tag: `re-engagement-${Date.now()}`,
+    });
+  }
+
+  res.json({ sent: eligibleIds.length, noSubscription, total: users.length });
 });
 
 const createTeamMember = asyncHandler(async (req, res) => {
@@ -148,7 +201,7 @@ const getNotificationStatus = asyncHandler(async (req, res) => {
   const endpoint = String(req.query.endpoint || '').trim();
   const subscribed = endpoint
     ? Array.isArray(user?.pushSubscriptions) && user.pushSubscriptions.some((item) => item.endpoint === endpoint)
-    : count > 0;
+    : false;
 
   res.json({
     enabled: isPushConfigured(),
@@ -228,6 +281,8 @@ const unsubscribeNotifications = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  listCustomers,
+  sendReEngagementMessage,
   listRiders,
   listTeamMembers,
   createTeamMember,

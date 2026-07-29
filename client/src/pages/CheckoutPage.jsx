@@ -26,12 +26,14 @@ export default function CheckoutPage() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [cart, setCart] = useState({ items: [] });
+  const [cartDiscount, setCartDiscount] = useState(null);
   const [fulfillmentType, setFulfillmentType] = useState('delivery');
   const [zones, setZones] = useState([]);
 
   const cartItems = cart.items || [];
   const displayedItems = order?.items || cartItems;
   const subtotal = displayedItems.reduce((sum, item) => sum + Number(item.price || item.priceSnapshot || 0) * Number(item.quantity || 0), 0);
+  const discountAmount = order ? Number(order.discount?.amount || 0) : Number(cartDiscount?.discountAmount || 0);
   const selectedZoneFee = Number(zones.find((zone) => zone.key === form.zone)?.fee || 0);
   const deliveryFee =
     order
@@ -39,7 +41,9 @@ export default function CheckoutPage() {
       : fulfillmentType === 'self_pickup'
         ? 0
         : selectedZoneFee;
-  const total = order ? Number(order.total || order.totalAmount || subtotal + deliveryFee) : subtotal + deliveryFee;
+  const total = order
+    ? Number(order.total || order.totalAmount || subtotal - discountAmount + deliveryFee)
+    : subtotal - discountAmount + deliveryFee;
   const displayedDeliveryFee = order ? Number(order.deliveryFee || 0) : deliveryFee;
 
   useEffect(() => {
@@ -67,8 +71,10 @@ export default function CheckoutPage() {
     try {
       const response = await cartApi.get();
       setCart(response.cart || { items: [] });
+      setCartDiscount(response.discount?.discountAmount ? response.discount : null);
     } catch {
       setCart({ items: [] });
+      setCartDiscount(null);
     }
   };
 
@@ -330,6 +336,12 @@ export default function CheckoutPage() {
             Subtotal
             <span>₦{subtotal.toLocaleString()}</span>
           </p>
+          {discountAmount > 0 ? (
+            <p className="summary-total-row summary-discount-row">
+              Combo Deal — {order ? order.discount?.title : cart.appliedPromotion?.title}
+              <span>-₦{discountAmount.toLocaleString()}</span>
+            </p>
+          ) : null}
           <p className="summary-total-row">
             {(order?.fulfillmentType || fulfillmentType) === 'self_pickup'
               ? 'Pickup fee'
@@ -366,6 +378,12 @@ export default function CheckoutPage() {
             ))}
           </ul>
           <p><strong>Subtotal:</strong> ₦{Number(order.subtotal || 0).toLocaleString()}</p>
+          {order.discount?.amount > 0 ? (
+            <p>
+              <strong>Combo Deal ({order.discount.title}, {order.discount.percent}% off):</strong> -₦
+              {Number(order.discount.amount).toLocaleString()}
+            </p>
+          ) : null}
           <p><strong>Delivery fee:</strong> ₦{Number(order.deliveryFee || 0).toLocaleString()}</p>
           <p>
             <strong>Fulfillment:</strong>{' '}

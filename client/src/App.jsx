@@ -30,6 +30,8 @@ import RiderQueuePage from './pages/RiderQueuePage';
 import RiderDeliveryHistoryPage from './pages/RiderDeliveryHistoryPage';
 import AdminPasswordPage from './pages/AdminPasswordPage';
 import AdminDeliveryZonesPage from './pages/AdminDeliveryZonesPage';
+import AdminPromotionsPage from './pages/AdminPromotionsPage';
+import AdminCustomersPage from './pages/AdminCustomersPage';
 import './App.css';
 
 function NavBarSelector() {
@@ -201,6 +203,22 @@ function App() {
           element={
             <ProtectedRoute roles={['admin']}>
               <AdminDeliveryZonesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/promotions"
+          element={
+            <ProtectedRoute roles={['admin']}>
+              <AdminPromotionsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/customers"
+          element={
+            <ProtectedRoute roles={['admin']}>
+              <AdminCustomersPage />
             </ProtectedRoute>
           }
         />

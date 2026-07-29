@@ -6,8 +6,8 @@ const DISMISS_KEY = 'wg:alerts-card:dismissed:';
 
 const roleCopy = {
   customer: {
-    title: 'Enable Order Alerts',
-    description: 'Get notified as soon as your order moves from confirmed to delivery and completion.',
+    title: 'Enable Alerts',
+    description: 'Get notified about your order status, plus deals and updates from Wise Gourmet.',
   },
   staff: {
     title: 'Enable New Order Alerts',

@@ -61,6 +61,18 @@ export default function AdminNavBar() {
               Zones
             </NavLink>
             <NavLink
+              to="/admin/promotions"
+              className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+            >
+              Promotions
+            </NavLink>
+            <NavLink
+              to="/admin/customers"
+              className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+            >
+              Customers
+            </NavLink>
+            <NavLink
               to="/admin/password"
               className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
             >

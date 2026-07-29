@@ -22,4 +22,10 @@ export const cartApi = {
   clear() {
     return apiRequest('/cart/clear', { method: 'DELETE' });
   },
+  applyPromotion(promotionId) {
+    return apiRequest('/cart/apply-promotion', { method: 'POST', body: { promotionId } });
+  },
+  clearPromotion() {
+    return apiRequest('/cart/promotion', { method: 'DELETE' });
+  },
 };
