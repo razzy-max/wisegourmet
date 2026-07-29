@@ -3,9 +3,10 @@ import { menuApi } from '../api/menuApi';
 import { cartApi } from '../api/cartApi';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { useMenuRealtime } from '../hooks/useMenuRealtime';
 import LoadingSpinner from '../components/LoadingSpinner';
 
-const MENU_CACHE_TTL_MS = 90 * 1000;
+const MENU_CACHE_TTL_MS = 10 * 60 * 1000;
 const MENU_CACHE_KEY_PREFIX = 'wg:menu:';
 const MENU_CACHE_KEY = `${MENU_CACHE_KEY_PREFIX}all`;
 let menuMemoryCache = null;
@@ -220,6 +221,12 @@ export default function HomeMenuPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const handleMenuChanged = useCallback(() => {
+    fetchData({ force: true });
+  }, [fetchData]);
+
+  useMenuRealtime(handleMenuChanged);
 
   const filteredItems = useMemo(() => {
     const normalizedSearch = String(search || '').trim().toLowerCase();

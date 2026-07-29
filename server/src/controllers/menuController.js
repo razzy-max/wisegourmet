@@ -3,6 +3,25 @@ const Category = require('../models/Category');
 const MenuItem = require('../models/MenuItem');
 const asyncHandler = require('../utils/asyncHandler');
 const slugify = require('../utils/slugify');
+const { parseDataUrl } = require('../utils/dataUrl');
+
+const notifyMenuChanged = (req) => {
+  const io = req.app.get('io');
+  if (io) {
+    io.emit('menu:changed', { updatedAt: new Date().toISOString() });
+  }
+};
+
+const buildImageUrl = (req, item) =>
+  item.imageContentType ? `${req.protocol}://${req.get('host')}/api/menu/${item._id}/image` : item.imageUrl || '';
+
+const serializeMenuItem = (req, doc) => {
+  const item = doc.toObject ? doc.toObject() : { ...doc };
+  item.imageUrl = buildImageUrl(req, item);
+  delete item.imageContentType;
+  delete item.imageData;
+  return item;
+};
 
 const listMenu = asyncHandler(async (req, res) => {
   const { category, search } = req.query;
@@ -39,7 +58,7 @@ const listMenu = asyncHandler(async (req, res) => {
     .populate('category', 'name slug')
     .sort({ createdAt: -1 });
 
-  res.json({ items: menuItems });
+  res.json({ items: menuItems.map((item) => serializeMenuItem(req, item)) });
 });
 
 const listCategories = asyncHandler(async (_req, res) => {
@@ -62,6 +81,7 @@ const createCategory = asyncHandler(async (req, res) => {
   }
 
   const category = await Category.create({ name, slug });
+  notifyMenuChanged(req);
   res.status(201).json({ category });
 });
 
@@ -84,6 +104,7 @@ const updateCategory = asyncHandler(async (req, res) => {
   }
 
   await category.save();
+  notifyMenuChanged(req);
   res.json({ category });
 });
 
@@ -101,6 +122,7 @@ const deleteCategory = asyncHandler(async (req, res) => {
     throw new Error('Category not found');
   }
 
+  notifyMenuChanged(req);
   res.json({ message: 'Category deleted' });
 });
 
@@ -123,20 +145,25 @@ const createMenuItem = asyncHandler(async (req, res) => {
       ? 'unavailable'
       : 'in_stock';
 
+  const parsedImage = parseDataUrl(imageUrl);
+
   const item = await MenuItem.create({
     name,
     slug: `${slugify(name)}-${Date.now()}`,
     description,
     category,
     price,
-    imageUrl,
+    imageUrl: parsedImage ? '' : imageUrl || '',
+    imageData: parsedImage ? parsedImage.base64 : '',
+    imageContentType: parsedImage ? parsedImage.contentType : '',
     availabilityStatus: normalizedStatus,
     isAvailable: normalizedStatus === 'in_stock',
     tags: Array.isArray(tags) ? tags : [],
   });
 
   const populated = await item.populate('category', 'name slug');
-  res.status(201).json({ item: populated });
+  notifyMenuChanged(req);
+  res.status(201).json({ item: serializeMenuItem(req, populated) });
 });
 
 const updateMenuItem = asyncHandler(async (req, res) => {
@@ -148,12 +175,25 @@ const updateMenuItem = asyncHandler(async (req, res) => {
     throw new Error('Menu item not found');
   }
 
-  const fields = ['name', 'description', 'price', 'imageUrl'];
+  const fields = ['name', 'description', 'price'];
   fields.forEach((field) => {
     if (req.body[field] !== undefined) {
       item[field] = req.body[field];
     }
   });
+
+  if (req.body.imageUrl !== undefined) {
+    const parsedImage = parseDataUrl(req.body.imageUrl);
+    if (parsedImage) {
+      item.imageData = parsedImage.base64;
+      item.imageContentType = parsedImage.contentType;
+      item.imageUrl = '';
+    } else {
+      item.imageData = '';
+      item.imageContentType = '';
+      item.imageUrl = req.body.imageUrl;
+    }
+  }
 
   if (req.body.name) {
     item.slug = `${slugify(req.body.name)}-${Date.now()}`;
@@ -186,7 +226,8 @@ const updateMenuItem = asyncHandler(async (req, res) => {
 
   await item.save();
   const populated = await item.populate('category', 'name slug');
-  res.json({ item: populated });
+  notifyMenuChanged(req);
+  res.json({ item: serializeMenuItem(req, populated) });
 });
 
 const deleteMenuItem = asyncHandler(async (req, res) => {
@@ -198,7 +239,24 @@ const deleteMenuItem = asyncHandler(async (req, res) => {
     throw new Error('Menu item not found');
   }
 
+  notifyMenuChanged(req);
   res.json({ message: 'Menu item deleted' });
+});
+
+const getMenuItemImage = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const item = await MenuItem.findById(id).select('+imageData imageContentType');
+
+  if (!item || !item.imageData) {
+    res.status(404);
+    throw new Error('Image not found');
+  }
+
+  res.set({
+    'Content-Type': item.imageContentType || 'application/octet-stream',
+    'Cache-Control': 'public, max-age=86400',
+  });
+  res.send(Buffer.from(item.imageData, 'base64'));
 });
 
 module.exports = {
@@ -210,4 +268,5 @@ module.exports = {
   createMenuItem,
   updateMenuItem,
   deleteMenuItem,
+  getMenuItemImage,
 };

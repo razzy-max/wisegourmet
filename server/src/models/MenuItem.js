@@ -33,6 +33,15 @@ const menuItemSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    imageData: {
+      type: String,
+      default: '',
+      select: false,
+    },
+    imageContentType: {
+      type: String,
+      default: '',
+    },
     isAvailable: {
       type: Boolean,
       default: true,

@@ -8,6 +8,7 @@ const {
   createMenuItem,
   updateMenuItem,
   deleteMenuItem,
+  getMenuItemImage,
 } = require('../controllers/menuController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -15,6 +16,7 @@ const router = express.Router();
 
 router.get('/', listMenu);
 router.get('/categories', listCategories);
+router.get('/:id/image', getMenuItemImage);
 
 router.post('/categories', protect, authorize('admin'), createCategory);
 router.put('/categories/:id', protect, authorize('admin'), updateCategory);

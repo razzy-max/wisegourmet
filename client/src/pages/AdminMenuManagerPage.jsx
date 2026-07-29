@@ -32,6 +32,7 @@ export default function AdminMenuManagerPage() {
     imageUrl: '',
     availabilityStatus: 'in_stock',
   });
+  const [editImageChanged, setEditImageChanged] = useState(false);
   const [savingItemId, setSavingItemId] = useState('');
   const [creatingItemId, setCreatingItemId] = useState('');
   const [message, setMessage] = useState('');
@@ -115,6 +116,7 @@ export default function AdminMenuManagerPage() {
 
   const startEdit = (item) => {
     setEditingItemId(item._id);
+    setEditImageChanged(false);
     setEditItem({
       name: item.name || '',
       description: item.description || '',
@@ -127,6 +129,7 @@ export default function AdminMenuManagerPage() {
 
   const cancelEdit = () => {
     setEditingItemId('');
+    setEditImageChanged(false);
     setEditItem({
       name: '',
       description: '',
@@ -142,6 +145,7 @@ export default function AdminMenuManagerPage() {
       const dataUrl = await toImageDataUrl(event.target.files || []);
       if (dataUrl) {
         setEditItem((prev) => ({ ...prev, imageUrl: dataUrl }));
+        setEditImageChanged(true);
       }
       event.target.value = '';
     } catch (error) {
@@ -154,10 +158,12 @@ export default function AdminMenuManagerPage() {
     setSavingItemId(itemId);
     try {
       setMessage('Saving item changes...');
-      const response = await menuApi.updateItem(itemId, {
-        ...editItem,
-        price: Number(editItem.price),
-      });
+      const { imageUrl, ...rest } = editItem;
+      const payload = { ...rest, price: Number(editItem.price) };
+      if (editImageChanged) {
+        payload.imageUrl = imageUrl;
+      }
+      const response = await menuApi.updateItem(itemId, payload);
 
       if (response?.item) {
         setItems((prev) => prev.map((existing) => (existing._id === itemId ? response.item : existing)));
@@ -340,7 +346,10 @@ export default function AdminMenuManagerPage() {
                   <input
                     placeholder="Image URL (optional)"
                     value={editItem.imageUrl}
-                    onChange={(event) => setEditItem((prev) => ({ ...prev, imageUrl: event.target.value }))}
+                    onChange={(event) => {
+                      setEditItem((prev) => ({ ...prev, imageUrl: event.target.value }));
+                      setEditImageChanged(true);
+                    }}
                   />
                   <label className="upload-zone" htmlFor="edit-menu-image">
                     <p className="upload-icon" aria-hidden="true">☁</p>
