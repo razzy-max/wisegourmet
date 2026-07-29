@@ -32,6 +32,16 @@ export default function AdminCustomersPage() {
   const [sendResult, setSendResult] = useState('');
   const [now, setNow] = useState(() => Date.now());
 
+  const [automationEnabled, setAutomationEnabled] = useState(false);
+  const [automationThresholdValue, setAutomationThresholdValue] = useState(7);
+  const [automationThresholdUnit, setAutomationThresholdUnit] = useState('days');
+  const [automationIntervalValue, setAutomationIntervalValue] = useState(7);
+  const [automationIntervalUnit, setAutomationIntervalUnit] = useState('days');
+  const [automationTitle, setAutomationTitle] = useState('');
+  const [automationBody, setAutomationBody] = useState('');
+  const [automationSaving, setAutomationSaving] = useState(false);
+  const [automationMessage, setAutomationMessage] = useState('');
+
   const loadCustomers = useCallback(async () => {
     setLoading(true);
     try {
@@ -49,6 +59,50 @@ export default function AdminCustomersPage() {
   useEffect(() => {
     loadCustomers();
   }, [loadCustomers]);
+
+  const loadAutomationSettings = useCallback(async () => {
+    try {
+      const response = await userApi.getReengagementSettings();
+      const settings = response.settings || {};
+      setAutomationEnabled(Boolean(settings.enabled));
+      setAutomationThresholdValue(settings.thresholdHours ? Math.round(settings.thresholdHours / 24) : 7);
+      setAutomationThresholdUnit('days');
+      setAutomationIntervalValue(settings.repeatIntervalHours ? Math.round(settings.repeatIntervalHours / 24) : 7);
+      setAutomationIntervalUnit('days');
+      setAutomationTitle(settings.title || '');
+      setAutomationBody(settings.body || '');
+    } catch (err) {
+      setAutomationMessage(err.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAutomationSettings();
+  }, [loadAutomationSettings]);
+
+  const saveAutomationSettings = async () => {
+    setAutomationSaving(true);
+    setAutomationMessage('');
+    try {
+      const thresholdHours =
+        automationThresholdUnit === 'days' ? Number(automationThresholdValue) * 24 : Number(automationThresholdValue);
+      const repeatIntervalHours =
+        automationIntervalUnit === 'days' ? Number(automationIntervalValue) * 24 : Number(automationIntervalValue);
+
+      await userApi.updateReengagementSettings({
+        enabled: automationEnabled,
+        thresholdHours,
+        repeatIntervalHours,
+        title: automationTitle.trim(),
+        body: automationBody.trim(),
+      });
+      setAutomationMessage('Automation settings saved.');
+    } catch (err) {
+      setAutomationMessage(err.message);
+    } finally {
+      setAutomationSaving(false);
+    }
+  };
 
   const rows = useMemo(() => {
     return customers
@@ -227,6 +281,76 @@ export default function AdminCustomersPage() {
           </button>
         </div>
         {sendResult ? <p className="message">{sendResult}</p> : null}
+      </article>
+
+      <article className="panel" style={{ marginTop: '1rem' }}>
+        <h3>Automatic Re-engagement</h3>
+        <p className="muted">
+          When enabled, inactive customers automatically get a repeating push nudge until they order again or you
+          turn this off.
+        </p>
+        <div className="form">
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={automationEnabled}
+              onChange={(event) => setAutomationEnabled(event.target.checked)}
+            />
+            <span>Enabled</span>
+          </label>
+          <div className="row">
+            <span className="muted">Send the first nudge after being inactive for:</span>
+            <input
+              type="number"
+              min="1"
+              className="qty-input"
+              value={automationThresholdValue}
+              onChange={(event) => setAutomationThresholdValue(event.target.value)}
+            />
+            <select
+              value={automationThresholdUnit}
+              onChange={(event) => setAutomationThresholdUnit(event.target.value)}
+            >
+              <option value="hours">Hours</option>
+              <option value="days">Days</option>
+            </select>
+          </div>
+          <div className="row">
+            <span className="muted">Then repeat every:</span>
+            <input
+              type="number"
+              min="1"
+              className="qty-input"
+              value={automationIntervalValue}
+              onChange={(event) => setAutomationIntervalValue(event.target.value)}
+            />
+            <select
+              value={automationIntervalUnit}
+              onChange={(event) => setAutomationIntervalUnit(event.target.value)}
+            >
+              <option value="hours">Hours</option>
+              <option value="days">Days</option>
+            </select>
+            <span className="muted">while still inactive</span>
+          </div>
+          <input
+            placeholder="Title (optional, defaults to 'Wise Gourmet')"
+            value={automationTitle}
+            onChange={(event) => setAutomationTitle(event.target.value)}
+          />
+          <textarea
+            placeholder="Message"
+            value={automationBody}
+            onChange={(event) => setAutomationBody(event.target.value)}
+          />
+          <button className="btn" type="button" onClick={saveAutomationSettings} disabled={automationSaving}>
+            {automationSaving ? 'Saving...' : 'Save automation settings'}
+          </button>
+          <p className="muted">
+            Checked roughly every 30 minutes, so actual delivery may lag slightly behind your configured interval.
+          </p>
+        </div>
+        {automationMessage ? <p className="message">{automationMessage}</p> : null}
       </article>
     </section>
   );

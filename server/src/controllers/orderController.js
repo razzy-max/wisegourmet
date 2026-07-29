@@ -215,6 +215,7 @@ const createOrderFromCart = asyncHandler(async (req, res) => {
   cart.items = [];
   cart.appliedPromotion = null;
   await cart.save();
+  await User.updateOne({ _id: req.user._id }, { lastAutoReengagementSentAt: null });
 
   const hydrated = await Order.findById(order._id)
     .populate('customer', 'fullName email phone role')

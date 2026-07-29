@@ -62,6 +62,10 @@ const userSchema = new mongoose.Schema(
         trim: true,
       },
     },
+    lastAutoReengagementSentAt: {
+      type: Date,
+      default: null,
+    },
     pushSubscriptions: {
       type: [
         {

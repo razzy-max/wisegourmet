@@ -2,6 +2,8 @@ const express = require('express');
 const {
 	listCustomers,
 	sendReEngagementMessage,
+	getReengagementSettings,
+	updateReengagementSettings,
 	listRiders,
 	listTeamMembers,
 	createTeamMember,
@@ -18,6 +20,8 @@ const router = express.Router();
 
 router.get('/customers', protect, authorize('admin'), listCustomers);
 router.post('/customers/notify', protect, authorize('admin'), sendReEngagementMessage);
+router.get('/reengagement-settings', protect, authorize('admin'), getReengagementSettings);
+router.put('/reengagement-settings', protect, authorize('admin'), updateReengagementSettings);
 router.get('/riders', protect, authorize('admin', 'staff'), listRiders);
 router.get('/team', protect, authorize('admin'), listTeamMembers);
 router.post('/team', protect, authorize('admin'), createTeamMember);

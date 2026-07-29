@@ -7,6 +7,12 @@ export const userApi = {
   sendReEngagementMessage(payload) {
     return apiRequest('/users/customers/notify', { method: 'POST', body: payload });
   },
+  getReengagementSettings() {
+    return apiRequest('/users/reengagement-settings');
+  },
+  updateReengagementSettings(payload) {
+    return apiRequest('/users/reengagement-settings', { method: 'PUT', body: payload });
+  },
   riders() {
     return apiRequest('/users/riders');
   },

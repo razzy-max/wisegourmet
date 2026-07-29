@@ -18,6 +18,7 @@ const promotionRoutes = require('./src/routes/promotionRoutes');
 const heroBackgroundRoutes = require('./src/routes/heroBackgroundRoutes');
 const { notFound, errorHandler } = require('./src/middleware/error');
 const ensureDemoData = require('./src/utils/bootstrapDemoData');
+const { startReengagementScheduler } = require('./src/utils/reengagementScheduler');
 
 const app = express();
 const server = http.createServer(app);
@@ -92,6 +93,7 @@ const start = async () => {
     server.listen(PORT, () => {
       console.log(`Wise Gourmet API running on http://localhost:${PORT}`);
     });
+    startReengagementScheduler();
   } catch (error) {
     console.error('Failed to start server:', error.message);
     process.exit(1);

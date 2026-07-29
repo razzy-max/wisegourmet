@@ -1,7 +1,8 @@
 const User = require('../models/User');
-const Order = require('../models/Order');
+const ReengagementSettings = require('../models/ReengagementSettings');
 const asyncHandler = require('../utils/asyncHandler');
 const { isPushConfigured, getPushPublicKey, sendPushToUserIds } = require('../utils/pushNotifications');
+const { getCustomersWithLastOrder } = require('../utils/customerActivity');
 
 const normalizeSubscription = (subscription) => {
   if (!subscription || typeof subscription !== 'object') {
@@ -40,24 +41,11 @@ const listTeamMembers = asyncHandler(async (_req, res) => {
 });
 
 const listCustomers = asyncHandler(async (_req, res) => {
-  const customers = await User.find({ role: 'customer' })
-    .select('fullName email phone isActive createdAt')
-    .sort({ fullName: 1 })
-    .lean();
-
-  const orderStats = await Order.aggregate([
-    { $group: { _id: '$customer', lastOrderAt: { $max: '$createdAt' }, orderCount: { $sum: 1 } } },
-  ]);
-  const statsByCustomerId = new Map(orderStats.map((stat) => [String(stat._id), stat]));
-
-  const results = customers.map((customer) => {
-    const stats = statsByCustomerId.get(String(customer._id));
-    return {
-      ...customer,
-      lastOrderAt: stats?.lastOrderAt || null,
-      orderCount: stats?.orderCount || 0,
-    };
-  });
+  const results = await getCustomersWithLastOrder(
+    { role: 'customer' },
+    'fullName email phone isActive createdAt'
+  );
+  results.sort((a, b) => String(a.fullName || '').localeCompare(String(b.fullName || '')));
 
   res.json({ customers: results });
 });
@@ -89,6 +77,39 @@ const sendReEngagementMessage = asyncHandler(async (req, res) => {
   }
 
   res.json({ sent: eligibleIds.length, noSubscription, total: users.length });
+});
+
+const getReengagementSettings = asyncHandler(async (_req, res) => {
+  const settings = (await ReengagementSettings.findOne()) || new ReengagementSettings();
+  res.json({ settings });
+});
+
+const updateReengagementSettings = asyncHandler(async (req, res) => {
+  const { enabled, thresholdHours, repeatIntervalHours, title, body } = req.body;
+
+  let settings = await ReengagementSettings.findOne();
+  if (!settings) {
+    settings = new ReengagementSettings();
+  }
+
+  if (enabled !== undefined) {
+    settings.enabled = Boolean(enabled);
+  }
+  if (thresholdHours !== undefined) {
+    settings.thresholdHours = Math.max(1, Number(thresholdHours) || settings.thresholdHours);
+  }
+  if (repeatIntervalHours !== undefined) {
+    settings.repeatIntervalHours = Math.max(1, Number(repeatIntervalHours) || settings.repeatIntervalHours);
+  }
+  if (title !== undefined) {
+    settings.title = String(title).trim();
+  }
+  if (body !== undefined) {
+    settings.body = String(body).trim();
+  }
+
+  await settings.save();
+  res.json({ settings });
 });
 
 const createTeamMember = asyncHandler(async (req, res) => {
@@ -283,6 +304,8 @@ const unsubscribeNotifications = asyncHandler(async (req, res) => {
 module.exports = {
   listCustomers,
   sendReEngagementMessage,
+  getReengagementSettings,
+  updateReengagementSettings,
   listRiders,
   listTeamMembers,
   createTeamMember,
