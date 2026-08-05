@@ -1,6 +1,6 @@
-# Wise Gourmet Client
+# Store Name Client
 
-React + Vite frontend for Wise Gourmet.
+React + Vite frontend for Store Name.
 
 ## Local Development
 

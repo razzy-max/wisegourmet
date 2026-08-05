@@ -1,6 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminApi } from '../api/adminApi';
-import LoadingSpinner from '../components/LoadingSpinner';
+import { useInView } from '../hooks/useInView';
+import Skeleton from '../components/Skeleton';
+import './AdminPolish.css';
+
+function RevealArticle({ index, className, children }) {
+  const [ref, isInView] = useInView({ threshold: 0.12 });
+  return (
+    <article
+      ref={ref}
+      className={`${className} reveal-card${isInView ? ' is-visible' : ''}`}
+      style={{ transitionDelay: `${Math.min(index, 8) * 50}ms` }}
+    >
+      {children}
+    </article>
+  );
+}
 
 const blankForm = {
   key: '',
@@ -124,7 +139,7 @@ export default function AdminDeliveryZonesPage() {
 
       {error ? <p className="error">{error}</p> : null}
       {message ? <p className="message">{message}</p> : null}
-      {loading ? <LoadingSpinner label="Loading delivery zones..." /> : null}
+      {loading ? <Skeleton variant="card" count={4} /> : null}
 
       <div className="grid">
         <article className="panel zone-summary-card">
@@ -178,8 +193,8 @@ export default function AdminDeliveryZonesPage() {
       <article className="panel" style={{ marginTop: '1rem' }}>
         <h3>Configured Zones</h3>
         <div className="grid">
-          {zones.map((zone) => (
-            <article className="panel zone-card" key={zone._id || zone.key}>
+          {zones.map((zone, index) => (
+            <RevealArticle index={index} className="panel zone-card" key={zone._id || zone.key}>
               {editingId === zone._id ? (
                 <div className="form">
                   <input
@@ -237,7 +252,7 @@ export default function AdminDeliveryZonesPage() {
                   </div>
                 </>
               )}
-            </article>
+            </RevealArticle>
           ))}
         </div>
       </article>

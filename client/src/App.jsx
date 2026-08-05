@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import AdminNavBar from './components/AdminNavBar';
@@ -57,53 +58,70 @@ function NavBarSelector() {
 
 function App() {
   const location = useLocation();
+  const { user, isAuthenticated } = useAuth();
+  const isAdminLayout = isAuthenticated && user?.role === 'admin';
+  const [renderedLocation, setRenderedLocation] = useState(location);
+
+  useEffect(() => {
+    if (location === renderedLocation) {
+      return;
+    }
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (typeof document.startViewTransition === 'function' && !reducedMotion) {
+      document.startViewTransition(() => {
+        flushSync(() => setRenderedLocation(location));
+      });
+    } else {
+      setRenderedLocation(location);
+    }
+  }, [location, renderedLocation]);
 
   useEffect(() => {
     const path = location.pathname;
 
     if (path === '/') {
-      document.title = 'Menu — Wise Gourmet';
+      document.title = 'Menu — Store Name';
       return;
     }
 
     if (path === '/install') {
-      document.title = 'Install App — Wise Gourmet';
+      document.title = 'Install App — Store Name';
       return;
     }
 
     if (path.startsWith('/cart')) {
-      document.title = 'Cart — Wise Gourmet';
+      document.title = 'Cart — Store Name';
       return;
     }
 
     if (path.startsWith('/checkout')) {
-      document.title = 'Checkout — Wise Gourmet';
+      document.title = 'Checkout — Store Name';
       return;
     }
 
     if (path.startsWith('/orders')) {
-      document.title = 'My Orders — Wise Gourmet';
+      document.title = 'My Orders — Store Name';
       return;
     }
 
     if (path.startsWith('/profile')) {
-      document.title = 'Profile — Wise Gourmet';
+      document.title = 'Profile — Store Name';
       return;
     }
 
     if (path.startsWith('/support')) {
-      document.title = 'Support — Wise Gourmet';
+      document.title = 'Support — Store Name';
       return;
     }
 
-    document.title = 'Wise Gourmet';
+    document.title = 'Store Name';
   }, [location.pathname]);
 
-  return (
-    <div>
-      <NavBarSelector />
-      <div key={location.pathname} className="route-fade">
-        <Routes>
+  const routesContent = (
+    <div key={renderedLocation.pathname} className="route-fade">
+      <Routes location={renderedLocation}>
         <Route path="/" element={<HomeMenuPage />} />
         <Route path="/install" element={<InstallPage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -279,8 +297,23 @@ function App() {
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+      </Routes>
+    </div>
+  );
+
+  if (isAdminLayout) {
+    return (
+      <div className="admin-shell">
+        <AdminNavBar />
+        <main className="admin-shell-main">{routesContent}</main>
       </div>
+    );
+  }
+
+  return (
+    <div>
+      <NavBarSelector />
+      {routesContent}
     </div>
   );
 }

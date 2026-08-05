@@ -194,7 +194,7 @@ const createOrderFromCart = asyncHandler(async (req, res) => {
       fullText:
         fulfillmentType === 'delivery'
           ? deliveryAddress.fullText
-          : 'Self pickup at Wise Gourmet kitchen',
+          : 'Self pickup at Store Name kitchen',
       area: fulfillmentType === 'delivery' ? deliveryAddress.area || '' : '',
       landmark: fulfillmentType === 'delivery' ? deliveryAddress.landmark || '' : '',
       notes: fulfillmentType === 'delivery' ? deliveryAddress.notes || '' : '',

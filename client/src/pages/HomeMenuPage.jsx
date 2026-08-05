@@ -9,10 +9,104 @@ import { useCart } from '../context/CartContext';
 import { useMenuRealtime } from '../hooks/useMenuRealtime';
 import { usePromotionsRealtime } from '../hooks/usePromotionsRealtime';
 import { useHeroBackgroundRealtime } from '../hooks/useHeroBackgroundRealtime';
+import { useInView } from '../hooks/useInView';
 import { buildGreeting } from '../utils/greeting';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PromoCarousel from '../components/PromoCarousel';
 import EnableAlertsCard from '../components/EnableAlertsCard';
+import EmptyState from '../components/EmptyState';
+import {
+  SearchIcon,
+  FoodIcon,
+  BasketIcon,
+  PackageIcon,
+  StarIcon,
+  TagIcon,
+  LeafIcon,
+  ChefHatIcon,
+  TruckIcon,
+  PercentIcon,
+  TipIcon,
+} from '../components/icons';
+import './HomeMenuPage.css';
+
+// Fixed pool of icons to deterministically assign to dynamic, admin-created
+// categories. We don't know category names ahead of time, so we can't map
+// icons by meaning -- instead every category gets a stable icon + color
+// derived from a hash of its identity, so it looks the same on every visit.
+const CATEGORY_ICONS = [
+  FoodIcon,
+  BasketIcon,
+  PackageIcon,
+  StarIcon,
+  TagIcon,
+  LeafIcon,
+  ChefHatIcon,
+  TruckIcon,
+  PercentIcon,
+  TipIcon,
+];
+
+const CATEGORY_TILE_COLORS = ['cat-tile-a', 'cat-tile-b', 'cat-tile-c', 'cat-tile-d', 'cat-tile-e'];
+
+// Small, deterministic string hash (djb2-ish) -- same input always produces
+// the same output, so a given category keeps the same icon/color forever.
+const hashString = (value) => {
+  const str = String(value || '');
+  let hash = 5381;
+  for (let i = 0; i < str.length; i += 1) {
+    hash = (hash * 33 + str.charCodeAt(i)) >>> 0;
+  }
+  return hash;
+};
+
+const getCategoryIcon = (category) => {
+  const key = category?._id || category?.name || '';
+  return CATEGORY_ICONS[hashString(key) % CATEGORY_ICONS.length];
+};
+
+const getCategoryTileColor = (category) => {
+  const key = category?._id || category?.name || '';
+  return CATEGORY_TILE_COLORS[hashString(`color:${key}`) % CATEGORY_TILE_COLORS.length];
+};
+
+function CategoryRail({ categories, selectedCategory, onSelect }) {
+  return (
+    <div className="cat-rail" role="tablist" aria-label="Filter menu by category">
+      <button
+        type="button"
+        role="tab"
+        aria-selected={selectedCategory === ''}
+        className={`cat-tile${selectedCategory === '' ? ' cat-tile-active' : ''}`}
+        onClick={() => onSelect('')}
+      >
+        <span className="cat-tile-circle cat-tile-all">
+          <StarIcon size={20} />
+        </span>
+        <span className="cat-tile-label">All</span>
+      </button>
+      {categories.map((category) => {
+        const Icon = getCategoryIcon(category);
+        const isActive = selectedCategory === category.slug;
+        return (
+          <button
+            key={category._id}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            className={`cat-tile${isActive ? ' cat-tile-active' : ''}`}
+            onClick={() => onSelect(category.slug)}
+          >
+            <span className={`cat-tile-circle ${getCategoryTileColor(category)}`}>
+              <Icon size={20} />
+            </span>
+            <span className="cat-tile-label">{category.name}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function PromoSlideContent({ promotion, onApplyCombo }) {
   const isInternalLink = promotion.ctaLink?.startsWith('/');
@@ -38,6 +132,65 @@ function PromoSlideContent({ promotion, onApplyCombo }) {
         )
       ) : null}
     </>
+  );
+}
+
+function MenuItemCard({ item, quantity, onQuantityChange, onAddToCart }) {
+  const [ref, isInView] = useInView({ threshold: 0.15, once: true });
+  const status = normalizeStatus(item);
+  const inStock = status === 'in_stock';
+
+  return (
+    <article
+      ref={ref}
+      className={`panel menu-card hmp-reveal${isInView ? '' : ' hmp-reveal-pending'}`}
+    >
+      <div className="menu-image-wrap">
+        {item.imageUrl ? (
+          <img className="menu-item-image" src={item.imageUrl} alt={item.name} loading="lazy" />
+        ) : (
+          <div className="menu-item-image-placeholder">Food Image</div>
+        )}
+        <span className="menu-category-badge">{item.category?.name || 'General'}</span>
+      </div>
+      <h3 className="menu-item-title">{item.name}</h3>
+      <p className="menu-item-desc">{item.description}</p>
+      <div className="menu-meta-row">
+        <p className="price menu-price">{formatCurrency(item.price)}</p>
+        <span className="menu-status-inline">
+          <span className={`status-dot ${inStock ? 'in-stock' : 'offline'}`} />
+          {statusLabelMap[status] || 'Unknown'}
+        </span>
+      </div>
+      {inStock ? (
+        <div className="qty-wrap menu-stepper">
+          <button
+            className="btn btn-ghost qty-btn"
+            type="button"
+            onClick={() => onQuantityChange((quantity || 1) - 1)}
+          >
+            -
+          </button>
+          <input
+            type="number"
+            min="1"
+            value={quantity || 1}
+            onChange={(event) => onQuantityChange(event.target.value)}
+            className="qty-input"
+          />
+          <button
+            className="btn btn-ghost qty-btn"
+            type="button"
+            onClick={() => onQuantityChange((quantity || 1) + 1)}
+          >
+            +
+          </button>
+        </div>
+      ) : null}
+      <button className="btn menu-add-btn" type="button" onClick={onAddToCart} disabled={!inStock}>
+        {inStock ? 'Add to cart' : 'Currently unavailable'}
+      </button>
+    </article>
   );
 }
 
@@ -412,20 +565,17 @@ export default function HomeMenuPage() {
       <PromoCarousel slides={slides} />
       <EnableAlertsCard />
       <h1>Menu</h1>
+      <CategoryRail
+        categories={categories}
+        selectedCategory={selectedCategory}
+        onSelect={setSelectedCategory}
+      />
       <div className="panel controls">
         <input
           placeholder="Search food..."
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
-        <select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)}>
-          <option value="">All categories</option>
-          {categories.map((category) => (
-            <option key={category._id} value={category.slug}>
-              {category.name}
-            </option>
-          ))}
-        </select>
       </div>
       {toastMessage ? (
         <div className={`cart-toast cart-toast-${toastStage}`} role="status" aria-live="polite">
@@ -445,63 +595,30 @@ export default function HomeMenuPage() {
       ) : null}
       <div className="grid menu-grid">
         {filteredItems.map((item) => (
-          <article className="panel menu-card" key={item._id}>
-            {item.imageUrl ? (
-              <img className="menu-item-image" src={item.imageUrl} alt={item.name} loading="lazy" />
-            ) : (
-              <div className="menu-item-image-placeholder">Food Image</div>
-            )}
-            <div className="menu-meta-row">
-              <span className="menu-category-pill"># {item.category?.name || 'General'}</span>
-              <span className="menu-status-inline">
-                <span className={`status-dot ${normalizeStatus(item) === 'in_stock' ? 'in-stock' : 'offline'}`} />
-                {statusLabelMap[normalizeStatus(item)] || 'Unknown'}
-              </span>
-            </div>
-            <h3 className="menu-item-title">{item.name}</h3>
-            <p>{item.description}</p>
-            <p className="price menu-price">{formatCurrency(item.price)}</p>
-            {normalizeStatus(item) === 'in_stock' ? (
-              <div className="qty-wrap menu-stepper">
-                <button
-                  className="btn btn-ghost qty-btn"
-                  type="button"
-                  onClick={() => setItemQuantity(item._id, (quantities[item._id] || 1) - 1)}
-                >
-                  -
-                </button>
-                <input
-                  type="number"
-                  min="1"
-                  value={quantities[item._id] || 1}
-                  onChange={(event) => setItemQuantity(item._id, event.target.value)}
-                  className="qty-input"
-                />
-                <button
-                  className="btn btn-ghost qty-btn"
-                  type="button"
-                  onClick={() => setItemQuantity(item._id, (quantities[item._id] || 1) + 1)}
-                >
-                  +
-                </button>
-              </div>
-            ) : null}
-            <button
-              className="btn menu-add-btn"
-              type="button"
-              onClick={() => addToCart(item)}
-              disabled={normalizeStatus(item) !== 'in_stock'}
-            >
-              {normalizeStatus(item) === 'in_stock' ? 'Add to cart' : 'Currently unavailable'}
-            </button>
-          </article>
+          <MenuItemCard
+            key={item._id}
+            item={item}
+            quantity={quantities[item._id] || 1}
+            onQuantityChange={(quantity) => setItemQuantity(item._id, quantity)}
+            onAddToCart={() => addToCart(item)}
+          />
         ))}
       </div>
       {!loading && !menuError && filteredItems.length === 0 ? (
-        <article className="panel empty-state" style={{ marginTop: '1rem' }}>
-          <p className="empty-icon" aria-hidden="true">-</p>
-          <p className="muted">No menu items match your search or category filter.</p>
-        </article>
+        <EmptyState
+          icon={SearchIcon}
+          heading="No items found"
+          subtext="No menu items match your search or category filter."
+          actionLabel={search || selectedCategory ? 'Clear filters' : undefined}
+          onAction={
+            search || selectedCategory
+              ? () => {
+                  setSearch('');
+                  setSelectedCategory('');
+                }
+              : undefined
+          }
+        />
       ) : null}
     </section>
   );

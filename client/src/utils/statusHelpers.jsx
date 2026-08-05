@@ -1,32 +1,48 @@
+import {
+  ClockIcon,
+  CheckIcon,
+  CheckCircleIcon,
+  ChefHatIcon,
+  PackageIcon,
+  TruckIcon,
+  MapPinIcon,
+  CloseIcon,
+} from '../components/icons';
+
 /**
- * Convert snake_case status to human-readable label with emoji
+ * Get status badge info (label, icon component, badge color class)
  * @param {string} status - Status in snake_case (e.g., 'ready_for_pickup')
- * @returns {object} - { label: string, emoji: string, badgeColor: string }
+ * @returns {object} - { label: string, Icon: Component|null, badgeColor: string }
  */
 export const getStatusBadge = (status) => {
   const badges = {
-    pending: { label: 'Pending', emoji: '⏳', badgeColor: 'status-pending' },
-    confirmed: { label: 'Confirmed', emoji: '✓', badgeColor: 'status-confirmed' },
-    preparing: { label: 'Preparing', emoji: '👨‍🍳', badgeColor: 'status-preparing' },
-    ready_for_pickup: { label: 'Ready for Pickup', emoji: '📦', badgeColor: 'status-ready' },
-    picked_up: { label: 'Picked up', emoji: '✓', badgeColor: 'status-picked' },
-    on_the_way: { label: 'On the Way', emoji: '🚚', badgeColor: 'status-way' },
-    arrived: { label: 'Arrived', emoji: '📍', badgeColor: 'status-arrived' },
-    delivered: { label: 'Delivered', emoji: '✓', badgeColor: 'status-delivered' },
-    cancelled: { label: 'Cancelled', emoji: '✕', badgeColor: 'status-cancelled' },
+    pending: { label: 'Pending', Icon: ClockIcon, badgeColor: 'status-pending' },
+    confirmed: { label: 'Confirmed', Icon: CheckIcon, badgeColor: 'status-confirmed' },
+    preparing: { label: 'Preparing', Icon: ChefHatIcon, badgeColor: 'status-preparing' },
+    ready_for_pickup: { label: 'Ready for Pickup', Icon: PackageIcon, badgeColor: 'status-ready' },
+    picked_up: { label: 'Picked up', Icon: CheckIcon, badgeColor: 'status-picked' },
+    on_the_way: { label: 'On the Way', Icon: TruckIcon, badgeColor: 'status-way' },
+    arrived: { label: 'Arrived', Icon: MapPinIcon, badgeColor: 'status-arrived' },
+    delivered: { label: 'Delivered', Icon: CheckCircleIcon, badgeColor: 'status-delivered' },
+    cancelled: { label: 'Cancelled', Icon: CloseIcon, badgeColor: 'status-cancelled' },
   };
 
-  return badges[status] || { label: status, emoji: '•', badgeColor: 'status-default' };
+  return badges[status] || { label: status, Icon: null, badgeColor: 'status-default' };
 };
 
 /**
- * Get display text for status (human-readable, with emoji)
+ * Get display node for status (icon + human-readable label)
  * @param {string} status - Status in snake_case
- * @returns {string} - Display text like "✓ Delivered"
+ * @returns {JSX.Element} - <><Icon /> Delivered</>
  */
 export const getStatusLabel = (status) => {
   const badge = getStatusBadge(status);
-  return `${badge.emoji} ${badge.label}`;
+  return (
+    <>
+      {badge.Icon ? <badge.Icon size={14} className="status-badge-icon" /> : null}
+      {badge.label}
+    </>
+  );
 };
 
 /**

@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { CloseIcon } from './icons';
 
 export default function AdminDrawer({ isOpen, onClose }) {
   const { logout } = useAuth();
@@ -47,7 +48,7 @@ export default function AdminDrawer({ isOpen, onClose }) {
             onClick={onClose}
             aria-label="Close navigation"
           >
-            ✕
+            <CloseIcon />
           </button>
         </div>
 

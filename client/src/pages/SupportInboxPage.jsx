@@ -1,21 +1,29 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supportApi } from '../api/supportApi';
-import LoadingSpinner from '../components/LoadingSpinner';
+import Skeleton from '../components/Skeleton';
+import EmptyState from '../components/EmptyState';
 import EnableAlertsCard from '../components/EnableAlertsCard';
+import { MessageIcon, ClockIcon, CheckIcon, InboxIcon } from '../components/icons';
+import './Support.css';
 
 const getTicketStatusBadge = (status) => {
   const badges = {
-    open: { label: 'Open', emoji: '✉', badgeColor: 'status-pending' },
-    in_progress: { label: 'In Progress', emoji: '⏳', badgeColor: 'status-confirmed' },
-    resolved: { label: 'Resolved', emoji: '✓', badgeColor: 'status-delivered' },
+    open: { label: 'Open', Icon: MessageIcon, badgeColor: 'status-pending' },
+    in_progress: { label: 'In Progress', Icon: ClockIcon, badgeColor: 'status-confirmed' },
+    resolved: { label: 'Resolved', Icon: CheckIcon, badgeColor: 'status-delivered' },
   };
-  return badges[status] || { label: status, emoji: '•', badgeColor: 'status-default' };
+  return badges[status] || { label: status, Icon: null, badgeColor: 'status-default' };
 };
 
 const getTicketStatusText = (status) => {
   const badge = getTicketStatusBadge(status);
-  return `${badge.emoji} ${badge.label}`;
+  return (
+    <>
+      {badge.Icon ? <badge.Icon size={14} className="status-badge-icon" /> : null}
+      {badge.label}
+    </>
+  );
 };
 
 export default function SupportInboxPage() {
@@ -68,12 +76,23 @@ export default function SupportInboxPage() {
     return true;
   });
 
-  const save = async (ticketId, status) => {
+  const sendReply = async (ticketId) => {
+    const text = (replyInputs[ticketId] || '').trim();
+    if (!text) {
+      return;
+    }
     try {
-      await supportApi.updateTicket(ticketId, {
-        status,
-        reply: replyInputs[ticketId] || '',
-      });
+      await supportApi.addMessage(ticketId, { text });
+      setReplyInputs((prev) => ({ ...prev, [ticketId]: '' }));
+      await load();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const setStatus = async (ticketId, status) => {
+    try {
+      await supportApi.updateTicket(ticketId, { status });
       await load();
     } catch (err) {
       setError(err.message);
@@ -115,11 +134,21 @@ export default function SupportInboxPage() {
         />
       </div>
       {error ? <p className="error">{error}</p> : null}
-      {loading ? <LoadingSpinner label="Loading inbox..." /> : null}
-      {!loading && filteredTickets.length === 0 ? <p className="muted">No tickets in this view.</p> : null}
+      {loading ? <Skeleton variant="card" count={4} /> : null}
+      {!loading && filteredTickets.length === 0 ? (
+        <EmptyState
+          icon={InboxIcon}
+          heading="No tickets in this view"
+          subtext="Try switching filters or searching for something else."
+        />
+      ) : null}
       <div className="grid">
-        {filteredTickets.map((ticket) => (
-          <article className="panel ticket-admin-card" key={ticket._id}>
+        {filteredTickets.map((ticket, index) => (
+          <article
+            className="panel ticket-admin-card ticket-admin-card-animate"
+            key={ticket._id}
+            style={{ '--stagger-index': index }}
+          >
             <div className="ticket-card-header">
               <Link to={`/support/tickets/${ticket._id}`} className="ticket-subject">
                 {ticket.subject}
@@ -157,16 +186,33 @@ export default function SupportInboxPage() {
               />
               <div className="ticket-reply-actions">
                 <button
-                  className="btn btn-amber"
+                  className="btn"
                   type="button"
-                  onClick={() => save(ticket._id, 'in_progress')}
+                  onClick={() => sendReply(ticket._id)}
+                  disabled={!(replyInputs[ticket._id] || '').trim()}
+                >
+                  Send reply
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  type="button"
+                  onClick={() => setStatus(ticket._id, 'in_progress')}
+                  disabled={ticket.status === 'in_progress'}
                 >
                   Mark in progress
                 </button>
-                <button className="btn" type="button" onClick={() => save(ticket._id, 'resolved')}>
+                <button
+                  className="btn btn-ghost"
+                  type="button"
+                  onClick={() => setStatus(ticket._id, 'resolved')}
+                  disabled={ticket.status === 'resolved'}
+                >
                   Resolve
                 </button>
               </div>
+              <p className="muted" style={{ fontSize: '0.78rem', marginTop: '0.4rem' }}>
+                Sending a reply never changes the ticket's status on its own.
+              </p>
             </div>
           </article>
         ))}

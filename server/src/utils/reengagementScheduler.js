@@ -44,7 +44,7 @@ const runReengagementCheck = async () => {
 
   if (eligibleIds.length > 0) {
     await sendPushToUserIds(eligibleIds, {
-      title: settings.title || 'Wise Gourmet',
+      title: settings.title || 'Store Name',
       body: settings.body,
       url: '/',
       tag: 'auto-re-engagement',

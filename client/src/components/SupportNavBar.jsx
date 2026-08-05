@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import SimpleNavDrawer from './SimpleNavDrawer';
+import ThemeToggle from './ThemeToggle';
+import { MenuIcon } from './icons';
 
 const NAV_ITEMS = [{ path: '/admin/support', label: 'Inbox' }];
 
@@ -14,7 +16,7 @@ export default function SupportNavBar() {
       <header className="nav-shell">
         <div className="nav-inner">
           <Link className="brand" to="/admin/support">
-            Wise Gourmet (Support)
+            Store Name (Support)
           </Link>
 
           <nav className="admin-nav-desktop">
@@ -32,13 +34,15 @@ export default function SupportNavBar() {
             </button>
           </nav>
 
+          <ThemeToggle />
+
           <button
             className="hamburger-btn"
             type="button"
             onClick={() => setDrawerOpen(true)}
             aria-label="Open navigation menu"
           >
-            ☰
+            <MenuIcon />
           </button>
         </div>
       </header>

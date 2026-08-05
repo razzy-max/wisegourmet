@@ -1,0 +1,27 @@
+/* Shared styles for kitchen/rider operational pages
+   (KitchenOrdersPage, StaffOrderHistoryPage, RiderQueuePage, RiderDeliveryHistoryPage).
+   Adds a lightweight staggered entrance animation for order cards as they
+   mount, including cards that appear later via realtime updates. */
+
+.order-card-enter {
+  animation: order-card-in 0.35s ease-out both;
+  animation-delay: var(--order-card-delay, 0s);
+}
+
+@keyframes order-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .order-card-enter {
+    animation: none;
+  }
+}

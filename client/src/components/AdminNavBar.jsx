@@ -2,6 +2,35 @@ import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AdminDrawer from './AdminDrawer';
+import ThemeToggle from './ThemeToggle';
+import {
+  SettingsIcon,
+  MenuIcon,
+  DashboardIcon,
+  ChartIcon,
+  FoodIcon,
+  PackageIcon,
+  PercentIcon,
+  UsersIcon,
+  TeamIcon,
+  ZoneIcon,
+  SupportIcon,
+  KeyIcon,
+  LogoutIcon,
+} from './icons';
+
+const NAV_ITEMS = [
+  { to: '/admin', label: 'Dashboard', icon: DashboardIcon, end: true },
+  { to: '/admin/stats', label: 'Stats', icon: ChartIcon },
+  { to: '/admin/menu', label: 'Menu', icon: FoodIcon },
+  { to: '/admin/orders', label: 'Orders', icon: PackageIcon },
+  { to: '/admin/promotions', label: 'Promotions', icon: PercentIcon },
+  { to: '/admin/customers', label: 'Customers', icon: UsersIcon },
+  { to: '/admin/team', label: 'Team', icon: TeamIcon },
+  { to: '/admin/zones', label: 'Zones', icon: ZoneIcon },
+  { to: '/admin/support', label: 'Support', icon: SupportIcon },
+  { to: '/admin/password', label: 'Settings', icon: KeyIcon },
+];
 
 export default function AdminNavBar() {
   const { logout } = useAuth();
@@ -9,93 +38,59 @@ export default function AdminNavBar() {
 
   return (
     <>
-      <header className="nav-shell">
+      {/* Desktop sidebar */}
+      <aside className="admin-sidebar">
+        <Link className="admin-sidebar-brand" to="/admin">
+          <SettingsIcon size={16} />
+          <span>Store Name</span>
+        </Link>
+
+        <nav className="admin-sidebar-nav">
+          {NAV_ITEMS.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) => `admin-sidebar-link${isActive ? ' active' : ''}`}
+            >
+              <item.icon size={17} />
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="admin-sidebar-footer">
+          <ThemeToggle />
+          <button type="button" className="admin-sidebar-logout" onClick={logout}>
+            <LogoutIcon size={16} />
+            <span>Logout</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* Mobile top bar */}
+      <header className="nav-shell admin-mobile-topbar">
         <div className="nav-inner">
           <Link className="brand admin-brand" to="/admin">
-            <span>Wise Gourmet</span>
-            <span className="admin-badge">⚙</span>
+            <span>Store Name</span>
+            <span className="admin-badge">
+              <SettingsIcon size={14} />
+            </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="admin-nav-desktop">
-            <NavLink
-              to="/admin"
-              className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-            >
-              Dashboard
-            </NavLink>
-            <NavLink
-              to="/admin/stats"
-              className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-            >
-              Stats
-            </NavLink>
-            <NavLink
-              to="/admin/menu"
-              className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-            >
-              Menu
-            </NavLink>
-            <NavLink
-              to="/admin/orders"
-              className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-            >
-              Orders
-            </NavLink>
-            <NavLink
-              to="/admin/team"
-              className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-            >
-              Team
-            </NavLink>
-            <NavLink
-              to="/admin/support"
-              className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-            >
-              Support
-            </NavLink>
-            <NavLink
-              to="/admin/zones"
-              className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-            >
-              Zones
-            </NavLink>
-            <NavLink
-              to="/admin/promotions"
-              className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-            >
-              Promotions
-            </NavLink>
-            <NavLink
-              to="/admin/customers"
-              className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-            >
-              Customers
-            </NavLink>
-            <NavLink
-              to="/admin/password"
-              className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-            >
-              Settings
-            </NavLink>
-            <button type="button" className="logout-link" onClick={logout}>
-              Logout
-            </button>
-          </nav>
+          <ThemeToggle />
 
-          {/* Mobile Hamburger Button */}
           <button
             className="hamburger-btn"
             type="button"
             onClick={() => setDrawerOpen(true)}
             aria-label="Open navigation menu"
           >
-            ☰
+            <MenuIcon />
           </button>
         </div>
       </header>
 
-      {/* Mobile Drawer */}
       <AdminDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </>
   );

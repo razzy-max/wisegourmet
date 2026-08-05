@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { userApi } from '../api/userApi';
-import LoadingSpinner from '../components/LoadingSpinner';
+import Skeleton from '../components/Skeleton';
 
 const PRESETS = [
   { label: '24 hours', value: 24, unit: 'hours' },
@@ -177,7 +177,7 @@ export default function AdminCustomersPage() {
       <p className="muted">View customer accounts and send a re-engagement message to customers who've gone quiet.</p>
 
       {error ? <p className="error">{error}</p> : null}
-      {loading ? <LoadingSpinner label="Loading customers..." /> : null}
+      {loading ? <Skeleton variant="row" count={4} /> : null}
 
       <article className="panel">
         <h3>Find inactive customers</h3>
@@ -262,7 +262,7 @@ export default function AdminCustomersPage() {
         <h3>Send Message ({selectedIds.size} selected)</h3>
         <div className="form">
           <input
-            placeholder="Title (optional, defaults to 'Wise Gourmet')"
+            placeholder="Title (optional, defaults to 'Store Name')"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
           />
@@ -334,7 +334,7 @@ export default function AdminCustomersPage() {
             <span className="muted">while still inactive</span>
           </div>
           <input
-            placeholder="Title (optional, defaults to 'Wise Gourmet')"
+            placeholder="Title (optional, defaults to 'Store Name')"
             value={automationTitle}
             onChange={(event) => setAutomationTitle(event.target.value)}
           />

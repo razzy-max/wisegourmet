@@ -1,5 +1,20 @@
 import { useEffect, useState } from 'react';
 import { userApi } from '../api/userApi';
+import { useInView } from '../hooks/useInView';
+import './AdminPolish.css';
+
+function RevealCard({ index, className, children }) {
+  const [ref, isInView] = useInView({ threshold: 0.12 });
+  return (
+    <div
+      ref={ref}
+      className={`${className} reveal-card${isInView ? ' is-visible' : ''}`}
+      style={{ transitionDelay: `${Math.min(index, 8) * 50}ms` }}
+    >
+      {children}
+    </div>
+  );
+}
 
 const initialForm = {
   fullName: '',
@@ -149,8 +164,8 @@ export default function AdminTeamPage() {
       <article className="panel" style={{ marginTop: '1rem' }}>
         <h3>Current Staff and Riders</h3>
         <div className="grid">
-          {users.map((user) => (
-            <div key={user._id} className="panel team-member-card">
+          {users.map((user, index) => (
+            <RevealCard key={user._id} index={index} className="panel team-member-card">
               <div className="member-header">
                 <div>
                   <h4>{user.fullName}</h4>
@@ -176,7 +191,7 @@ export default function AdminTeamPage() {
                   Delete member
                 </button>
               </div>
-            </div>
+            </RevealCard>
           ))}
         </div>
       </article>

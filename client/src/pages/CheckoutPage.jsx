@@ -4,6 +4,9 @@ import { orderApi } from '../api/orderApi';
 import { cartApi } from '../api/cartApi';
 import { authApi } from '../api/authApi';
 import { useCart } from '../context/CartContext';
+import PinDisplay from '../components/PinDisplay';
+import { CheckCircleIcon } from '../components/icons';
+import './OrderFlow.css';
 
 const getZoneLabel = (zoneKey, zones = []) => {
   if (!zoneKey) return 'Select zone';
@@ -245,7 +248,7 @@ export default function CheckoutPage() {
             {fulfillmentType === 'self_pickup' ? (
               <article className="pickup-info-card field-full">
                 <h4>Pickup Instructions</h4>
-                <p>Pick up from Wise Gourmet kitchen once your order is marked Ready for Pickup.</p>
+                <p>Pick up from Store Name kitchen once your order is marked Ready for Pickup.</p>
                 <p className="muted">No delivery fee will be charged for this option.</p>
               </article>
             ) : null}
@@ -368,6 +371,9 @@ export default function CheckoutPage() {
 
       {order && order.payment?.status === 'paid' ? (
         <div className="panel">
+          <div className="checkout-confirmed-icon" aria-hidden="true">
+            <CheckCircleIcon size={48} />
+          </div>
           <p><strong>Order Confirmed:</strong> {order._id}</p>
           <h3>Order summary</h3>
           <ul className="timeline">
@@ -394,24 +400,8 @@ export default function CheckoutPage() {
           ) : null}
           
           {order.deliveryPin && order.fulfillmentType !== 'self_pickup' && (
-            <div style={{
-              backgroundColor: '#f0f0f0',
-              padding: '20px',
-              borderRadius: '8px',
-              textAlign: 'center',
-              border: '2px solid #333',
-              marginTop: '20px',
-              marginBottom: '20px'
-            }}>
-              <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#666' }}>
-                Your Delivery PIN (share with rider):
-              </p>
-              <p style={{ margin: '0', fontSize: '36px', fontWeight: 'bold', letterSpacing: '8px', color: '#000' }}>
-                {order.deliveryPin}
-              </p>
-              <p style={{ margin: '10px 0 0 0', fontSize: '12px', color: '#999' }}>
-                Rider will ask for this PIN before completing delivery
-              </p>
+            <div style={{ marginTop: '20px', marginBottom: '20px' }}>
+              <PinDisplay pin={order.deliveryPin} label="Delivery PIN" subtitle="Share with your rider" />
             </div>
           )}
 

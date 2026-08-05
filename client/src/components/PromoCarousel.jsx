@@ -96,7 +96,9 @@ export default function PromoCarousel({ slides, intervalMs = 5000 }) {
         {slides.map((slide, index) => (
           <div
             key={slide.id}
-            className={`promo-slide ${slide.imageUrl ? '' : 'promo-slide-fallback'}`}
+            className={`promo-slide ${slide.imageUrl ? '' : 'promo-slide-fallback'} ${
+              index === activeIndex ? 'promo-slide-active' : ''
+            }`}
             style={slide.imageUrl ? { backgroundImage: `url(${slide.imageUrl})` } : undefined}
             aria-hidden={index !== activeIndex}
           >

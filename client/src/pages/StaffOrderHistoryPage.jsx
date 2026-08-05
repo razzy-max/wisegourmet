@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { orderApi } from '../api/orderApi';
-import LoadingSpinner from '../components/LoadingSpinner';
+import Skeleton from '../components/Skeleton';
 import { getStatusLabel, getStatusBadgeClass } from '../utils/statusHelpers';
+import './OpsPages.css';
 
 export default function StaffOrderHistoryPage() {
   const [orders, setOrders] = useState([]);
@@ -39,7 +40,7 @@ export default function StaffOrderHistoryPage() {
     <section className="page-wrap">
       <h1>Order History</h1>
       {error ? <p className="error">{error}</p> : null}
-      {loading ? <LoadingSpinner label="Loading order history..." /> : null}
+      {loading ? <Skeleton variant="card" count={3} /> : null}
 
       <article className="panel">
         <div className="row">
@@ -58,8 +59,12 @@ export default function StaffOrderHistoryPage() {
       <article className="panel" style={{ marginTop: '1rem' }}>
         <h3>Completed Orders</h3>
         <div className="grid">
-          {completedOrders.map((order) => (
-            <article className="panel" key={order._id}>
+          {completedOrders.map((order, index) => (
+            <article
+              className="panel order-card-enter"
+              key={order._id}
+              style={{ '--order-card-delay': `${Math.min(index, 8) * 0.05}s` }}
+            >
               <div className="zone-card-top">
                 <h4>Order {order._id.slice(-6)}</h4>
                 <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>

@@ -4,7 +4,10 @@ import { orderApi } from '../api/orderApi';
 import { useOrdersRealtime } from '../hooks/useOrdersRealtime';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EnableAlertsCard from '../components/EnableAlertsCard';
+import PinDisplay from '../components/PinDisplay';
 import { getStatusLabel, getStatusBadgeClass, getStepperCircleClass } from '../utils/statusHelpers';
+import { CheckIcon } from '../components/icons';
+import './OrderFlow.css';
 
 const dedupeTimeline = (timeline = []) => {
   return timeline.filter((entry, index, array) => {
@@ -31,7 +34,6 @@ export default function OrderDetailsPage() {
   const { id } = useParams();
   const [order, setOrder] = useState(null);
   const [error, setError] = useState('');
-  const [copiedPin, setCopiedPin] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState('');
 
@@ -50,14 +52,6 @@ export default function OrderDetailsPage() {
   }, [load]);
 
   useOrdersRealtime(load, { orderId: id });
-
-  const copyPin = () => {
-    if (order.deliveryPin) {
-      navigator.clipboard.writeText(order.deliveryPin);
-      setCopiedPin(true);
-      setTimeout(() => setCopiedPin(false), 2000);
-    }
-  };
 
   const getRiderInitials = (fullName) => {
     if (!fullName) return 'R';
@@ -174,32 +168,11 @@ export default function OrderDetailsPage() {
         </article>
 
         {/* PIN Card */}
-        <article className="panel order-delivery-pin">
-          <div className="pin-header">
-            <span>{order.fulfillmentType === 'self_pickup' ? '🔐 Pickup PIN' : '🔐 Delivery PIN'}</span>
-            <span className="pin-subtitle">
-              {order.fulfillmentType === 'self_pickup'
-                ? 'Show to kitchen staff at collection'
-                : 'Share with your rider'}
-            </span>
-          </div>
-          {order.payment?.status === 'paid' && order.deliveryPin ? (
-            <>
-              <div className="pin-display" onClick={copyPin}>
-                <strong>{order.deliveryPin}</strong>
-                <p className="pin-hint" style={{ opacity: copiedPin ? 1 : 0.5 }}>
-                  {copiedPin ? '✓ Copied!' : 'Tap to copy'}
-                </p>
-              </div>
-            </>
-          ) : (
-            <p className="muted">
-              {order.fulfillmentType === 'self_pickup'
-                ? 'Pickup PIN will appear after payment is verified.'
-                : 'Delivery PIN will appear after payment is verified.'}
-            </p>
-          )}
-        </article>
+        <PinDisplay
+          pin={order.payment?.status === 'paid' ? order.deliveryPin : ''}
+          label={order.fulfillmentType === 'self_pickup' ? 'Pickup PIN' : 'Delivery PIN'}
+          subtitle={order.fulfillmentType === 'self_pickup' ? 'Show to kitchen staff at collection' : 'Share with your rider'}
+        />
 
         {/* Payment Action Card - Show if payment is pending */}
         {isPaymentPending && (
@@ -322,9 +295,15 @@ export default function OrderDetailsPage() {
             return (
               <div key={status} className="stepper-step">
                 <div className={`stepper-circle ${getStepperCircleClass(order.status, status)}`}>
-                  {isCompleted && <span>✓</span>}
+                  {isCompleted && <CheckIcon size={12} />}
                 </div>
-                {index < statusOrder.length - 1 && <div className="stepper-line" />}
+                {index < statusOrder.length - 1 && (
+                  <div className="stepper-line">
+                    <div
+                      className={`stepper-line-fill ${isCompleted ? 'stepper-line-fill-active' : ''}`}
+                    />
+                  </div>
+                )}
                 <div className="stepper-content">
                   <h4>{status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</h4>
                   {timelineEntry && (

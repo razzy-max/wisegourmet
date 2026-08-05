@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { orderApi } from '../api/orderApi';
 import { useOrdersRealtime } from '../hooks/useOrdersRealtime';
-import LoadingSpinner from '../components/LoadingSpinner';
 import EnableAlertsCard from '../components/EnableAlertsCard';
 import PinEntryForm from '../components/PinEntryForm';
+import Skeleton from '../components/Skeleton';
 import { getStatusLabel, getStatusBadgeClass } from '../utils/statusHelpers';
+import './OpsPages.css';
 
 const KITCHEN_STATUSES = ['confirmed', 'preparing'];
 
@@ -92,12 +93,16 @@ export default function KitchenOrdersPage() {
       <p className="muted">Manage confirmed orders and move them to ready_for_pickup.</p>
       {message ? <p className="message">{message}</p> : null}
       {error ? <p className="error">{error}</p> : null}
-      {loading ? <LoadingSpinner label="Loading kitchen orders..." /> : null}
+      {loading ? <Skeleton variant="card" count={3} /> : null}
       {!loading && kitchenOrders.length === 0 ? <p className="muted">No kitchen orders pending right now.</p> : null}
 
       <div className="grid">
-        {kitchenOrders.map((order) => (
-          <article className="panel" key={order._id}>
+        {kitchenOrders.map((order, index) => (
+          <article
+            className="panel order-card-enter"
+            key={order._id}
+            style={{ '--order-card-delay': `${Math.min(index, 8) * 0.05}s` }}
+          >
             <div className="zone-card-top">
               <h3>Order {order._id.slice(-6)}</h3>
               <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>

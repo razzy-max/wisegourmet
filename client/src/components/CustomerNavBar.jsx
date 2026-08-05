@@ -2,6 +2,8 @@ import { Link, NavLink } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import ThemeToggle from './ThemeToggle';
+import { LeafIcon, CartIcon, MenuIcon, ReceiptIcon, ProfileIcon, SupportIcon, LogoutIcon } from './icons';
 
 export default function CustomerNavBar() {
   const { logout, isAuthenticated } = useAuth();
@@ -58,58 +60,17 @@ export default function CustomerNavBar() {
 
   const renderCartIcon = (className = 'cart-icon') => (
     <span className={className} aria-hidden="true">
-      <svg
-        viewBox="0 0 24 24"
-        className="cart-icon-svg"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <circle cx="9" cy="20" r="1" />
-        <circle cx="18" cy="20" r="1" />
-        <path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h8.8a1 1 0 0 0 1-.8L21 7H7" />
-      </svg>
+      <CartIcon className="cart-icon-svg" size={20} strokeWidth={2} />
     </span>
   );
 
   const renderBottomNavIcon = (iconName) => {
     const icons = {
-      menu: (
-        <svg viewBox="0 0 24 24" className="mobile-nav-icon-svg" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M4 7h16" />
-          <path d="M4 12h16" />
-          <path d="M4 17h16" />
-        </svg>
-      ),
-      cart: (
-        <svg viewBox="0 0 24 24" className="mobile-nav-icon-svg" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="9" cy="20" r="1.2" />
-          <circle cx="18" cy="20" r="1.2" />
-          <path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h8.8a1 1 0 0 0 1-.8L21 7H7" />
-        </svg>
-      ),
-      orders: (
-        <svg viewBox="0 0 24 24" className="mobile-nav-icon-svg" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M6 4h12l2 4v10H4V8z" />
-          <path d="M9 4v4" />
-          <path d="M15 4v4" />
-        </svg>
-      ),
-      profile: (
-        <svg viewBox="0 0 24 24" className="mobile-nav-icon-svg" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="8" r="3.5" />
-          <path d="M5 20c1.5-3.5 4-5.5 7-5.5s5.5 2 7 5.5" />
-        </svg>
-      ),
-      support: (
-        <svg viewBox="0 0 24 24" className="mobile-nav-icon-svg" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M4 12a8 8 0 0 1 16 0" />
-          <path d="M4 12v3a3 3 0 0 0 3 3h1v-7H7a3 3 0 0 0-3 3Z" />
-          <path d="M20 12v3a3 3 0 0 1-3 3h-1v-7h1a3 3 0 0 1 3 3Z" />
-        </svg>
-      ),
+      menu: <MenuIcon className="mobile-nav-icon-svg" size={22} strokeWidth={2.2} />,
+      cart: <CartIcon className="mobile-nav-icon-svg" size={22} strokeWidth={2.2} />,
+      orders: <ReceiptIcon className="mobile-nav-icon-svg" size={22} strokeWidth={2.2} />,
+      profile: <ProfileIcon className="mobile-nav-icon-svg" size={22} strokeWidth={2.2} />,
+      support: <SupportIcon className="mobile-nav-icon-svg" size={22} strokeWidth={2.2} />,
     };
 
     return icons[iconName];
@@ -121,9 +82,9 @@ export default function CustomerNavBar() {
         <div className="nav-inner">
           <Link className="brand" to="/">
             <span className="brand-mark" aria-hidden="true">
-              🍃
+              <LeafIcon size={20} />
             </span>{' '}
-            Wise Gourmet
+            Store Name
           </Link>
 
           <nav className="customer-nav-desktop">
@@ -171,8 +132,9 @@ export default function CustomerNavBar() {
                   </button>
                 ) : null}
                 <button type="button" className="logout-link" onClick={logout}>
-                  ⎋ Logout
+                  <LogoutIcon size={16} /> Logout
                 </button>
+                <ThemeToggle />
               </>
             ) : (
               <>
@@ -197,6 +159,7 @@ export default function CustomerNavBar() {
                 >
                   Register
                 </NavLink>
+                <ThemeToggle />
               </>
             )}
           </nav>
@@ -219,6 +182,7 @@ export default function CustomerNavBar() {
                     </span>
                   ) : null}
                 </Link>
+                <ThemeToggle />
               </div>
             ) : (
               <div className="mobile-guest-nav-row">
@@ -235,6 +199,7 @@ export default function CustomerNavBar() {
                     Register
                   </Link>
                 </div>
+                <ThemeToggle />
               </div>
             )}
           </div>

@@ -1,0 +1,73 @@
+/* ===== ORDER FLOW ANIMATIONS (Cart, Checkout, Order Details) ===== */
+
+/* --- Cart: staggered row fade-in on first render --- */
+.cart-item-row {
+  animation: cart-row-in 0.3s ease both;
+}
+
+@keyframes cart-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Checkout: order-confirmed checkmark entrance --- */
+.checkout-confirmed-icon {
+  display: flex;
+  justify-content: center;
+  color: var(--wg-green);
+  margin-bottom: 0.4rem;
+  animation: checkmark-pop 0.4s ease-out both;
+}
+
+@keyframes checkmark-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+
+  70% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* --- Order Details: stepper line fill transition --- */
+.stepper-line-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--wg-green);
+  border-radius: 2px;
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.4s ease;
+}
+
+.stepper-line-fill-active {
+  transform: scaleY(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cart-item-row {
+    animation: none;
+  }
+
+  .checkout-confirmed-icon {
+    animation: none;
+  }
+
+  .stepper-line-fill {
+    transition: none;
+  }
+}

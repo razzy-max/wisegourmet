@@ -10,9 +10,11 @@
 }
 
 .install-logo {
-  font-size: 3.5rem;
   margin-bottom: 1rem;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #3a6835;
 }
 
 .install-header h1 {
@@ -22,29 +24,29 @@
 }
 
 .install-header p {
-  color: #5f6d60;
+  color: var(--wg-muted);
   font-size: 1.05rem;
   margin: 0;
 }
 
 .install-card {
-  background: #ffffff;
+  background: var(--wg-card);
   border-radius: 16px;
   padding: 2rem 1.5rem;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  border: 1px solid #ece8de;
+  border: 1px solid var(--wg-border);
   text-align: center;
   margin-bottom: 1rem;
 }
 
 .install-icon {
-  font-size: 3rem;
   margin-bottom: 1rem;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .install-icon-success {
-  font-size: 3.5rem;
   color: #3a6835;
 }
 
@@ -132,24 +134,24 @@
 }
 
 .install-button-secondary {
-  background: #f0f4ed;
-  color: #3a6835;
-  border: 1px solid #dde2d7;
+  background: var(--wg-green-light);
+  color: var(--wg-green);
+  border: 1px solid var(--wg-border);
 }
 
 .install-button-secondary:hover {
-  background: #e8ede2;
-  border-color: #d0d5ca;
+  background: var(--wg-border);
+  border-color: var(--wg-green);
 }
 
 .install-button-ghost {
   background: transparent;
-  color: #5f6d60;
-  border: 1px solid #dde2d7;
+  color: var(--wg-muted);
+  border: 1px solid var(--wg-border);
 }
 
 .install-button-ghost:hover {
-  background: #f8fafc;
+  background: var(--wg-green-light);
   color: #3a6835;
 }
 
@@ -190,11 +192,4 @@
     padding: 1.5rem 1rem;
   }
 
-  .install-logo {
-    font-size: 3rem;
-  }
-
-  .install-icon {
-    font-size: 2.5rem;
-  }
 }

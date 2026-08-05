@@ -1,6 +1,6 @@
-# Wise Gourmet
+# Store Name
 
-Wise Gourmet is a restaurant ordering and operations demo built to feel like a real production product. It covers the full workflow from browsing a live menu, placing and paying for orders, tracking fulfillment, managing support tickets, and coordinating staff, riders, and administrators from the same platform.
+Store Name is a restaurant ordering and operations demo built to feel like a real production product. It covers the full workflow from browsing a live menu, placing and paying for orders, tracking fulfillment, managing support tickets, and coordinating staff, riders, and administrators from the same platform.
 
 ## What It Demonstrates
 
@@ -184,4 +184,4 @@ Use this if you need a quick presentation flow:
 5. Show the `/install` page and explain that the app can be saved to the phone home screen.
 6. Mention that alerts can be enabled per role so customers, kitchen staff, riders, and support all receive the right updates.
 
-One-line pitch: Wise Gourmet turns restaurant ordering, operations, support, and mobile installability into one app-like workflow.
+One-line pitch: Store Name turns restaurant ordering, operations, support, and mobile installability into one app-like workflow.

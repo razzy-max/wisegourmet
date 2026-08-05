@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import SimpleNavDrawer from './SimpleNavDrawer';
+import ThemeToggle from './ThemeToggle';
+import { MenuIcon } from './icons';
 
 const NAV_ITEMS = [
   { path: '/staff/kitchen', label: 'Kitchen' },
@@ -17,7 +19,7 @@ export default function StaffNavBar() {
       <header className="nav-shell">
         <div className="nav-inner">
           <Link className="brand" to="/staff/kitchen">
-            Wise Gourmet (Kitchen)
+            Store Name (Kitchen)
           </Link>
 
           <nav className="admin-nav-desktop">
@@ -35,13 +37,15 @@ export default function StaffNavBar() {
             </button>
           </nav>
 
+          <ThemeToggle />
+
           <button
             className="hamburger-btn"
             type="button"
             onClick={() => setDrawerOpen(true)}
             aria-label="Open navigation menu"
           >
-            ☰
+            <MenuIcon />
           </button>
         </div>
       </header>

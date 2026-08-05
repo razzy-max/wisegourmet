@@ -12,7 +12,7 @@ if (isPushConfigured()) {
 }
 
 const buildPayload = (payload = {}) => ({
-  title: payload.title || 'Wise Gourmet',
+  title: payload.title || 'Store Name',
   body: payload.body || '',
   url: payload.url || '/',
   tag: payload.tag || '',

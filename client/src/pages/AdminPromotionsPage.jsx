@@ -3,8 +3,24 @@ import { promotionApi } from '../api/promotionApi';
 import { heroBackgroundApi } from '../api/heroBackgroundApi';
 import { menuApi } from '../api/menuApi';
 import { usePromotionsRealtime } from '../hooks/usePromotionsRealtime';
+import { useInView } from '../hooks/useInView';
 import { filesToAttachments } from '../utils/attachments';
-import LoadingSpinner from '../components/LoadingSpinner';
+import Skeleton from '../components/Skeleton';
+import { UploadIcon } from '../components/icons';
+import './AdminPolish.css';
+
+function RevealArticle({ index, className, children }) {
+  const [ref, isInView] = useInView({ threshold: 0.12 });
+  return (
+    <article
+      ref={ref}
+      className={`${className} reveal-card${isInView ? ' is-visible' : ''}`}
+      style={{ transitionDelay: `${Math.min(index, 8) * 50}ms` }}
+    >
+      {children}
+    </article>
+  );
+}
 
 const blankForm = {
   title: '',
@@ -307,7 +323,7 @@ export default function AdminPromotionsPage() {
 
       {error ? <p className="error">{error}</p> : null}
       {message ? <p className="message">{message}</p> : null}
-      {loading ? <LoadingSpinner label="Loading promotions..." /> : null}
+      {loading ? <Skeleton variant="card" count={4} /> : null}
 
       <article className="panel">
         <h3>Greeting Banner Background</h3>
@@ -323,7 +339,7 @@ export default function AdminPromotionsPage() {
             <div className="hero-background-preview">Using default background</div>
           )}
           <label className="upload-zone" htmlFor="hero-background-image">
-            <p className="upload-icon" aria-hidden="true">☁</p>
+            <p className="upload-icon" aria-hidden="true"><UploadIcon size={28} /></p>
             <p>Drag files here or click to upload.</p>
           </label>
           <input
@@ -364,7 +380,7 @@ export default function AdminPromotionsPage() {
             onChange={(event) => setForm((prev) => ({ ...prev, imageUrl: event.target.value }))}
           />
           <label className="upload-zone" htmlFor="create-promo-image">
-            <p className="upload-icon" aria-hidden="true">☁</p>
+            <p className="upload-icon" aria-hidden="true"><UploadIcon size={28} /></p>
             <p>Drag files here or click to upload.</p>
           </label>
           <input
@@ -428,7 +444,7 @@ export default function AdminPromotionsPage() {
         <h3>Configured Promotions</h3>
         <div className="grid">
           {promotions.map((promotion, index) => (
-            <article className="panel" key={promotion._id}>
+            <RevealArticle index={index} className="panel" key={promotion._id}>
               {editingId === promotion._id ? (
                 <>
                   {editForm.imageUrl ? (
@@ -463,7 +479,7 @@ export default function AdminPromotionsPage() {
                       }}
                     />
                     <label className="upload-zone" htmlFor={`edit-promo-image-${promotion._id}`}>
-                      <p className="upload-icon" aria-hidden="true">☁</p>
+                      <p className="upload-icon" aria-hidden="true"><UploadIcon size={28} /></p>
                       <p>Drag files here or click to upload.</p>
                     </label>
                     <input
@@ -583,7 +599,7 @@ export default function AdminPromotionsPage() {
                   </div>
                 </>
               )}
-            </article>
+            </RevealArticle>
           ))}
         </div>
       </article>

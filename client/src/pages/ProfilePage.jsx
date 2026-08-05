@@ -3,6 +3,7 @@ import { orderApi } from '../api/orderApi';
 import { authApi } from '../api/authApi';
 import { userApi } from '../api/userApi';
 import { useAuth } from '../context/AuthContext';
+import ToggleSwitch from '../components/ToggleSwitch';
 
 const formatZoneLabel = (zoneKey) =>
   String(zoneKey || '')
@@ -54,7 +55,7 @@ export default function ProfilePage() {
     .map((value) => value.trim().charAt(0).toUpperCase())
     .filter(Boolean)
     .slice(0, 2)
-    .join('') || 'WG';
+    .join('') || 'SN';
 
   const loadProfile = async () => {
     try {
@@ -353,32 +354,22 @@ export default function ProfilePage() {
           <p className="muted">Notifications are currently unavailable on the server.</p>
         ) : null}
         {!notificationsLoading && notificationsSupported && notificationsConfigured ? (
-          <>
-            <p className="muted">
-              Status: <strong>{notificationsSubscribed ? 'Enabled on this device' : 'Disabled on this device'}</strong>
-            </p>
-            <div className="row" style={{ marginTop: '0.75rem' }}>
-              {notificationsSubscribed ? (
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  onClick={disableNotifications}
-                  disabled={notificationsBusy}
-                >
-                  {notificationsBusy ? 'Disabling...' : 'Disable Notifications'}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={enableNotifications}
-                  disabled={notificationsBusy}
-                >
-                  {notificationsBusy ? 'Enabling...' : 'Enable Notifications'}
-                </button>
-              )}
-            </div>
-          </>
+          <div className="row" style={{ marginTop: '0.75rem', alignItems: 'center' }}>
+            <ToggleSwitch
+              checked={notificationsSubscribed}
+              disabled={notificationsBusy}
+              onChange={(event) => (event.target.checked ? enableNotifications() : disableNotifications())}
+              label={
+                notificationsBusy
+                  ? notificationsSubscribed
+                    ? 'Disabling...'
+                    : 'Enabling...'
+                  : notificationsSubscribed
+                    ? 'Enabled on this device'
+                    : 'Disabled on this device'
+              }
+            />
+          </div>
         ) : null}
         {notificationsMessage ? <p className="muted" style={{ marginTop: '0.75rem' }}>{notificationsMessage}</p> : null}
       </article>

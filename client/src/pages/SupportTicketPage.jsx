@@ -5,6 +5,8 @@ import { supportApi } from '../api/supportApi';
 import { filesToAttachments } from '../utils/attachments';
 import { useSupportTicketRealtime } from '../hooks/useSupportTicketRealtime';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { UploadIcon, SupportIcon } from '../components/icons';
+import './Support.css';
 
 const initialComposer = {
   text: '',
@@ -127,6 +129,21 @@ export default function SupportTicketPage() {
     return user?.role === 'customer' ? 'You' : senderName || 'Customer';
   };
 
+  const getSenderInitials = (message) => {
+    const label = getSenderLabel(message).replace(/[()]/g, '');
+    const words = label.trim().split(/\s+/).filter(Boolean);
+
+    if (words.length === 0) {
+      return '';
+    }
+
+    if (words.length === 1) {
+      return words[0].charAt(0).toUpperCase();
+    }
+
+    return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+  };
+
   const setStatus = async (status) => {
     setStatusBusy(true);
     setError('');
@@ -219,39 +236,52 @@ export default function SupportTicketPage() {
           <div className="ticket-messages">
             {messages.map((message, index) => {
               const isOwnMessage = String(message.sender?._id || message.sender || '') === String(user?.id || '') || (user?.role === 'customer' && message.senderRole === 'customer');
+              const initials = getSenderInitials(message);
+              const avatar = (
+                <span className={`ticket-avatar ${isOwnMessage ? 'ticket-avatar-own' : 'ticket-avatar-other'}`} aria-hidden="true">
+                  {initials || <SupportIcon size={16} />}
+                </span>
+              );
               return (
-                <div key={`${message.createdAt || index}-${index}`} className={`ticket-message ${isOwnMessage ? 'ticket-message-own' : 'ticket-message-other'}`}>
-                  <div className="ticket-message-header">
-                    <strong>{getSenderLabel(message)}</strong>
-                    <span>{message.createdAt ? new Date(message.createdAt).toLocaleString() : ''}</span>
-                  </div>
-                  {message.text ? <p>{message.text}</p> : null}
-                  {message.attachments?.length ? (
-                    <div className="ticket-attachments">
-                      {message.attachments.map((attachment, attachmentIndex) => (
-                        attachment.fileType?.startsWith('image/') ? (
-                          <button
-                            key={`${attachment.fileName}-${attachmentIndex}`}
-                            type="button"
-                            className="ticket-attachment ticket-attachment-btn"
-                            onClick={() => setViewerImage(attachment)}
-                          >
-                            <img src={attachment.dataUrl} alt={attachment.fileName} />
-                          </button>
-                        ) : (
-                          <a
-                            key={`${attachment.fileName}-${attachmentIndex}`}
-                            href={attachment.dataUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="ticket-attachment"
-                          >
-                            <span>{attachment.fileName}</span>
-                          </a>
-                        )
-                      ))}
+                <div
+                  key={`${message.createdAt || index}-${index}`}
+                  className={`ticket-message-row ${isOwnMessage ? 'ticket-message-row-own' : 'ticket-message-row-other'}`}
+                >
+                  {!isOwnMessage ? avatar : null}
+                  <div className={`ticket-message ${isOwnMessage ? 'ticket-message-own' : 'ticket-message-other'}`}>
+                    <div className="ticket-message-header">
+                      <strong>{getSenderLabel(message)}</strong>
+                      <span>{message.createdAt ? new Date(message.createdAt).toLocaleString() : ''}</span>
                     </div>
-                  ) : null}
+                    {message.text ? <p>{message.text}</p> : null}
+                    {message.attachments?.length ? (
+                      <div className="ticket-attachments">
+                        {message.attachments.map((attachment, attachmentIndex) => (
+                          attachment.fileType?.startsWith('image/') ? (
+                            <button
+                              key={`${attachment.fileName}-${attachmentIndex}`}
+                              type="button"
+                              className="ticket-attachment ticket-attachment-btn"
+                              onClick={() => setViewerImage(attachment)}
+                            >
+                              <img src={attachment.dataUrl} alt={attachment.fileName} />
+                            </button>
+                          ) : (
+                            <a
+                              key={`${attachment.fileName}-${attachmentIndex}`}
+                              href={attachment.dataUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="ticket-attachment"
+                            >
+                              <span>{attachment.fileName}</span>
+                            </a>
+                          )
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                  {isOwnMessage ? avatar : null}
                 </div>
               );
             })}
@@ -268,7 +298,7 @@ export default function SupportTicketPage() {
                 onChange={(event) => setComposer((prev) => ({ ...prev, text: event.target.value }))}
               />
               <label className="upload-zone" htmlFor="ticket-reply-attachments">
-                <p className="upload-icon" aria-hidden="true">☁</p>
+                <p className="upload-icon" aria-hidden="true"><UploadIcon size={28} /></p>
                 <p>Drag files here or click to upload.</p>
               </label>
               <input
@@ -331,8 +361,8 @@ export default function SupportTicketPage() {
       </div>
 
       {viewerImage ? (
-        <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setViewerImage(null)}>
-          <div className="lightbox-content" onClick={(event) => event.stopPropagation()}>
+        <div className="lightbox lightbox-animate" role="dialog" aria-modal="true" onClick={() => setViewerImage(null)}>
+          <div className="lightbox-content lightbox-content-animate" onClick={(event) => event.stopPropagation()}>
             <img src={viewerImage.dataUrl} alt={viewerImage.fileName} />
             <p>{viewerImage.fileName}</p>
           </div>

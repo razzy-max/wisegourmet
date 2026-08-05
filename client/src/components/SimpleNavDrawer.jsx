@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { CloseIcon } from './icons';
 
 export default function SimpleNavDrawer({ isOpen, onClose, links, title = 'Navigation' }) {
   const { logout } = useAuth();
@@ -20,7 +21,7 @@ export default function SimpleNavDrawer({ isOpen, onClose, links, title = 'Navig
         <div className="drawer-header">
           <h2 className="drawer-title">{title}</h2>
           <button className="drawer-close-btn" type="button" onClick={onClose} aria-label="Close navigation">
-            ✕
+            <CloseIcon />
           </button>
         </div>
 

@@ -4,6 +4,8 @@ import { supportApi } from '../api/supportApi';
 import { filesToAttachments } from '../utils/attachments';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { orderApi } from '../api/orderApi';
+import { UploadIcon, InboxIcon } from '../components/icons';
+import EmptyState from '../components/EmptyState';
 
 const initialForm = {
   orderId: '',
@@ -123,7 +125,7 @@ export default function SupportPage() {
             />
 
             <label className="upload-zone" htmlFor="support-attachments">
-              <p className="upload-icon" aria-hidden="true">☁</p>
+              <p className="upload-icon" aria-hidden="true"><UploadIcon size={28} /></p>
               <p>Drag files here or click to upload.</p>
             </label>
             <input
@@ -160,10 +162,7 @@ export default function SupportPage() {
           <h3>My tickets</h3>
           {loading ? <LoadingSpinner label="Loading your tickets..." /> : null}
           {!loading && tickets.length === 0 ? (
-            <div className="empty-state">
-              <p className="empty-icon" aria-hidden="true">📥</p>
-              <p className="muted">No tickets yet. We&apos;re here if you need us.</p>
-            </div>
+            <EmptyState icon={InboxIcon} heading="No tickets yet" subtext="We're here if you need us." />
           ) : null}
           <div className="grid">
             {tickets.map((ticket) => (

@@ -1,0 +1,233 @@
+/* ===== AUTH (LOGIN / REGISTER) PAGES ===== */
+
+.auth-page {
+  width: 100%;
+  padding-top: 2.5rem;
+}
+
+/* Split-panel shell: brand/testimonial on the left, the form card on the
+   right. This is the element that fades in on mount and shows the
+   shake-on-error animation used to live on .auth-card directly; the class
+   toggling logic in the pages is untouched, only which element carries the
+   visuals changed. */
+.auth-split {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 45% 55%;
+  align-items: stretch;
+  background: var(--wg-card);
+  border: 1px solid var(--wg-border);
+  border-radius: var(--wg-radius-lg);
+  box-shadow: var(--wg-shadow);
+  overflow: hidden;
+}
+
+.auth-panel-brand {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 2.6rem 2.1rem;
+  background: linear-gradient(150deg, var(--wg-green-header), #2e542a);
+  color: #ffffff;
+}
+
+.auth-brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.auth-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.auth-brand-name {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.auth-testimonial {
+  margin: 0;
+}
+
+.auth-testimonial p {
+  margin: 0 0 0.75rem;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #ffffff;
+}
+
+.auth-testimonial footer {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.auth-panel-form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 2.2rem;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  animation: auth-card-in 0.45s ease-out both;
+}
+
+.auth-card-shake {
+  animation: auth-shake 0.4s ease-in-out;
+}
+
+.auth-brand {
+  text-align: center;
+  margin-bottom: 1.4rem;
+}
+
+.auth-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.45rem;
+  text-align: center;
+  color: var(--wg-text);
+}
+
+.auth-tagline {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--wg-muted);
+  text-align: center;
+}
+
+.auth-form {
+  margin-top: 0.4rem;
+}
+
+.auth-submit-btn {
+  width: 100%;
+  margin-top: 0.3rem;
+  text-align: center;
+}
+
+.auth-error {
+  margin: 0.9rem 0 0;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.auth-switch {
+  margin: 1.1rem 0 0;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--wg-muted);
+}
+
+.auth-switch a {
+  color: var(--wg-green);
+  font-weight: 600;
+}
+
+/* Auth pages reuse .floating-label-field from the admin password page, but the
+   password input sits inside a .form grid here, so make sure it spans full width
+   and keeps consistent spacing with the floating-field inputs around it. */
+.auth-form .floating-label-field {
+  margin-bottom: 0;
+}
+
+@keyframes auth-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes auth-shake {
+  10%,
+  90% {
+    transform: translateX(-1px);
+  }
+  20%,
+  80% {
+    transform: translateX(2px);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translateX(-4px);
+  }
+  40%,
+  60% {
+    transform: translateX(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-card {
+    animation: none;
+  }
+
+  .auth-card-shake {
+    animation: none;
+  }
+}
+
+/* Below this width a two-column split reads cramped, so the brand panel
+   collapses to a compact leaf + wordmark line above the form instead of a
+   full gradient panel with a testimonial. */
+@media (max-width: 720px) {
+  .auth-split {
+    grid-template-columns: 1fr;
+    max-width: 460px;
+  }
+
+  .auth-panel-brand {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.6rem;
+    padding: 1.4rem 1.5rem 1rem;
+  }
+
+  .auth-brand-mark {
+    width: 32px;
+    height: 32px;
+  }
+
+  .auth-testimonial {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-page {
+    padding-top: 1.4rem;
+  }
+
+  .auth-panel-brand {
+    padding: 1.2rem 1.15rem 0.9rem;
+  }
+
+  .auth-panel-form {
+    padding: 1.4rem 1.15rem 1.6rem;
+  }
+}

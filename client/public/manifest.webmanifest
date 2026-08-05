@@ -1,12 +1,12 @@
 {
-  "name": "Wise Gourmet",
-  "short_name": "WiseGourmet",
-  "description": "Order food from Wise Gourmet with a fast app-like experience.",
+  "name": "Store Name",
+  "short_name": "Store Name",
+  "description": "Order food from Store Name with a fast app-like experience.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#101828",
+  "background_color": "#faf8f4",
+  "theme_color": "#3a6835",
   "orientation": "portrait",
   "icons": [
     {

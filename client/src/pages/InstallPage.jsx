@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import EnableAlertsCard from '../components/EnableAlertsCard';
+import { CheckCircleIcon, LeafIcon, PhoneIcon, DesktopIcon, TipIcon } from '../components/icons';
 import './InstallPage.css';
 
 export default function InstallPage() {
@@ -64,8 +65,8 @@ export default function InstallPage() {
     return (
       <div className="page-wrap">
         <div className="install-card install-success">
-          <div className="install-icon install-icon-success">✓</div>
-          <h1>Wise Gourmet is Installed!</h1>
+          <div className="install-icon install-icon-success"><CheckCircleIcon size={28} /></div>
+          <h1>Store Name is Installed!</h1>
           <p>You're all set. The app is ready to use from your home screen.</p>
           <button onClick={() => navigate('/')} className="install-button install-button-primary">
             Go to Menu
@@ -80,16 +81,16 @@ export default function InstallPage() {
     <div className="page-wrap">
       <div className="install-container">
         <div className="install-header">
-          <div className="install-logo">🍃</div>
-          <h1>Get Wise Gourmet as an App</h1>
+          <div className="install-logo"><LeafIcon size={28} /></div>
+          <h1>Get Store Name as an App</h1>
           <p>Install on your phone for quick access and offline support</p>
         </div>
 
         {isAndroid && canInstall && (
           <div className="install-card install-card-android">
-            <div className="install-icon install-icon-android">📱</div>
+            <div className="install-icon install-icon-android"><PhoneIcon size={28} /></div>
             <h2>Install Now</h2>
-            <p>Tap the button below to add Wise Gourmet to your phone's home screen.</p>
+            <p>Tap the button below to add Store Name to your phone's home screen.</p>
             <button onClick={handleInstallClick} className="install-button install-button-primary">
               Install App
             </button>
@@ -98,7 +99,7 @@ export default function InstallPage() {
 
         {isIos && (
           <div className="install-card install-card-ios">
-            <div className="install-icon install-icon-ios">📲</div>
+            <div className="install-icon install-icon-ios"><PhoneIcon size={28} /></div>
             <h2>Install for iOS</h2>
             <p>Follow these simple steps:</p>
             <ol className="install-steps">
@@ -113,7 +114,7 @@ export default function InstallPage() {
               </li>
             </ol>
             <div className="install-tip">
-              <strong>💡 Tip:</strong> Open this link in Safari to see the install option
+              <TipIcon size={16} /> <strong>Tip:</strong> Open this link in Safari to see the install option
             </div>
             <button onClick={() => navigate('/')} className="install-button install-button-secondary">
               Open Menu
@@ -123,7 +124,7 @@ export default function InstallPage() {
 
         {!isAndroid && !isIos && (
           <div className="install-card install-card-desktop">
-            <div className="install-icon install-icon-desktop">💻</div>
+            <div className="install-icon install-icon-desktop"><DesktopIcon size={28} /></div>
             <h2>Desktop View</h2>
             <p>It looks like you're on a desktop or the device type couldn't be detected.</p>
             <p className="install-hint">
@@ -139,7 +140,7 @@ export default function InstallPage() {
 
         {isAndroid && !canInstall && (
           <div className="install-card install-card-android">
-            <div className="install-icon install-icon-android">📱</div>
+            <div className="install-icon install-icon-android"><PhoneIcon size={28} /></div>
             <h2>Ready to Install?</h2>
             <p>
               The app can be installed on your Android device. If you don't see an install option, try reloading

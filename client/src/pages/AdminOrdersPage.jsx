@@ -4,18 +4,11 @@ import { orderApi } from '../api/orderApi';
 import { useAuth } from '../context/AuthContext';
 import { useOrdersRealtime } from '../hooks/useOrdersRealtime';
 import { getStatusLabel, getStatusBadgeClass } from '../utils/statusHelpers';
-import LoadingSpinner from '../components/LoadingSpinner';
 import EnableAlertsCard from '../components/EnableAlertsCard';
-
-const getStatusTone = (status) => {
-  if (['arrived', 'picked_up', 'delivered'].includes(status)) {
-    return 'success';
-  }
-  if (['confirmed', 'preparing', 'ready_for_pickup', 'on_the_way'].includes(status)) {
-    return 'active';
-  }
-  return 'muted';
-};
+import Skeleton from '../components/Skeleton';
+import EmptyState from '../components/EmptyState';
+import { SearchIcon, PackageIcon, ChevronRightIcon } from '../components/icons';
+import './AdminPolish.css';
 
 export default function AdminOrdersPage() {
   const { user } = useAuth();
@@ -83,104 +76,130 @@ export default function AdminOrdersPage() {
 
       {error ? <p className="error">{error}</p> : null}
 
-      {/* Search & Filter */}
-      <article className="panel admin-filters">
-        <input
-          type="text"
-          placeholder="Search by order ID, customer name, or phone..."
-          value={searchFilter}
-          onChange={(e) => setSearchFilter(e.target.value)}
-          className="search-input"
-        />
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="all">All statuses</option>
-          {statusOptions
-            .filter((s) => s !== 'all')
-            .map((status) => (
-              <option key={status} value={status}>
-                {status.replace(/_/g, ' ').charAt(0).toUpperCase() + status.replace(/_/g, ' ').slice(1)}
-              </option>
-            ))}
-        </select>
+      <article className="panel" style={{ marginTop: '1.2rem' }}>
+        {/* Search & Filter */}
+        <div className="data-toolbar">
+          <div className="search-field">
+            <SearchIcon size={15} />
+            <input
+              type="text"
+              placeholder="Search by order ID, customer name, or phone..."
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+            />
+          </div>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="all">All statuses</option>
+            {statusOptions
+              .filter((s) => s !== 'all')
+              .map((status) => (
+                <option key={status} value={status}>
+                  {status.replace(/_/g, ' ').charAt(0).toUpperCase() + status.replace(/_/g, ' ').slice(1)}
+                </option>
+              ))}
+          </select>
+        </div>
+
+        {loading ? <Skeleton variant="row" count={5} /> : null}
+        {!loading && filteredOrders.length === 0 ? (
+          <EmptyState
+            icon={PackageIcon}
+            heading="No orders found"
+            subtext="Orders will show up here as customers check out."
+          />
+        ) : null}
+
+        {!loading && filteredOrders.length > 0 ? (
+          <div className="data-table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Order</th>
+                  <th>Customer</th>
+                  <th className="num">Total</th>
+                  <th>Status</th>
+                  <th>Kitchen</th>
+                  <th>Rider</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOrders.map((order) => {
+                  const unclaimed = !order.kitchenHandledBy;
+                  const noRider = !order.assignedRider && order.fulfillmentType !== 'self_pickup';
+                  const rowClass = unclaimed || noRider ? 'row-severity-warn' : '';
+                  return (
+                    <tr className={rowClass} key={order._id}>
+                      <td>
+                        <div className="row-item">
+                          <div>
+                            <div className="row-name">Order #{order._id.slice(-6)}</div>
+                            <div className="row-desc">
+                              {new Date(order.createdAt).toLocaleDateString()} at{' '}
+                              {new Date(order.createdAt).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="row-name">{order.customer?.fullName || 'Unknown'}</div>
+                        {order.customer?.phone && (
+                          <div className="row-desc">
+                            <a href={`tel:${order.customer.phone}`}>{order.customer.phone}</a>
+                          </div>
+                        )}
+                      </td>
+                      <td className="num tabular">₦{Number(order.total || 0).toLocaleString()}</td>
+                      <td>
+                        <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
+                          {getStatusLabel(order.status)}
+                        </span>
+                      </td>
+                      <td>
+                        {order.kitchenHandledBy ? (
+                          order.kitchenHandledBy.fullName
+                        ) : (
+                          <strong style={{ color: 'var(--wg-amber)' }}>Unclaimed</strong>
+                        )}
+                      </td>
+                      <td>
+                        {order.assignedRider ? (
+                          <>
+                            <div className="row-name">{order.assignedRider.fullName}</div>
+                            {order.assignedRider.phone ? (
+                              <div className="row-desc">{order.assignedRider.phone}</div>
+                            ) : null}
+                          </>
+                        ) : order.fulfillmentType === 'self_pickup' ? (
+                          <span className="muted">—</span>
+                        ) : (
+                          <strong style={{ color: 'var(--wg-amber)' }}>Unclaimed</strong>
+                        )}
+                      </td>
+                      <td>
+                        <div className="row-actions">
+                          <Link to={`/orders/${order._id}`} aria-label="View full details">
+                            <ChevronRightIcon size={16} />
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+
+        {!loading && filteredOrders.length > 0 ? (
+          <div className="table-foot">
+            <span>Showing {filteredOrders.length} of {orders.length} orders</span>
+          </div>
+        ) : null}
       </article>
-
-      {loading ? <LoadingSpinner label="Loading orders..." /> : null}
-      {!loading && filteredOrders.length === 0 ? (
-        <p className="muted">No orders found.</p>
-      ) : null}
-
-      <div className="grid">
-        {filteredOrders.map((order) => (
-          <article
-            className={`panel order-card tone-${getStatusTone(order.status)}`}
-            key={order._id}
-          >
-            <div className="order-card-header">
-              <div>
-                <h3 className="order-card-title">Order #{order._id.slice(-6)}</h3>
-                <p className="muted">
-                  {new Date(order.createdAt).toLocaleDateString()} at{' '}
-                  {new Date(order.createdAt).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </p>
-              </div>
-              <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
-                {getStatusLabel(order.status)}
-              </span>
-            </div>
-
-            <div className="order-card-details">
-              <p>
-                <strong>Customer:</strong> {order.customer?.fullName || 'Unknown'}
-              </p>
-              {order.customer?.phone && (
-                <p>
-                  <strong>Phone:</strong>{' '}
-                  <a href={`tel:${order.customer.phone}`}>{order.customer.phone}</a>
-                </p>
-              )}
-              <p>
-                <strong>Total:</strong> <span className="price">₦{Number(order.total || 0).toLocaleString()}</span>
-              </p>
-              <p>
-                <strong>Fulfillment:</strong>{' '}
-                {order.fulfillmentType === 'self_pickup' ? 'Self pickup' : 'Delivery'}
-              </p>
-            </div>
-
-            {/* Operation Alerts */}
-            {!order.kitchenHandledBy && (
-              <div className="alert alert-warning">
-                ⚠ <strong>Not claimed yet</strong> — No kitchen staff assigned
-              </div>
-            )}
-            {!order.assignedRider && order.fulfillmentType !== 'self_pickup' && (
-              <div className="alert alert-warning">
-                ⚠ <strong>No rider assigned</strong> — Waiting for dispatch
-              </div>
-            )}
-
-            {/* Staff Info */}
-            {order.kitchenHandledBy && (
-              <p>
-                <strong>Kitchen:</strong> {order.kitchenHandledBy.fullName}
-              </p>
-            )}
-            {order.assignedRider && (
-              <p>
-                <strong>Rider:</strong> {order.assignedRider.fullName}
-                {order.assignedRider.phone && ` • ${order.assignedRider.phone}`}
-              </p>
-            )}
-
-            <Link to={`/orders/${order._id}`} className="order-link">
-              View full details →
-            </Link>
-          </article>
-        ))}
-      </div>
     </section>
   );
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { authApi } from '../api/authApi';
+import { EyeIcon, EyeOffIcon } from '../components/icons';
 
 const getPasswordStrength = (password) => {
   if (!password) return { strength: 0, label: '', color: '' };
@@ -85,7 +86,7 @@ export default function AdminPasswordPage() {
             onClick={() => toggleShow('current')}
             aria-label="Toggle password visibility"
           >
-            {showPasswords.current ? '👁' : '👁‍🗨'}
+            {showPasswords.current ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
           </button>
         </div>
 
@@ -107,7 +108,7 @@ export default function AdminPasswordPage() {
             onClick={() => toggleShow('new')}
             aria-label="Toggle password visibility"
           >
-            {showPasswords.new ? '👁' : '👁‍🗨'}
+            {showPasswords.new ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
           </button>
         </div>
 
@@ -147,7 +148,7 @@ export default function AdminPasswordPage() {
             onClick={() => toggleShow('confirm')}
             aria-label="Toggle password visibility"
           >
-            {showPasswords.confirm ? '👁' : '👁‍🗨'}
+            {showPasswords.confirm ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
           </button>
         </div>
 

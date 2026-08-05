@@ -2,10 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { orderApi } from '../api/orderApi';
 import { useOrdersRealtime } from '../hooks/useOrdersRealtime';
-import LoadingSpinner from '../components/LoadingSpinner';
 import EnableAlertsCard from '../components/EnableAlertsCard';
 import PinEntryForm from '../components/PinEntryForm';
+import Skeleton from '../components/Skeleton';
 import { getStatusLabel, getStatusBadgeClass } from '../utils/statusHelpers';
+import './OpsPages.css';
 
 export default function RiderQueuePage() {
   const location = useLocation();
@@ -125,13 +126,17 @@ export default function RiderQueuePage() {
       <h1>Rider Dispatch Queue</h1>
       {message ? <p className="message">{message}</p> : null}
       {error ? <p className="error">{error}</p> : null}
-      {loading ? <LoadingSpinner label="Loading dispatch queue..." /> : null}
+      {loading ? <Skeleton variant="card" count={3} /> : null}
 
       <article className="panel">
         <h3>Ready for Pickup</h3>
         <div className="grid">
-          {queueOrders.map((order) => (
-            <article className="panel" key={order._id}>
+          {queueOrders.map((order, index) => (
+            <article
+              className="panel order-card-enter"
+              key={order._id}
+              style={{ '--order-card-delay': `${Math.min(index, 8) * 0.05}s` }}
+            >
               <div className="zone-card-top">
                 <h4>Order {order._id.slice(-6)}</h4>
                 <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
@@ -145,7 +150,10 @@ export default function RiderQueuePage() {
                 {order.assignedRider?.fullName ? order.assignedRider.fullName : 'Available for pickup'}
               </p>
               <p>Address: {order.deliveryAddress?.fullText || 'Not provided'}</p>
-              <button 
+              {order.deliveryAddress?.area ? <p>Area: {order.deliveryAddress.area}</p> : null}
+              {order.deliveryAddress?.landmark ? <p>Landmark: {order.deliveryAddress.landmark}</p> : null}
+              {order.deliveryAddress?.notes ? <p>Notes: {order.deliveryAddress.notes}</p> : null}
+              <button
                 className="btn" 
                 type="button" 
                 onClick={() => acceptOrder(order._id)}
@@ -162,8 +170,12 @@ export default function RiderQueuePage() {
       <article id="active-deliveries" className="panel" style={{ marginTop: '1rem' }}>
         <h3>My Active Deliveries</h3>
         <div className="grid">
-          {activeOrders.map((order) => (
-            <article className="panel" key={order._id}>
+          {activeOrders.map((order, index) => (
+            <article
+              className="panel order-card-enter"
+              key={order._id}
+              style={{ '--order-card-delay': `${Math.min(index, 8) * 0.05}s` }}
+            >
               <div className="zone-card-top">
                 <h4>Order {order._id.slice(-6)}</h4>
                 <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
@@ -174,6 +186,9 @@ export default function RiderQueuePage() {
               <p>Phone: {order.customer?.phone || 'Not provided'}</p>
               <p>Being handled by: {order.assignedRider?.fullName || 'You'}</p>
               <p>Address: {order.deliveryAddress?.fullText || 'Not provided'}</p>
+              {order.deliveryAddress?.area ? <p>Area: {order.deliveryAddress.area}</p> : null}
+              {order.deliveryAddress?.landmark ? <p>Landmark: {order.deliveryAddress.landmark}</p> : null}
+              {order.deliveryAddress?.notes ? <p>Notes: {order.deliveryAddress.notes}</p> : null}
 
               <div className="row">
                 {order.status === 'picked_up' ? (

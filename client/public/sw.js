@@ -91,7 +91,7 @@ self.addEventListener('push', (event) => {
   }
 
   let payload = {
-    title: 'Wise Gourmet',
+    title: 'Store Name',
     body: 'You have a new update.',
     url: '/',
     tag: 'wise-gourmet-update',

@@ -1,0 +1,187 @@
+/* HomeMenuPage + PromoCarousel visual polish for the sales demo pass.
+   Reuses design tokens (--wg-*) defined in App.css — no new colors introduced. */
+
+/* Scroll-reveal for menu cards. Base state (no pending class) is fully visible,
+   so the grid still renders normally if JS/IntersectionObserver never resolves. */
+.hmp-reveal {
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+}
+
+.hmp-reveal-pending {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+/* Subtle scale-in on the active promo slide, layered on top of the
+   existing translateX sliding transform on .promo-track. */
+.promo-slide {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  transform: scale(0.97);
+  opacity: 0.85;
+}
+
+.promo-slide-active {
+  transform: scale(1);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hmp-reveal,
+  .hmp-reveal-pending {
+    transition: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .promo-slide {
+    transition: none;
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* Give the admin-driven promo carousel a slightly more elevated, integrated
+   look so it reads as part of the redesigned page rather than a plain banner. */
+.promo-carousel {
+  border-radius: var(--wg-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--wg-shadow-hover);
+}
+
+/* --- Category icon rail --------------------------------------------------
+   Categories are dynamic/admin-created, so icons and colors are assigned
+   deterministically by hashing the category id/name in HomeMenuPage.jsx
+   (see hashString/getCategoryIcon/getCategoryTileColor) rather than by
+   any hardcoded name-to-icon mapping. */
+.cat-rail {
+  display: flex;
+  gap: 0.9rem;
+  overflow-x: auto;
+  padding: 0.4rem 0.15rem 0.7rem;
+  margin-top: 0.75rem;
+  scrollbar-width: thin;
+}
+
+.cat-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  width: 68px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--wg-text);
+}
+
+.cat-tile-circle {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--wg-green-dark);
+  border: 2px solid transparent;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cat-tile:hover .cat-tile-circle {
+  transform: translateY(-2px);
+}
+
+.cat-tile-active .cat-tile-circle {
+  border-color: var(--wg-green);
+  box-shadow: var(--wg-shadow-hover);
+}
+
+.cat-tile-label {
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+  max-width: 68px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cat-tile-active .cat-tile-label {
+  color: var(--wg-green-dark);
+}
+
+.cat-tile-all {
+  background: var(--wg-green-light);
+}
+
+.cat-tile-a {
+  background: #fde3cf;
+}
+
+.cat-tile-b {
+  background: #dceefb;
+}
+
+.cat-tile-c {
+  background: #f3ddf7;
+}
+
+.cat-tile-d {
+  background: #fdeccb;
+}
+
+.cat-tile-e {
+  background: #dcf3e4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cat-tile-circle {
+    transition: none;
+  }
+}
+
+/* --- Menu card redesign ---------------------------------------------------
+   Image on top with an overlaid category badge (top-left) and a floating
+   circular "add 1 to cart" button (bottom-right). The quantity stepper stays
+   in the card body so shoppers can still bump quantity before adding. */
+.menu-image-wrap {
+  position: relative;
+  margin-bottom: 1.05rem;
+}
+
+.menu-image-wrap .menu-item-image,
+.menu-image-wrap .menu-item-image-placeholder {
+  margin-bottom: 0;
+}
+
+.menu-category-badge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--wg-green-dark);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.menu-item-desc {
+  color: var(--wg-muted);
+  font-size: 0.88rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.menu-card .menu-meta-row {
+  margin: 0.2rem 0 0.55rem;
+}
+
+.menu-card .menu-price {
+  margin: 0;
+}
+

@@ -2,8 +2,8 @@
   font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #253126;
-  background: #faf8f4;
+  color: var(--wg-text);
+  background: var(--wg-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -17,7 +17,9 @@
 body {
   margin: 0;
   min-height: 100svh;
-  background: #faf8f4;
+  background: var(--wg-bg);
+  color: var(--wg-text);
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 p {

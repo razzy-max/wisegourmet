@@ -15,7 +15,7 @@ export default function NavBar() {
     <header className="nav-shell">
       <div className="nav-inner">
         <Link className="brand" to="/">
-          Wise Gourmet
+          Store Name
         </Link>
         <nav>
           {baseLinks.map((link) => (

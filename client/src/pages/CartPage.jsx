@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { cartApi } from '../api/cartApi';
 import { useCart } from '../context/CartContext';
-import LoadingSpinner from '../components/LoadingSpinner';
+import Skeleton from '../components/Skeleton';
+import EmptyState from '../components/EmptyState';
+import { BasketIcon, FoodIcon, TrashIcon } from '../components/icons';
+import './OrderFlow.css';
 
 export default function CartPage() {
+  const navigate = useNavigate();
   const [cart, setCart] = useState({ items: [] });
   const [discount, setDiscount] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -60,24 +64,31 @@ export default function CartPage() {
     <section className="page-wrap cart-page">
       <h1>Cart</h1>
       {error ? <p className="error">{error}</p> : null}
-      {loading ? <LoadingSpinner label="Loading cart..." /> : null}
+      {loading ? <Skeleton variant="row" count={3} /> : null}
 
       {!loading && !hasItems ? (
-        <article className="panel empty-state">
-          <p className="empty-icon" aria-hidden="true">🧺</p>
-          <p className="muted">Your cart is empty. Add something tasty from the menu.</p>
-        </article>
+        <EmptyState
+          icon={BasketIcon}
+          heading="Your cart is empty"
+          subtext="Add something tasty from the menu to get started."
+          actionLabel="Browse the menu"
+          onAction={() => navigate('/')}
+        />
       ) : null}
 
       {hasItems ? (
         <div className="cart-layout">
           <article className="panel cart-list-panel">
-            {cart.items.map((item) => (
-              <div className="cart-item-row" key={item._id}>
+            {cart.items.map((item, index) => (
+              <div
+                className="cart-item-row"
+                key={item._id}
+                style={{ animationDelay: `${index * 0.05}s` }}
+              >
                 {item.menuItem?.imageUrl ? (
                   <img src={item.menuItem.imageUrl} alt={item.nameSnapshot} className="cart-thumb" loading="lazy" />
                 ) : (
-                  <div className="cart-thumb cart-thumb-fallback" aria-hidden="true">🍽</div>
+                  <div className="cart-thumb cart-thumb-fallback" aria-hidden="true"><FoodIcon size={22} /></div>
                 )}
                 <div className="cart-item-main">
                   <h3>{item.nameSnapshot}</h3>
@@ -112,7 +123,7 @@ export default function CartPage() {
                   type="button"
                   aria-label={`Remove ${item.nameSnapshot}`}
                 >
-                  🗑
+                  <TrashIcon size={16} />
                 </button>
               </div>
             ))}
@@ -160,7 +171,7 @@ export default function CartPage() {
       {!loading && hasItems && (
         <div className="page-footer">
           <Link to="/" className="footer-suggestion">
-            <span className="footer-icon">🍽</span>
+            <span className="footer-icon"><FoodIcon size={16} /></span>
             <span>Keep browsing the menu</span>
           </Link>
         </div>
