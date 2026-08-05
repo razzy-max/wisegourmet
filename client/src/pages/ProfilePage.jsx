@@ -183,6 +183,14 @@ export default function ProfilePage() {
     setNotificationsMessage('');
 
     try {
+      if (window.Notification.permission === 'denied') {
+        setNotificationsMessage(
+          'Notifications are blocked for this site in your browser. Open your browser\'s site settings, allow notifications, then try again.'
+        );
+        setNotificationsBusy(false);
+        return;
+      }
+
       const permission = await window.Notification.requestPermission();
       if (permission !== 'granted') {
         setNotificationsMessage('Notification permission was not granted.');

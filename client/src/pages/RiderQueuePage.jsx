@@ -2,11 +2,128 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { orderApi } from '../api/orderApi';
 import { useOrdersRealtime } from '../hooks/useOrdersRealtime';
+import { useOrderLocationRealtime } from '../hooks/useOrderLocationRealtime';
+import { useLocationBroadcaster } from '../hooks/useLocationBroadcaster';
 import EnableAlertsCard from '../components/EnableAlertsCard';
 import PinEntryForm from '../components/PinEntryForm';
 import Skeleton from '../components/Skeleton';
+import LiveDeliveryMap from '../components/LiveDeliveryMap';
 import { getStatusLabel, getStatusBadgeClass } from '../utils/statusHelpers';
 import './OpsPages.css';
+
+const MAP_VISIBLE_STATUSES = ['on_the_way', 'arrived'];
+
+function ActiveDeliveryCard({
+  order,
+  index,
+  pinValue,
+  onPinChange,
+  onUpdateStatus,
+  onVerifyPin,
+  updatingStatusOrderId,
+  verifyingPinOrderId,
+}) {
+  const [riderLocation, setRiderLocation] = useState(null);
+  const [customerLocation, setCustomerLocation] = useState(null);
+
+  useEffect(() => {
+    if (order.riderLocation?.lat != null) setRiderLocation(order.riderLocation);
+    if (order.customerLocation?.lat != null) setCustomerLocation(order.customerLocation);
+  }, [order]);
+
+  const handleLocationUpdate = useCallback((payload) => {
+    if (payload.role === 'rider') {
+      setRiderLocation({ lat: payload.lat, lng: payload.lng, updatedAt: payload.updatedAt });
+    } else if (payload.role === 'customer') {
+      setCustomerLocation({ lat: payload.lat, lng: payload.lng, updatedAt: payload.updatedAt });
+    }
+  }, []);
+
+  useOrderLocationRealtime(handleLocationUpdate, { orderId: order._id });
+
+  const locationBroadcaster = useLocationBroadcaster(order._id);
+  const showMap = MAP_VISIBLE_STATUSES.includes(order.status);
+
+  return (
+    <article
+      className="panel order-card-enter"
+      style={{ '--order-card-delay': `${Math.min(index, 8) * 0.05}s` }}
+    >
+      <div className="zone-card-top">
+        <h4>Order {order._id.slice(-6)}</h4>
+        <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
+          {getStatusLabel(order.status)}
+        </span>
+      </div>
+      <p>Customer: {order.customer?.fullName || 'Unknown'}</p>
+      <p>Phone: {order.customer?.phone || 'Not provided'}</p>
+      <p>Being handled by: {order.assignedRider?.fullName || 'You'}</p>
+      <p>Address: {order.deliveryAddress?.fullText || 'Not provided'}</p>
+      {order.deliveryAddress?.area ? <p>Area: {order.deliveryAddress.area}</p> : null}
+      {order.deliveryAddress?.landmark ? <p>Landmark: {order.deliveryAddress.landmark}</p> : null}
+      {order.deliveryAddress?.notes ? <p>Notes: {order.deliveryAddress.notes}</p> : null}
+
+      {showMap && (
+        <div className="live-map-wrap">
+          <LiveDeliveryMap
+            riderLocation={riderLocation}
+            customerLocation={customerLocation}
+            deliveryAddress={order.deliveryAddress}
+            viewerRole="rider"
+          />
+          <div className="live-map-controls">
+            {locationBroadcaster.sharing ? (
+              <button type="button" className="btn btn-ghost" onClick={locationBroadcaster.stop}>
+                Stop sharing my location
+              </button>
+            ) : (
+              <button type="button" className="btn" onClick={locationBroadcaster.start}>
+                Share my location with customer
+              </button>
+            )}
+            {locationBroadcaster.error && <p className="error-message">{locationBroadcaster.error}</p>}
+          </div>
+        </div>
+      )}
+
+      <div className="row">
+        {order.status === 'picked_up' ? (
+          <button
+            className="btn"
+            type="button"
+            onClick={() => onUpdateStatus(order._id, 'on_the_way')}
+            disabled={updatingStatusOrderId === order._id}
+          >
+            {updatingStatusOrderId === order._id ? 'Updating...' : 'Mark On The Way'}
+          </button>
+        ) : null}
+        {order.status === 'on_the_way' ? (
+          <button
+            className="btn"
+            type="button"
+            onClick={() => onUpdateStatus(order._id, 'arrived')}
+            disabled={updatingStatusOrderId === order._id}
+          >
+            {updatingStatusOrderId === order._id ? 'Updating...' : 'Mark Arrived'}
+          </button>
+        ) : null}
+      </div>
+
+      {order.status === 'arrived' ? (
+        <PinEntryForm
+          helperText="Customer must provide PIN to complete delivery"
+          placeholder="Enter customer PIN"
+          value={pinValue}
+          onChange={onPinChange}
+          onSubmit={() => onVerifyPin(order._id)}
+          submitting={verifyingPinOrderId === order._id}
+          submitLabel="Verify & Deliver"
+          submittingLabel="Verifying..."
+        />
+      ) : null}
+    </article>
+  );
+}
 
 export default function RiderQueuePage() {
   const location = useLocation();
@@ -171,61 +288,17 @@ export default function RiderQueuePage() {
         <h3>My Active Deliveries</h3>
         <div className="grid">
           {activeOrders.map((order, index) => (
-            <article
-              className="panel order-card-enter"
+            <ActiveDeliveryCard
               key={order._id}
-              style={{ '--order-card-delay': `${Math.min(index, 8) * 0.05}s` }}
-            >
-              <div className="zone-card-top">
-                <h4>Order {order._id.slice(-6)}</h4>
-                <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
-                  {getStatusLabel(order.status)}
-                </span>
-              </div>
-              <p>Customer: {order.customer?.fullName || 'Unknown'}</p>
-              <p>Phone: {order.customer?.phone || 'Not provided'}</p>
-              <p>Being handled by: {order.assignedRider?.fullName || 'You'}</p>
-              <p>Address: {order.deliveryAddress?.fullText || 'Not provided'}</p>
-              {order.deliveryAddress?.area ? <p>Area: {order.deliveryAddress.area}</p> : null}
-              {order.deliveryAddress?.landmark ? <p>Landmark: {order.deliveryAddress.landmark}</p> : null}
-              {order.deliveryAddress?.notes ? <p>Notes: {order.deliveryAddress.notes}</p> : null}
-
-              <div className="row">
-                {order.status === 'picked_up' ? (
-                  <button
-                    className="btn"
-                    type="button"
-                    onClick={() => updateStatus(order._id, 'on_the_way')}
-                    disabled={updatingStatusOrderId === order._id}
-                  >
-                    {updatingStatusOrderId === order._id ? 'Updating...' : 'Mark On The Way'}
-                  </button>
-                ) : null}
-                {order.status === 'on_the_way' ? (
-                  <button
-                    className="btn"
-                    type="button"
-                    onClick={() => updateStatus(order._id, 'arrived')}
-                    disabled={updatingStatusOrderId === order._id}
-                  >
-                    {updatingStatusOrderId === order._id ? 'Updating...' : 'Mark Arrived'}
-                  </button>
-                ) : null}
-              </div>
-
-              {order.status === 'arrived' ? (
-                <PinEntryForm
-                  helperText="Customer must provide PIN to complete delivery"
-                  placeholder="Enter customer PIN"
-                  value={pinInputs[order._id] || ''}
-                  onChange={(value) => setPinInputs((prev) => ({ ...prev, [order._id]: value }))}
-                  onSubmit={() => verifyDeliveryPin(order._id)}
-                  submitting={verifyingPinOrderId === order._id}
-                  submitLabel="Verify & Deliver"
-                  submittingLabel="Verifying..."
-                />
-              ) : null}
-            </article>
+              order={order}
+              index={index}
+              pinValue={pinInputs[order._id] || ''}
+              onPinChange={(value) => setPinInputs((prev) => ({ ...prev, [order._id]: value }))}
+              onUpdateStatus={updateStatus}
+              onVerifyPin={verifyDeliveryPin}
+              updatingStatusOrderId={updatingStatusOrderId}
+              verifyingPinOrderId={verifyingPinOrderId}
+            />
           ))}
           {activeOrders.length === 0 ? <p className="muted">No active deliveries yet.</p> : null}
         </div>

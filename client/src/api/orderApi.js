@@ -55,4 +55,7 @@ export const orderApi = {
   updateStatus(id, payload) {
     return apiRequest(`/orders/${id}/status`, { method: 'PATCH', body: payload });
   },
+  updateLocation(id, payload) {
+    return apiRequest(`/orders/${id}/location`, { method: 'PATCH', body: payload });
+  },
 };

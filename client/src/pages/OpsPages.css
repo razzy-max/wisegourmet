@@ -25,3 +25,14 @@
     animation: none;
   }
 }
+
+.live-map-wrap {
+  margin: 0.75rem 0;
+}
+
+.live-map-controls {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}

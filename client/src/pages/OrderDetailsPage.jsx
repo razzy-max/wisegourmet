@@ -2,12 +2,17 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { orderApi } from '../api/orderApi';
 import { useOrdersRealtime } from '../hooks/useOrdersRealtime';
+import { useOrderLocationRealtime } from '../hooks/useOrderLocationRealtime';
+import { useLocationBroadcaster } from '../hooks/useLocationBroadcaster';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EnableAlertsCard from '../components/EnableAlertsCard';
 import PinDisplay from '../components/PinDisplay';
+import LiveDeliveryMap from '../components/LiveDeliveryMap';
 import { getStatusLabel, getStatusBadgeClass, getStepperCircleClass } from '../utils/statusHelpers';
 import { CheckIcon } from '../components/icons';
 import './OrderFlow.css';
+
+const TRACKABLE_STATUSES = ['on_the_way', 'arrived'];
 
 const dedupeTimeline = (timeline = []) => {
   return timeline.filter((entry, index, array) => {
@@ -36,6 +41,8 @@ export default function OrderDetailsPage() {
   const [error, setError] = useState('');
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState('');
+  const [riderLocation, setRiderLocation] = useState(null);
+  const [customerLocation, setCustomerLocation] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -52,6 +59,23 @@ export default function OrderDetailsPage() {
   }, [load]);
 
   useOrdersRealtime(load, { orderId: id });
+
+  useEffect(() => {
+    if (order?.riderLocation?.lat != null) setRiderLocation(order.riderLocation);
+    if (order?.customerLocation?.lat != null) setCustomerLocation(order.customerLocation);
+  }, [order]);
+
+  const handleLocationUpdate = useCallback((payload) => {
+    if (payload.role === 'rider') {
+      setRiderLocation({ lat: payload.lat, lng: payload.lng, updatedAt: payload.updatedAt });
+    } else if (payload.role === 'customer') {
+      setCustomerLocation({ lat: payload.lat, lng: payload.lng, updatedAt: payload.updatedAt });
+    }
+  }, []);
+
+  useOrderLocationRealtime(handleLocationUpdate, { orderId: id });
+
+  const locationBroadcaster = useLocationBroadcaster(id);
 
   const getRiderInitials = (fullName) => {
     if (!fullName) return 'R';
@@ -283,6 +307,31 @@ export default function OrderDetailsPage() {
           )}
         </article>
       </div>
+
+      {/* Live Delivery Map */}
+      {order.fulfillmentType !== 'self_pickup' && TRACKABLE_STATUSES.includes(order.status) && (
+        <article className="panel order-live-map" style={{ marginTop: '1.5rem' }}>
+          <h3>Live Tracking</h3>
+          <LiveDeliveryMap
+            riderLocation={riderLocation}
+            customerLocation={customerLocation}
+            deliveryAddress={order.deliveryAddress}
+            viewerRole="customer"
+          />
+          <div className="live-map-controls">
+            {locationBroadcaster.sharing ? (
+              <button type="button" className="btn btn-ghost" onClick={locationBroadcaster.stop}>
+                Stop sharing my location
+              </button>
+            ) : (
+              <button type="button" className="btn" onClick={locationBroadcaster.start}>
+                Share my location with the rider
+              </button>
+            )}
+            {locationBroadcaster.error && <p className="error-message">{locationBroadcaster.error}</p>}
+          </div>
+        </article>
+      )}
 
       {/* Status Timeline - Full Width */}
       <article className="panel order-timeline" style={{ marginTop: '1.5rem' }}>

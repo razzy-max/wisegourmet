@@ -105,6 +105,14 @@ export default function EnableAlertsCard() {
     setMessage('');
 
     try {
+      if (window.Notification.permission === 'denied') {
+        setMessage(
+          'Notifications are blocked for this site in your browser. Open your browser\'s site settings, allow notifications, then try again.'
+        );
+        setBusy(false);
+        return;
+      }
+
       const permission = await window.Notification.requestPermission();
       if (permission !== 'granted') {
         setMessage('Notification permission was not granted.');

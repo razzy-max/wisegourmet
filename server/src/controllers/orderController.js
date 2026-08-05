@@ -760,6 +760,70 @@ const verifySelfPickupPin = asyncHandler(async (req, res) => {
   res.json({ order: hydrated });
 });
 
+const TRACKABLE_STATUSES = new Set([ORDER_STATUS.ON_THE_WAY, ORDER_STATUS.ARRIVED]);
+
+const updateOrderLocation = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { lat, lng } = req.body;
+
+  const latNum = Number(lat);
+  const lngNum = Number(lng);
+  if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
+    res.status(400);
+    throw new Error('lat and lng must be valid numbers');
+  }
+
+  const order = await Order.findById(id);
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
+  }
+
+  if (order.fulfillmentType !== 'delivery') {
+    res.status(400);
+    throw new Error('Location tracking is only available for delivery orders');
+  }
+
+  if (!TRACKABLE_STATUSES.has(order.status)) {
+    res.status(400);
+    throw new Error('Order is not currently in an active delivery window');
+  }
+
+  let role;
+  if (order.assignedRider && String(order.assignedRider) === String(req.user._id)) {
+    role = 'rider';
+  } else if (String(order.customer) === String(req.user._id)) {
+    role = 'customer';
+  } else {
+    res.status(403);
+    throw new Error('Not authorized to update location for this order');
+  }
+
+  const updatedAt = new Date();
+  const field = role === 'rider' ? 'riderLocation' : 'customerLocation';
+
+  await Order.findByIdAndUpdate(id, {
+    $set: {
+      [`${field}.lat`]: latNum,
+      [`${field}.lng`]: lngNum,
+      [`${field}.updatedAt`]: updatedAt,
+    },
+  });
+
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`order:${id}`).emit('order-location:changed', {
+      orderId: id,
+      role,
+      lat: latNum,
+      lng: lngNum,
+      updatedAt: updatedAt.toISOString(),
+    });
+  }
+
+  res.json({ ok: true });
+});
+
 module.exports = {
   createOrderFromCart,
   getDeliveryZones,
@@ -775,4 +839,5 @@ module.exports = {
   verifyDeliveryPin,
   verifySelfPickupPin,
   updateOrderStatus,
+  updateOrderLocation,
 };
