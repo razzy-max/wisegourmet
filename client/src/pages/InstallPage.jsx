@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import EnableAlertsCard from '../components/EnableAlertsCard';
 import { useStoreName } from '../context/StoreSettingsContext';
-import { CheckCircleIcon, LeafIcon, PhoneIcon, DesktopIcon, TipIcon } from '../components/icons';
+import { CheckCircleIcon, LeafIcon, PhoneIcon, DesktopIcon } from '../components/icons';
 import './InstallPage.css';
 
 export default function InstallPage() {
@@ -106,7 +106,7 @@ export default function InstallPage() {
             <p>Follow these simple steps:</p>
             <ol className="install-steps">
               <li>
-                Tap the <strong>Share</strong> button at the bottom of Safari
+                Tap the <strong>Share</strong> button in your browser
               </li>
               <li>
                 Scroll down and tap <strong>Add to Home Screen</strong>
@@ -115,9 +115,6 @@ export default function InstallPage() {
                 Tap <strong>Add</strong> in the top right corner
               </li>
             </ol>
-            <div className="install-tip">
-              <TipIcon size={16} /> <strong>Tip:</strong> Open this link in Safari to see the install option
-            </div>
             <button onClick={() => navigate('/')} className="install-button install-button-secondary">
               Open Menu
             </button>
@@ -132,7 +129,7 @@ export default function InstallPage() {
             <p className="install-hint">
               On Android: Use Chrome and look for the install prompt in the browser menu.
               <br />
-              On iPhone: Open this link in Safari and use Share → Add to Home Screen.
+              On iPhone: Use Share → Add to Home Screen.
             </p>
             <button onClick={() => navigate('/')} className="install-button install-button-secondary">
               Back to Menu

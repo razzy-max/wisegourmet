@@ -14,12 +14,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #3a6835;
+  color: var(--wg-green);
 }
 
 .install-header h1 {
   font-size: 2rem;
-  color: #253126;
+  color: var(--wg-text);
   margin: 0 0 0.5rem 0;
 }
 
@@ -47,7 +47,7 @@
 }
 
 .install-icon-success {
-  color: #3a6835;
+  color: var(--wg-green);
 }
 
 .install-icon-android {
@@ -55,28 +55,28 @@
 }
 
 .install-icon-ios {
-  color: #555555;
+  color: var(--wg-muted);
 }
 
 .install-icon-desktop {
-  color: #5f6d60;
+  color: var(--wg-muted);
 }
 
 .install-card h2 {
   font-size: 1.5rem;
-  color: #253126;
+  color: var(--wg-text);
   margin: 0.5rem 0 1rem 0;
 }
 
 .install-card p {
-  color: #5f6d60;
+  color: var(--wg-muted);
   margin: 0 0 1.5rem 0;
   line-height: 1.6;
 }
 
 .install-steps {
   text-align: left;
-  color: #253126;
+  color: var(--wg-text);
   margin: 1.5rem 0;
   padding-left: 1.5rem;
   line-height: 1.8;
@@ -88,23 +88,12 @@
 
 .install-steps strong {
   font-weight: 700;
-  color: #3a6835;
-}
-
-.install-tip {
-  background: #f0f4ed;
-  border-left: 3px solid #3a6835;
-  padding: 1rem;
-  text-align: left;
-  border-radius: 8px;
-  margin: 1.5rem 0;
-  font-size: 0.95rem;
-  color: #253126;
+  color: var(--wg-green);
 }
 
 .install-hint {
   font-size: 0.9rem;
-  color: #5f6d60;
+  color: var(--wg-muted);
   line-height: 1.7;
 }
 
@@ -122,13 +111,13 @@
 }
 
 .install-button-primary {
-  background: linear-gradient(135deg, #3a6835 0%, #2c5d29 100%);
+  background: linear-gradient(135deg, var(--wg-green) 0%, var(--wg-green-dark) 100%);
   color: #ffffff;
   box-shadow: 0 4px 12px rgba(58, 104, 53, 0.24);
 }
 
 .install-button-primary:hover {
-  background: linear-gradient(135deg, #426f3c 0%, #315f2d 100%);
+  filter: brightness(1.1);
   box-shadow: 0 6px 16px rgba(58, 104, 53, 0.32);
   transform: translateY(-2px);
 }
@@ -152,27 +141,27 @@
 
 .install-button-ghost:hover {
   background: var(--wg-green-light);
-  color: #3a6835;
+  color: var(--wg-green);
 }
 
 .install-card-android {
-  border-color: #e8f5e9;
-  background: linear-gradient(135deg, #ffffff 0%, #f1f5f0 100%);
+  border-color: var(--wg-border);
+  background: linear-gradient(135deg, var(--wg-card) 0%, var(--wg-green-light) 100%);
 }
 
 .install-card-ios {
-  border-color: #f0f0f0;
-  background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
+  border-color: var(--wg-border);
+  background: var(--wg-card);
 }
 
 .install-card-desktop {
-  border-color: #ede8de;
-  background: linear-gradient(135deg, #ffffff 0%, #faf9f7 100%);
+  border-color: var(--wg-border);
+  background: var(--wg-card);
 }
 
 .install-success {
-  border-color: #c8e6c9;
-  background: linear-gradient(135deg, #ffffff 0%, #f1f5f0 100%);
+  border-color: var(--wg-border);
+  background: linear-gradient(135deg, var(--wg-card) 0%, var(--wg-green-light) 100%);
 }
 
 @media (max-width: 640px) {

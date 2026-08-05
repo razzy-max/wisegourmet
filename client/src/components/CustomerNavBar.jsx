@@ -1,4 +1,4 @@
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -7,12 +7,15 @@ import ThemeToggle from './ThemeToggle';
 import { LeafIcon, CartIcon, MenuIcon, ReceiptIcon, ProfileIcon, SupportIcon, LogoutIcon } from './icons';
 
 export default function CustomerNavBar() {
+  const navigate = useNavigate();
   const { logout, isAuthenticated } = useAuth();
   const { cartCount, cartPulse } = useCart();
   const storeName = useStoreName();
   const [animateCart, setAnimateCart] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [canInstall, setCanInstall] = useState(false);
+  const [isIos, setIsIos] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated || cartPulse === 0) return;
@@ -22,10 +25,14 @@ export default function CustomerNavBar() {
   }, [cartPulse, isAuthenticated]);
 
   useEffect(() => {
-    const isStandalone =
+    const standalone =
       window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    setIsStandalone(standalone);
 
-    if (isStandalone) {
+    const ua = navigator.userAgent.toLowerCase();
+    setIsIos(/iphone|ipad|ipod/.test(ua) && !window.MSStream);
+
+    if (standalone) {
       setCanInstall(false);
       return undefined;
     }
@@ -51,7 +58,10 @@ export default function CustomerNavBar() {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      navigate('/install');
+      return;
+    }
 
     deferredPrompt.prompt();
     await deferredPrompt.userChoice;
@@ -128,7 +138,7 @@ export default function CustomerNavBar() {
                 >
                   Support
                 </NavLink>
-                {canInstall ? (
+                {(canInstall || isIos) && !isStandalone ? (
                   <button type="button" className="install-link" onClick={handleInstallClick}>
                     Install App
                   </button>
@@ -140,7 +150,7 @@ export default function CustomerNavBar() {
               </>
             ) : (
               <>
-                {canInstall ? (
+                {(canInstall || isIos) && !isStandalone ? (
                   <button type="button" className="install-link" onClick={handleInstallClick}>
                     Install App
                   </button>
@@ -169,7 +179,7 @@ export default function CustomerNavBar() {
           <div className="customer-nav-mobile-top">
             {isAuthenticated ? (
               <div className="mobile-top-actions">
-                {canInstall ? (
+                {(canInstall || isIos) && !isStandalone ? (
                   <button type="button" className="mobile-install-link" onClick={handleInstallClick}>
                     Install
                   </button>
@@ -188,7 +198,7 @@ export default function CustomerNavBar() {
               </div>
             ) : (
               <div className="mobile-guest-nav-row">
-                {canInstall ? (
+                {(canInstall || isIos) && !isStandalone ? (
                   <button type="button" className="mobile-install-link" onClick={handleInstallClick}>
                     Install
                   </button>
