@@ -1,5 +1,6 @@
 const webPush = require('web-push');
 const User = require('../models/User');
+const { getStoreName } = require('./storeSettings');
 
 const VAPID_PUBLIC_KEY = process.env.WEB_PUSH_VAPID_PUBLIC_KEY || '';
 const VAPID_PRIVATE_KEY = process.env.WEB_PUSH_VAPID_PRIVATE_KEY || '';
@@ -11,8 +12,8 @@ if (isPushConfigured()) {
   webPush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 }
 
-const buildPayload = (payload = {}) => ({
-  title: payload.title || 'Store Name',
+const buildPayload = async (payload = {}) => ({
+  title: payload.title || (await getStoreName()),
   body: payload.body || '',
   url: payload.url || '/',
   tag: payload.tag || '',
@@ -69,7 +70,7 @@ const sendPushToRoles = async (roles = [], payload = {}) => {
   }
 
   const users = await User.find({ role: { $in: roles }, isActive: true }).select('_id pushSubscriptions');
-  const normalizedPayload = buildPayload(payload);
+  const normalizedPayload = await buildPayload(payload);
 
   await Promise.all(users.map((user) => sendToUserRecord(user, normalizedPayload)));
 };
@@ -80,7 +81,7 @@ const sendPushToUserIds = async (userIds = [], payload = {}) => {
   }
 
   const users = await User.find({ _id: { $in: userIds }, isActive: true }).select('_id pushSubscriptions');
-  const normalizedPayload = buildPayload(payload);
+  const normalizedPayload = await buildPayload(payload);
 
   await Promise.all(users.map((user) => sendToUserRecord(user, normalizedPayload)));
 };

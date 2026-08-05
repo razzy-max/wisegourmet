@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { userApi } from '../api/userApi';
+import { useStoreName } from '../context/StoreSettingsContext';
 import Skeleton from '../components/Skeleton';
 
 const PRESETS = [
@@ -20,6 +21,7 @@ const formatInactiveFor = (hours) => {
 };
 
 export default function AdminCustomersPage() {
+  const storeName = useStoreName();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -262,7 +264,7 @@ export default function AdminCustomersPage() {
         <h3>Send Message ({selectedIds.size} selected)</h3>
         <div className="form">
           <input
-            placeholder="Title (optional, defaults to 'Store Name')"
+            placeholder={`Title (optional, defaults to '${storeName}')`}
             value={title}
             onChange={(event) => setTitle(event.target.value)}
           />
@@ -334,7 +336,7 @@ export default function AdminCustomersPage() {
             <span className="muted">while still inactive</span>
           </div>
           <input
-            placeholder="Title (optional, defaults to 'Store Name')"
+            placeholder={`Title (optional, defaults to '${storeName}')`}
             value={automationTitle}
             onChange={(event) => setAutomationTitle(event.target.value)}
           />

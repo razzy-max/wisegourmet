@@ -5,6 +5,7 @@ import App from './App.jsx';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { StoreSettingsProvider } from './context/StoreSettingsContext';
 import './index.css';
 
 if ('serviceWorker' in navigator) {
@@ -21,7 +22,9 @@ createRoot(document.getElementById('root')).render(
       <BrowserRouter>
         <AuthProvider>
           <CartProvider>
-            <App />
+            <StoreSettingsProvider>
+              <App />
+            </StoreSettingsProvider>
           </CartProvider>
         </AuthProvider>
       </BrowserRouter>

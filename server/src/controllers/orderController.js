@@ -7,6 +7,7 @@ const { calculateDeliveryFee, DEFAULT_ZONE_FEES } = require('../utils/deliveryFe
 const { ORDER_STATUS, canTransition } = require('../utils/orderStatus');
 const { sendPushToRoles, sendPushToUserIds } = require('../utils/pushNotifications');
 const { computeComboDiscount, reconcileAppliedPromotion } = require('../utils/comboDiscount');
+const { getStoreName } = require('../utils/storeSettings');
 
 const STAFF_ALLOWED_STATUSES = new Set([
   ORDER_STATUS.CONFIRMED,
@@ -170,6 +171,8 @@ const createOrderFromCart = asyncHandler(async (req, res) => {
   // Generate random PIN for delivery verification
   const deliveryPin = Math.floor(1000 + Math.random() * 9000).toString();
 
+  const storeName = fulfillmentType === 'delivery' ? null : await getStoreName();
+
   const order = await Order.create({
     customer: req.user._id,
     items,
@@ -194,7 +197,7 @@ const createOrderFromCart = asyncHandler(async (req, res) => {
       fullText:
         fulfillmentType === 'delivery'
           ? deliveryAddress.fullText
-          : 'Self pickup at Store Name kitchen',
+          : `Self pickup at ${storeName} kitchen`,
       area: fulfillmentType === 'delivery' ? deliveryAddress.area || '' : '',
       landmark: fulfillmentType === 'delivery' ? deliveryAddress.landmark || '' : '',
       notes: fulfillmentType === 'delivery' ? deliveryAddress.notes || '' : '',

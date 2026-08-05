@@ -69,7 +69,7 @@ const sendReEngagementMessage = asyncHandler(async (req, res) => {
 
   if (eligibleIds.length > 0) {
     await sendPushToUserIds(eligibleIds, {
-      title: title || 'Store Name',
+      title,
       body: String(body).trim(),
       url: '/',
       tag: `re-engagement-${Date.now()}`,

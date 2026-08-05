@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../api/authApi';
 import { useAuth } from '../context/AuthContext';
+import { useStoreName } from '../context/StoreSettingsContext';
 import { LeafIcon, EyeIcon, EyeOffIcon } from '../components/icons';
 import './Auth.css';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const storeName = useStoreName();
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -49,13 +51,13 @@ export default function LoginPage() {
             <span className="auth-brand-mark" aria-hidden="true">
               <LeafIcon size={22} />
             </span>
-            <p className="auth-brand-name">Store Name</p>
+            <p className="auth-brand-name">{storeName}</p>
           </div>
 
           <blockquote className="auth-testimonial">
             <p>
               &ldquo;My jollof rice showed up still steaming and the rider rang before he even
-              reached the gate. Store Name has become my Friday night ritual.&rdquo;
+              reached the gate. {storeName} has become my Friday night ritual.&rdquo;
             </p>
             <footer>&mdash; Amaka O., Lekki</footer>
           </blockquote>

@@ -4,6 +4,7 @@ import { orderApi } from '../api/orderApi';
 import { cartApi } from '../api/cartApi';
 import { authApi } from '../api/authApi';
 import { useCart } from '../context/CartContext';
+import { useStoreName } from '../context/StoreSettingsContext';
 import PinDisplay from '../components/PinDisplay';
 import { CheckCircleIcon } from '../components/icons';
 import './OrderFlow.css';
@@ -17,6 +18,7 @@ const getZoneLabel = (zoneKey, zones = []) => {
 export default function CheckoutPage() {
   const [searchParams] = useSearchParams();
   const { refreshCartCount } = useCart();
+  const storeName = useStoreName();
   const [form, setForm] = useState({
     fullText: '',
     area: '',
@@ -248,7 +250,7 @@ export default function CheckoutPage() {
             {fulfillmentType === 'self_pickup' ? (
               <article className="pickup-info-card field-full">
                 <h4>Pickup Instructions</h4>
-                <p>Pick up from Store Name kitchen once your order is marked Ready for Pickup.</p>
+                <p>Pick up from {storeName} kitchen once your order is marked Ready for Pickup.</p>
                 <p className="muted">No delivery fee will be charged for this option.</p>
               </article>
             ) : null}

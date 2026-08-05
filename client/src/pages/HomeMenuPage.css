@@ -63,8 +63,8 @@
   /* Fade the trailing edge so a partially-cut-off tile reads as "more to
      scroll to" rather than an abrupt cutoff — the classic peek+fade
      affordance for horizontally-scrolling rows with no other scroll hint. */
-  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent 100%);
-  mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 64px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 calc(100% - 64px), transparent 100%);
 }
 
 .cat-tile {

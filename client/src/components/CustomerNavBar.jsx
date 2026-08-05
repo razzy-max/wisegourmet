@@ -2,12 +2,14 @@ import { Link, NavLink } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { useStoreName } from '../context/StoreSettingsContext';
 import ThemeToggle from './ThemeToggle';
 import { LeafIcon, CartIcon, MenuIcon, ReceiptIcon, ProfileIcon, SupportIcon, LogoutIcon } from './icons';
 
 export default function CustomerNavBar() {
   const { logout, isAuthenticated } = useAuth();
   const { cartCount, cartPulse } = useCart();
+  const storeName = useStoreName();
   const [animateCart, setAnimateCart] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [canInstall, setCanInstall] = useState(false);
@@ -84,7 +86,7 @@ export default function CustomerNavBar() {
             <span className="brand-mark" aria-hidden="true">
               <LeafIcon size={20} />
             </span>{' '}
-            Store Name
+            {storeName}
           </Link>
 
           <nav className="customer-nav-desktop">

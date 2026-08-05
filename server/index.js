@@ -16,6 +16,7 @@ const supportRoutes = require('./src/routes/supportRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
 const promotionRoutes = require('./src/routes/promotionRoutes');
 const heroBackgroundRoutes = require('./src/routes/heroBackgroundRoutes');
+const storeSettingsRoutes = require('./src/routes/storeSettingsRoutes');
 const { notFound, errorHandler } = require('./src/middleware/error');
 const ensureDemoData = require('./src/utils/bootstrapDemoData');
 const { startReengagementScheduler } = require('./src/utils/reengagementScheduler');
@@ -82,6 +83,7 @@ app.use('/api/support', supportRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/hero-background', heroBackgroundRoutes);
+app.use('/api/store-settings', storeSettingsRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

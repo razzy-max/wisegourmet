@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useStoreName } from '../context/StoreSettingsContext';
 import SimpleNavDrawer from './SimpleNavDrawer';
 import ThemeToggle from './ThemeToggle';
 import { MenuIcon } from './icons';
@@ -13,6 +14,7 @@ const NAV_ITEMS = [
 
 export default function RiderNavBar() {
   const { logout } = useAuth();
+  const storeName = useStoreName();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
@@ -20,7 +22,7 @@ export default function RiderNavBar() {
       <header className="nav-shell">
         <div className="nav-inner">
           <Link className="brand" to="/rider/queue">
-            Store Name (Dispatch)
+            {storeName} (Dispatch)
           </Link>
 
           <nav className="admin-nav-desktop">

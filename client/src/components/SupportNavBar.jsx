@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useStoreName } from '../context/StoreSettingsContext';
 import SimpleNavDrawer from './SimpleNavDrawer';
 import ThemeToggle from './ThemeToggle';
 import { MenuIcon } from './icons';
@@ -9,6 +10,7 @@ const NAV_ITEMS = [{ path: '/admin/support', label: 'Inbox' }];
 
 export default function SupportNavBar() {
   const { logout } = useAuth();
+  const storeName = useStoreName();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
@@ -16,7 +18,7 @@ export default function SupportNavBar() {
       <header className="nav-shell">
         <div className="nav-inner">
           <Link className="brand" to="/admin/support">
-            Store Name (Support)
+            {storeName} (Support)
           </Link>
 
           <nav className="admin-nav-desktop">

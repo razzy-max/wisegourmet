@@ -44,7 +44,7 @@ const runReengagementCheck = async () => {
 
   if (eligibleIds.length > 0) {
     await sendPushToUserIds(eligibleIds, {
-      title: settings.title || 'Store Name',
+      title: settings.title,
       body: settings.body,
       url: '/',
       tag: 'auto-re-engagement',
