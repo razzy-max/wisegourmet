@@ -6,6 +6,9 @@ export function useOrdersRealtime(onChange, options = {}) {
 
   useEffect(() => {
     const socket = getSocket();
+    const join = () => {
+      if (orderId) socket.emit('order:watch', orderId);
+    };
 
     const handleOrdersChanged = () => {
       onChange();
@@ -19,14 +22,15 @@ export function useOrdersRealtime(onChange, options = {}) {
 
     socket.on('orders:changed', handleOrdersChanged);
     socket.on('order:changed', handleOrderChanged);
-
-    if (orderId) {
-      socket.emit('order:watch', orderId);
-    }
+    // Socket.IO room membership does not survive a reconnect, so rejoin every
+    // time the transport (re)connects, not just once on mount.
+    socket.on('connect', join);
+    join();
 
     return () => {
       socket.off('orders:changed', handleOrdersChanged);
       socket.off('order:changed', handleOrderChanged);
+      socket.off('connect', join);
       if (orderId) {
         socket.emit('order:unwatch', orderId);
       }

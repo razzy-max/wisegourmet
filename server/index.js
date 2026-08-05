@@ -7,6 +7,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const { Server } = require('socket.io');
 const connectDB = require('./src/config/db');
+const Order = require('./src/models/Order');
 const authRoutes = require('./src/routes/authRoutes');
 const menuRoutes = require('./src/routes/menuRoutes');
 const cartRoutes = require('./src/routes/cartRoutes');
@@ -38,10 +39,35 @@ const io = new Server(server, {
   },
 });
 
+const emitLocationSnapshot = async (socket, orderId) => {
+  try {
+    const order = await Order.findById(orderId).select('riderLocation customerLocation');
+    if (!order) return;
+
+    const emitIfPresent = (role, location) => {
+      if (Number.isFinite(location?.lat) && Number.isFinite(location?.lng)) {
+        socket.emit('order-location:changed', {
+          orderId,
+          role,
+          lat: location.lat,
+          lng: location.lng,
+          updatedAt: (location.updatedAt || new Date()).toISOString(),
+        });
+      }
+    };
+
+    emitIfPresent('rider', order.riderLocation);
+    emitIfPresent('customer', order.customerLocation);
+  } catch (error) {
+    console.error('Failed to send location snapshot on watch:', error.message);
+  }
+};
+
 io.on('connection', (socket) => {
   socket.on('order:watch', (orderId) => {
     if (orderId) {
       socket.join(`order:${orderId}`);
+      emitLocationSnapshot(socket, orderId);
     }
   });
 

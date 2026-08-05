@@ -72,7 +72,7 @@ function ActiveDeliveryCard({
             viewerRole="rider"
           />
           <div className="live-map-controls">
-            {locationBroadcaster.sharing ? (
+            {locationBroadcaster.checkingPermission ? null : locationBroadcaster.sharing ? (
               <button type="button" className="btn btn-ghost" onClick={locationBroadcaster.stop}>
                 Stop sharing my location
               </button>

@@ -6,6 +6,7 @@ const MIN_INTERVAL_MS = 5000;
 export function useLocationBroadcaster(orderId) {
   const [sharing, setSharing] = useState(false);
   const [error, setError] = useState('');
+  const [checkingPermission, setCheckingPermission] = useState(true);
   const watchIdRef = useRef(null);
   const lastSentRef = useRef(0);
 
@@ -49,7 +50,38 @@ export function useLocationBroadcaster(orderId) {
     setSharing(true);
   }, [orderId, stop]);
 
+  useEffect(() => {
+    if (!orderId || !('permissions' in navigator)) {
+      setCheckingPermission(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    navigator.permissions
+      .query({ name: 'geolocation' })
+      .then((status) => {
+        if (cancelled) return;
+        // Browsers remember a granted geolocation permission across reloads,
+        // same as notifications — resume sharing automatically instead of
+        // making the user click "Share my location" again every visit.
+        if (status.state === 'granted') {
+          start();
+        }
+        setCheckingPermission(false);
+      })
+      .catch(() => {
+        // Permissions API doesn't support querying 'geolocation' in this
+        // browser (e.g. older Safari) — fall back to the manual button.
+        if (!cancelled) setCheckingPermission(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [orderId, start]);
+
   useEffect(() => stop, [stop]);
 
-  return { sharing, error, start, stop };
+  return { sharing, error, checkingPermission, start, stop };
 }

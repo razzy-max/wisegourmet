@@ -6,6 +6,9 @@ export function useSupportTicketRealtime(onChange, options = {}) {
 
   useEffect(() => {
     const socket = getSocket();
+    const join = () => {
+      if (ticketId) socket.emit('support-ticket:watch', ticketId);
+    };
 
     const handleTicketChanged = (payload) => {
       if (!ticketId || payload?.ticketId === ticketId) {
@@ -15,14 +18,15 @@ export function useSupportTicketRealtime(onChange, options = {}) {
 
     socket.on('support:tickets:changed', handleTicketChanged);
     socket.on('support-ticket:changed', handleTicketChanged);
-
-    if (ticketId) {
-      socket.emit('support-ticket:watch', ticketId);
-    }
+    // Socket.IO room membership does not survive a reconnect, so rejoin every
+    // time the transport (re)connects, not just once on mount.
+    socket.on('connect', join);
+    join();
 
     return () => {
       socket.off('support:tickets:changed', handleTicketChanged);
       socket.off('support-ticket:changed', handleTicketChanged);
+      socket.off('connect', join);
       if (ticketId) {
         socket.emit('support-ticket:unwatch', ticketId);
       }
