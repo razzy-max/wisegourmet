@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useStoreName } from '../context/StoreSettingsContext';
 import { userApi } from '../api/userApi';
+import { ensurePushSubscription, isPushSupported, PUSH_SUBSCRIBED_EVENT } from '../lib/pushSubscribe';
 
 const DISMISS_KEY = 'wg:alerts-card:dismissed:';
 
@@ -23,19 +24,6 @@ const buildRoleCopy = (storeName) => ({
     description: 'Get notified when new support tickets arrive or customers reply.',
   },
 });
-
-const urlBase64ToUint8Array = (base64String) => {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-
-  for (let index = 0; index < rawData.length; index += 1) {
-    outputArray[index] = rawData.charCodeAt(index);
-  }
-
-  return outputArray;
-};
 
 export default function EnableAlertsCard() {
   const { user, isAuthenticated } = useAuth();
@@ -60,13 +48,7 @@ export default function EnableAlertsCard() {
     const alreadyDismissed = window.localStorage.getItem(`${DISMISS_KEY}${user.role}`) === '1';
     setDismissed(alreadyDismissed);
 
-    const pushSupported =
-      typeof window !== 'undefined' &&
-      'Notification' in window &&
-      'serviceWorker' in navigator &&
-      'PushManager' in window;
-
-    if (!pushSupported) {
+    if (!isPushSupported()) {
       setSupported(false);
       setLoading(false);
       return;
@@ -95,42 +77,20 @@ export default function EnableAlertsCard() {
     loadStatus();
   }, [loadStatus]);
 
-  const handleEnable = async () => {
-    if (!publicKey) {
-      setMessage('Notifications are not configured yet.');
-      return;
-    }
+  useEffect(() => {
+    // The app-wide auto-enable hook may subscribe this device in the
+    // background off the user's first click — stay in sync so this card
+    // hides itself the moment that happens, without needing a manual retry.
+    window.addEventListener(PUSH_SUBSCRIBED_EVENT, loadStatus);
+    return () => window.removeEventListener(PUSH_SUBSCRIBED_EVENT, loadStatus);
+  }, [loadStatus]);
 
+  const handleEnable = async () => {
     setBusy(true);
     setMessage('');
 
     try {
-      if (window.Notification.permission === 'denied') {
-        setMessage(
-          'Notifications are blocked for this site in your browser. Open your browser\'s site settings, allow notifications, then try again.'
-        );
-        setBusy(false);
-        return;
-      }
-
-      const permission = await window.Notification.requestPermission();
-      if (permission !== 'granted') {
-        setMessage('Notification permission was not granted.');
-        setBusy(false);
-        return;
-      }
-
-      const registration = await navigator.serviceWorker.ready;
-      let subscription = await registration.pushManager.getSubscription();
-
-      if (!subscription) {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(publicKey),
-        });
-      }
-
-      await userApi.subscribeNotifications(subscription.toJSON());
+      await ensurePushSubscription(publicKey);
       setSubscribed(true);
       setMessage('Alerts enabled. You will now receive important updates.');
     } catch (error) {

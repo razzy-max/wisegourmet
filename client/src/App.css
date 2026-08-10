@@ -1975,6 +1975,12 @@ select:hover {
   gap: 0.5rem;
 }
 
+.live-map-sharing-status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .address-block {
   display: flex;
   flex-direction: column;

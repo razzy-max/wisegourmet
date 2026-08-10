@@ -8,6 +8,7 @@ import EnableAlertsCard from '../components/EnableAlertsCard';
 import PinEntryForm from '../components/PinEntryForm';
 import Skeleton from '../components/Skeleton';
 import LiveDeliveryMap from '../components/LiveDeliveryMap';
+import { MapPinIcon } from '../components/icons';
 import { getStatusLabel, getStatusBadgeClass } from '../utils/statusHelpers';
 import './OpsPages.css';
 
@@ -73,13 +74,16 @@ function ActiveDeliveryCard({
           />
           <div className="live-map-controls">
             {locationBroadcaster.checkingPermission ? null : locationBroadcaster.sharing ? (
-              <button type="button" className="btn btn-ghost" onClick={locationBroadcaster.stop}>
-                Stop sharing my location
-              </button>
+              <p className="muted live-map-sharing-status">
+                <MapPinIcon size={14} /> Sharing your live location with the customer
+              </p>
+            ) : locationBroadcaster.permissionBlocked ? (
+              <p className="muted">
+                Location sharing is blocked for this site in your browser. Enable it in your browser's site
+                settings to share your live location with the customer.
+              </p>
             ) : (
-              <button type="button" className="btn" onClick={locationBroadcaster.start}>
-                Share my location with customer
-              </button>
+              <p className="muted">Tap anywhere on this page to start sharing your live location with the customer.</p>
             )}
             {locationBroadcaster.error && <p className="error-message">{locationBroadcaster.error}</p>}
           </div>

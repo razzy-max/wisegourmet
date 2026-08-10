@@ -4,25 +4,13 @@ import { authApi } from '../api/authApi';
 import { userApi } from '../api/userApi';
 import { useAuth } from '../context/AuthContext';
 import ToggleSwitch from '../components/ToggleSwitch';
+import { ensurePushSubscription, isPushSupported, PUSH_SUBSCRIBED_EVENT } from '../lib/pushSubscribe';
 
 const formatZoneLabel = (zoneKey) =>
   String(zoneKey || '')
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase())
     .trim();
-
-const urlBase64ToUint8Array = (base64String) => {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-
-  for (let index = 0; index < rawData.length; index += 1) {
-    outputArray[index] = rawData.charCodeAt(index);
-  }
-
-  return outputArray;
-};
 
 const initialForm = {
   fullName: '',
@@ -91,13 +79,7 @@ export default function ProfilePage() {
       return;
     }
 
-    const pushSupported =
-      typeof window !== 'undefined' &&
-      'Notification' in window &&
-      'serviceWorker' in navigator &&
-      'PushManager' in window;
-
-    if (!pushSupported) {
+    if (!isPushSupported()) {
       setNotificationsSupported(false);
       setNotificationsLoading(false);
       return;
@@ -127,6 +109,14 @@ export default function ProfilePage() {
     loadProfile();
     loadZones();
     loadNotificationStatus();
+  }, []);
+
+  useEffect(() => {
+    // The app-wide auto-enable hook may subscribe this device in the
+    // background off the user's first click — stay in sync so the toggle
+    // reflects that without needing a manual refresh.
+    window.addEventListener(PUSH_SUBSCRIBED_EVENT, loadNotificationStatus);
+    return () => window.removeEventListener(PUSH_SUBSCRIBED_EVENT, loadNotificationStatus);
   }, []);
 
   const zoneOptions = useMemo(() => {
@@ -183,32 +173,7 @@ export default function ProfilePage() {
     setNotificationsMessage('');
 
     try {
-      if (window.Notification.permission === 'denied') {
-        setNotificationsMessage(
-          'Notifications are blocked for this site in your browser. Open your browser\'s site settings, allow notifications, then try again.'
-        );
-        setNotificationsBusy(false);
-        return;
-      }
-
-      const permission = await window.Notification.requestPermission();
-      if (permission !== 'granted') {
-        setNotificationsMessage('Notification permission was not granted.');
-        setNotificationsBusy(false);
-        return;
-      }
-
-      const registration = await navigator.serviceWorker.ready;
-      let subscription = await registration.pushManager.getSubscription();
-
-      if (!subscription) {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(notificationsPublicKey),
-        });
-      }
-
-      await userApi.subscribeNotifications(subscription.toJSON());
+      await ensurePushSubscription(notificationsPublicKey);
       setNotificationsSubscribed(true);
       setNotificationsMessage('Notifications enabled for this device.');
     } catch (err) {

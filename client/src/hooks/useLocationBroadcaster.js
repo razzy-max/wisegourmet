@@ -7,6 +7,7 @@ export function useLocationBroadcaster(orderId) {
   const [sharing, setSharing] = useState(false);
   const [error, setError] = useState('');
   const [checkingPermission, setCheckingPermission] = useState(true);
+  const [permissionBlocked, setPermissionBlocked] = useState(false);
   const watchIdRef = useRef(null);
   const lastSentRef = useRef(0);
 
@@ -51,37 +52,66 @@ export function useLocationBroadcaster(orderId) {
   }, [orderId, stop]);
 
   useEffect(() => {
-    if (!orderId || !('permissions' in navigator)) {
+    if (!orderId) {
       setCheckingPermission(false);
       return undefined;
     }
 
     let cancelled = false;
+    let removeClickListener;
+
+    const askOnFirstInteraction = () => {
+      const handleFirstInteraction = () => start();
+      document.addEventListener('click', handleFirstInteraction, { once: true });
+      removeClickListener = () => document.removeEventListener('click', handleFirstInteraction);
+    };
+
+    if (!('permissions' in navigator)) {
+      // Permissions API can't be queried here (e.g. older Safari) — we can't
+      // tell in advance whether this is already granted or denied, so fall
+      // back to asking on the page's first click, same as the common case.
+      askOnFirstInteraction();
+      setCheckingPermission(false);
+      return () => {
+        cancelled = true;
+        if (removeClickListener) removeClickListener();
+      };
+    }
 
     navigator.permissions
       .query({ name: 'geolocation' })
       .then((status) => {
         if (cancelled) return;
-        // Browsers remember a granted geolocation permission across reloads,
-        // same as notifications — resume sharing automatically instead of
-        // making the user click "Share my location" again every visit.
+
         if (status.state === 'granted') {
+          // Browsers remember a granted permission across reloads, same as
+          // notifications — resume sharing automatically, no click needed.
           start();
+        } else if (status.state === 'denied') {
+          setPermissionBlocked(true);
+        } else {
+          // Not yet decided — ask the moment the user makes any natural
+          // interaction on this page, instead of requiring a dedicated
+          // "Share my location" button (browsers require a real gesture
+          // before showing the prompt at all).
+          askOnFirstInteraction();
         }
+
         setCheckingPermission(false);
       })
       .catch(() => {
-        // Permissions API doesn't support querying 'geolocation' in this
-        // browser (e.g. older Safari) — fall back to the manual button.
-        if (!cancelled) setCheckingPermission(false);
+        if (cancelled) return;
+        askOnFirstInteraction();
+        setCheckingPermission(false);
       });
 
     return () => {
       cancelled = true;
+      if (removeClickListener) removeClickListener();
     };
   }, [orderId, start]);
 
   useEffect(() => stop, [stop]);
 
-  return { sharing, error, checkingPermission, start, stop };
+  return { sharing, error, checkingPermission, permissionBlocked, start, stop };
 }

@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { useStoreName } from './context/StoreSettingsContext';
+import { useAutoEnableNotifications } from './hooks/useAutoEnableNotifications';
 import AdminNavBar from './components/AdminNavBar';
 import StaffNavBar from './components/StaffNavBar';
 import RiderNavBar from './components/RiderNavBar';
@@ -64,6 +65,8 @@ function App() {
   const storeName = useStoreName();
   const isAdminLayout = isAuthenticated && user?.role === 'admin';
   const [renderedLocation, setRenderedLocation] = useState(location);
+
+  useAutoEnableNotifications(isAuthenticated, user?.role);
 
   useEffect(() => {
     if (location === renderedLocation) {
