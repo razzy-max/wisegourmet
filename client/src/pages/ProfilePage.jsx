@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { orderApi } from '../api/orderApi';
 import { authApi } from '../api/authApi';
 import { userApi } from '../api/userApi';
 import { useAuth } from '../context/AuthContext';
 import ToggleSwitch from '../components/ToggleSwitch';
-import { ensurePushSubscription, isPushSupported, PUSH_SUBSCRIBED_EVENT } from '../lib/pushSubscribe';
+import { ensurePushSubscription, isIosNonStandalone, isPushSupported, PUSH_SUBSCRIBED_EVENT } from '../lib/pushSubscribe';
 
 const formatZoneLabel = (zoneKey) =>
   String(zoneKey || '')
@@ -326,7 +327,15 @@ export default function ProfilePage() {
         {!notificationsLoading && notificationsSupported && !notificationsConfigured ? (
           <p className="muted">Notifications are currently unavailable on the server.</p>
         ) : null}
-        {!notificationsLoading && notificationsSupported && notificationsConfigured ? (
+        {!notificationsLoading && notificationsSupported && notificationsConfigured && isIosNonStandalone() ? (
+          <div style={{ marginTop: '0.75rem' }}>
+            <p className="muted">On iPhone, notifications only work once this app is added to your Home Screen.</p>
+            <Link to="/install" className="btn" style={{ marginTop: '0.5rem', display: 'inline-block' }}>
+              Install App
+            </Link>
+          </div>
+        ) : null}
+        {!notificationsLoading && notificationsSupported && notificationsConfigured && !isIosNonStandalone() ? (
           <div className="row" style={{ marginTop: '0.75rem', alignItems: 'center' }}>
             <ToggleSwitch
               checked={notificationsSubscribed}

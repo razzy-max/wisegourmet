@@ -24,7 +24,27 @@ export function isPushSupported() {
   );
 }
 
+// Every iOS browser (Safari, Chrome, Firefox, Edge) is required by Apple to
+// run on WebKit, and Web Push only actually works from a page added to the
+// Home Screen (standalone display mode) — a plain browser tab will report
+// these APIs as present (isPushSupported() === true) but any subscribe
+// attempt will fail. This is an iOS/WebKit-wide restriction, not specific
+// to Safari's UI, and there's no way to lift it from code.
+export function isIosNonStandalone() {
+  const ua = navigator.userAgent.toLowerCase();
+  const isIos = /iphone|ipad|ipod/.test(ua) && !window.MSStream;
+  const isStandalone =
+    window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  return isIos && !isStandalone;
+}
+
 export async function ensurePushSubscription(publicKey) {
+  if (isIosNonStandalone()) {
+    throw new Error(
+      'Notifications on iPhone require adding this app to your Home Screen first. Tap "Install App" in the menu, open it from your Home Screen, then try again.'
+    );
+  }
+
   if (!publicKey) {
     throw new Error('Notifications are not configured yet.');
   }

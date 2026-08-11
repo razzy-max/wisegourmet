@@ -10,6 +10,7 @@ export function useLocationBroadcaster(orderId) {
   const [permissionBlocked, setPermissionBlocked] = useState(false);
   const watchIdRef = useRef(null);
   const lastSentRef = useRef(0);
+  const consecutiveErrorsRef = useRef(0);
 
   const stop = useCallback(() => {
     if (watchIdRef.current !== null) {
@@ -30,6 +31,11 @@ export function useLocationBroadcaster(orderId) {
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
+        // A successful reading clears any earlier transient error — the
+        // watch has self-recovered, no need for the user to do anything.
+        consecutiveErrorsRef.current = 0;
+        setError('');
+
         const now = Date.now();
         if (now - lastSentRef.current < MIN_INTERVAL_MS) return;
         lastSentRef.current = now;
@@ -38,12 +44,22 @@ export function useLocationBroadcaster(orderId) {
         orderApi.updateLocation(orderId, { lat: latitude, lng: longitude }).catch(() => {});
       },
       (geoError) => {
+        if (geoError.code === geoError.PERMISSION_DENIED) {
+          setError('Location permission was denied.');
+          stop();
+          return;
+        }
+
+        // A single timed-out or temporarily-unavailable fix (common on the
+        // first cold GPS attempt, especially indoors) isn't fatal — keep the
+        // existing watch running so it can self-recover on its own, rather
+        // than tearing it down and forcing a page refresh to try again.
+        consecutiveErrorsRef.current += 1;
         setError(
-          geoError.code === geoError.PERMISSION_DENIED
-            ? 'Location permission was denied.'
-            : 'Unable to get your location right now.'
+          consecutiveErrorsRef.current >= 3
+            ? "Still having trouble getting an accurate location. Make sure Location is turned on for this browser in your device settings, and try moving somewhere with a clearer view of the sky."
+            : 'Still trying to get an accurate location…'
         );
-        stop();
       },
       { enableHighAccuracy: true, maximumAge: 4000, timeout: 15000 }
     );

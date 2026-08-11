@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useStoreName } from '../context/StoreSettingsContext';
 import { userApi } from '../api/userApi';
-import { ensurePushSubscription, isPushSupported, PUSH_SUBSCRIBED_EVENT } from '../lib/pushSubscribe';
+import { ensurePushSubscription, isIosNonStandalone, isPushSupported, PUSH_SUBSCRIBED_EVENT } from '../lib/pushSubscribe';
 
 const DISMISS_KEY = 'wg:alerts-card:dismissed:';
 
@@ -117,6 +118,25 @@ export default function EnableAlertsCard() {
 
   if (!enabled) {
     return null;
+  }
+
+  if (isIosNonStandalone()) {
+    return (
+      <article className="panel alerts-optin-card" role="region" aria-label="Enable notifications">
+        <h3>{copy.title}</h3>
+        <p className="muted">
+          On iPhone, notifications only work once this app is added to your Home Screen.
+        </p>
+        <div className="row alerts-optin-actions">
+          <Link to="/install" className="btn">
+            Install App
+          </Link>
+          <button className="btn btn-ghost" type="button" onClick={handleDismiss}>
+            Not now
+          </button>
+        </div>
+      </article>
+    );
   }
 
   return (

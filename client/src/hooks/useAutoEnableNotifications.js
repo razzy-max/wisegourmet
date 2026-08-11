@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { userApi } from '../api/userApi';
-import { ensurePushSubscription, isPushSupported } from '../lib/pushSubscribe';
+import { ensurePushSubscription, isIosNonStandalone, isPushSupported } from '../lib/pushSubscribe';
 
 // Browsers require a real user gesture before a permission prompt can appear
 // (and will auto-block a site that prompts without one), so this can't fire
@@ -12,6 +12,10 @@ export function useAutoEnableNotifications(isAuthenticated, role) {
     if (!isAuthenticated || !role || role === 'admin') return undefined;
     if (!isPushSupported()) return undefined;
     if (window.Notification.permission !== 'default') return undefined;
+    // Guaranteed to fail from a plain iOS browser tab — don't spend the
+    // user's first click on it. EnableAlertsCard/Profile show the "install
+    // first" guidance instead.
+    if (isIosNonStandalone()) return undefined;
 
     let cancelled = false;
 
