@@ -1,12 +1,12 @@
-const CACHE_NAME = 'wise-gourmet-v3';
+const CACHE_NAME = 'wise-gourmet-v4';
 const CACHE_PREFIX = 'wise-gourmet-v';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/favicon.svg',
-  '/icon-192.svg',
-  '/icon-512.svg',
+  '/favicon.png',
+  '/icon-192.png',
+  '/icon-512.png',
 ];
 
 self.addEventListener('install', (event) => {
@@ -91,12 +91,12 @@ self.addEventListener('push', (event) => {
   }
 
   let payload = {
-    title: 'Store Name',
+    title: 'Wise Gourmet',
     body: 'You have a new update.',
     url: '/',
     tag: 'wise-gourmet-update',
-    icon: '/icon-192.svg',
-    badge: '/icon-192.svg',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
   };
 
   try {

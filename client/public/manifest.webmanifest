@@ -1,7 +1,7 @@
 {
-  "name": "Store Name",
-  "short_name": "Store Name",
-  "description": "Order food from Store Name with a fast app-like experience.",
+  "name": "Wise Gourmet",
+  "short_name": "Wise Gourmet",
+  "description": "Order food from Wise Gourmet with a fast app-like experience.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -10,16 +10,22 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/icon-192.svg",
+      "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon-512.svg",
+      "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import EnableAlertsCard from '../components/EnableAlertsCard';
-import { useStoreName } from '../context/StoreSettingsContext';
-import { CheckCircleIcon, LeafIcon, PhoneIcon, DesktopIcon } from '../components/icons';
+import { CheckCircleIcon, PhoneIcon, DesktopIcon } from '../components/icons';
 import './InstallPage.css';
 
 export default function InstallPage() {
   const navigate = useNavigate();
-  const storeName = useStoreName();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [canInstall, setCanInstall] = useState(false);
   const [isIos, setIsIos] = useState(false);
@@ -68,7 +66,7 @@ export default function InstallPage() {
       <div className="page-wrap">
         <div className="install-card install-success">
           <div className="install-icon install-icon-success"><CheckCircleIcon size={28} /></div>
-          <h1>{storeName} is Installed!</h1>
+          <h1>Wise Gourmet is Installed!</h1>
           <p>You're all set. The app is ready to use from your home screen.</p>
           <button onClick={() => navigate('/')} className="install-button install-button-primary">
             Go to Menu
@@ -83,8 +81,8 @@ export default function InstallPage() {
     <div className="page-wrap">
       <div className="install-container">
         <div className="install-header">
-          <div className="install-logo"><LeafIcon size={28} /></div>
-          <h1>Get {storeName} as an App</h1>
+          <div className="install-logo"><img src="/logo.png" alt="Wise Gourmet" /></div>
+          <h1>Get Wise Gourmet as an App</h1>
           <p>Install on your phone for quick access and offline support</p>
         </div>
 
@@ -92,7 +90,7 @@ export default function InstallPage() {
           <div className="install-card install-card-android">
             <div className="install-icon install-icon-android"><PhoneIcon size={28} /></div>
             <h2>Install Now</h2>
-            <p>Tap the button below to add {storeName} to your phone's home screen.</p>
+            <p>Tap the button below to add Wise Gourmet to your phone's home screen.</p>
             <button onClick={handleInstallClick} className="install-button install-button-primary">
               Install App
             </button>

@@ -1,6 +1,5 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useStoreName } from '../context/StoreSettingsContext';
 
 const baseLinks = [
   { to: '/', label: 'Menu' },
@@ -11,13 +10,12 @@ const baseLinks = [
 
 export default function NavBar() {
   const { user, isAuthenticated, logout } = useAuth();
-  const storeName = useStoreName();
 
   return (
     <header className="nav-shell">
       <div className="nav-inner">
         <Link className="brand" to="/">
-          {storeName}
+          Wise Gourmet
         </Link>
         <nav>
           {baseLinks.map((link) => (

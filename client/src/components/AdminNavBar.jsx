@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useStoreName } from '../context/StoreSettingsContext';
 import AdminDrawer from './AdminDrawer';
 import ThemeToggle from './ThemeToggle';
 import {
@@ -35,7 +34,6 @@ const NAV_ITEMS = [
 
 export default function AdminNavBar() {
   const { logout } = useAuth();
-  const storeName = useStoreName();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
@@ -44,7 +42,7 @@ export default function AdminNavBar() {
       <aside className="admin-sidebar">
         <Link className="admin-sidebar-brand" to="/admin">
           <SettingsIcon size={16} />
-          <span>{storeName}</span>
+          <span>Wise Gourmet</span>
         </Link>
 
         <nav className="admin-sidebar-nav">
@@ -74,7 +72,7 @@ export default function AdminNavBar() {
       <header className="nav-shell admin-mobile-topbar">
         <div className="nav-inner">
           <Link className="brand admin-brand" to="/admin">
-            <span>{storeName}</span>
+            <span>Wise Gourmet</span>
             <span className="admin-badge">
               <SettingsIcon size={14} />
             </span>

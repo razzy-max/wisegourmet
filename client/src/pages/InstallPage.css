@@ -17,6 +17,11 @@
   color: var(--wg-green);
 }
 
+.install-logo img {
+  height: 64px;
+  width: auto;
+}
+
 .install-header h1 {
   font-size: 2rem;
   color: var(--wg-text);

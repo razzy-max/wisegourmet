@@ -2,14 +2,12 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../api/authApi';
 import { useAuth } from '../context/AuthContext';
-import { useStoreName } from '../context/StoreSettingsContext';
-import { LeafIcon, EyeIcon, EyeOffIcon } from '../components/icons';
+import { EyeIcon, EyeOffIcon } from '../components/icons';
 import './Auth.css';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const storeName = useStoreName();
   const [form, setForm] = useState({
     fullName: '',
     email: '',
@@ -37,10 +35,7 @@ export default function RegisterPage() {
       <div className="auth-split">
         <div className="auth-panel-brand">
           <div className="auth-brand-lockup">
-            <span className="auth-brand-mark" aria-hidden="true">
-              <LeafIcon size={22} />
-            </span>
-            <p className="auth-brand-name">{storeName}</p>
+            <img src="/logo.png" alt="Wise Gourmet" className="auth-brand-logo" />
           </div>
 
           <blockquote className="auth-testimonial">
@@ -56,7 +51,7 @@ export default function RegisterPage() {
           <div className={`auth-card${error ? ' auth-card-shake' : ''}`}>
             <div className="auth-brand">
               <h1 className="auth-title">Create your account</h1>
-              <p className="auth-tagline">Join {storeName} for faster checkout and order tracking.</p>
+              <p className="auth-tagline">Join Wise Gourmet for faster checkout and order tracking.</p>
             </div>
 
             <form onSubmit={submit} className="form auth-form">

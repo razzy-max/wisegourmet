@@ -1,6 +1,5 @@
 const webPush = require('web-push');
 const User = require('../models/User');
-const { getStoreName } = require('./storeSettings');
 
 const VAPID_PUBLIC_KEY = process.env.WEB_PUSH_VAPID_PUBLIC_KEY || '';
 const VAPID_PRIVATE_KEY = process.env.WEB_PUSH_VAPID_PRIVATE_KEY || '';
@@ -12,13 +11,13 @@ if (isPushConfigured()) {
   webPush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 }
 
-const buildPayload = async (payload = {}) => ({
-  title: payload.title || (await getStoreName()),
+const buildPayload = (payload = {}) => ({
+  title: payload.title || 'Wise Gourmet',
   body: payload.body || '',
   url: payload.url || '/',
   tag: payload.tag || '',
-  icon: payload.icon || '/icon-192.svg',
-  badge: payload.badge || '/icon-192.svg',
+  icon: payload.icon || '/icon-192.png',
+  badge: payload.badge || '/icon-192.png',
 });
 
 const cleanupInvalidSubscriptions = async (userId, staleEndpoints = []) => {
@@ -70,7 +69,7 @@ const sendPushToRoles = async (roles = [], payload = {}) => {
   }
 
   const users = await User.find({ role: { $in: roles }, isActive: true }).select('_id pushSubscriptions');
-  const normalizedPayload = await buildPayload(payload);
+  const normalizedPayload = buildPayload(payload);
 
   await Promise.all(users.map((user) => sendToUserRecord(user, normalizedPayload)));
 };
@@ -81,7 +80,7 @@ const sendPushToUserIds = async (userIds = [], payload = {}) => {
   }
 
   const users = await User.find({ _id: { $in: userIds }, isActive: true }).select('_id pushSubscriptions');
-  const normalizedPayload = await buildPayload(payload);
+  const normalizedPayload = buildPayload(payload);
 
   await Promise.all(users.map((user) => sendToUserRecord(user, normalizedPayload)));
 };

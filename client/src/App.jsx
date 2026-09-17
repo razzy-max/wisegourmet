@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
-import { useStoreName } from './context/StoreSettingsContext';
 import { useAutoEnableNotifications } from './hooks/useAutoEnableNotifications';
 import AdminNavBar from './components/AdminNavBar';
 import StaffNavBar from './components/StaffNavBar';
@@ -35,8 +34,9 @@ import AdminPasswordPage from './pages/AdminPasswordPage';
 import AdminDeliveryZonesPage from './pages/AdminDeliveryZonesPage';
 import AdminPromotionsPage from './pages/AdminPromotionsPage';
 import AdminCustomersPage from './pages/AdminCustomersPage';
-import ControlStoreNamePage from './pages/ControlStoreNamePage';
 import './App.css';
+
+const STORE_NAME = 'Wise Gourmet';
 
 function NavBarSelector() {
   const { user, isAuthenticated } = useAuth();
@@ -62,7 +62,6 @@ function NavBarSelector() {
 function App() {
   const location = useLocation();
   const { user, isAuthenticated } = useAuth();
-  const storeName = useStoreName();
   const isAdminLayout = isAuthenticated && user?.role === 'admin';
   const [renderedLocation, setRenderedLocation] = useState(location);
 
@@ -88,42 +87,42 @@ function App() {
     const path = location.pathname;
 
     if (path === '/') {
-      document.title = `Menu — ${storeName}`;
+      document.title = `Menu — ${STORE_NAME}`;
       return;
     }
 
     if (path === '/install') {
-      document.title = `Install App — ${storeName}`;
+      document.title = `Install App — ${STORE_NAME}`;
       return;
     }
 
     if (path.startsWith('/cart')) {
-      document.title = `Cart — ${storeName}`;
+      document.title = `Cart — ${STORE_NAME}`;
       return;
     }
 
     if (path.startsWith('/checkout')) {
-      document.title = `Checkout — ${storeName}`;
+      document.title = `Checkout — ${STORE_NAME}`;
       return;
     }
 
     if (path.startsWith('/orders')) {
-      document.title = `My Orders — ${storeName}`;
+      document.title = `My Orders — ${STORE_NAME}`;
       return;
     }
 
     if (path.startsWith('/profile')) {
-      document.title = `Profile — ${storeName}`;
+      document.title = `Profile — ${STORE_NAME}`;
       return;
     }
 
     if (path.startsWith('/support')) {
-      document.title = `Support — ${storeName}`;
+      document.title = `Support — ${STORE_NAME}`;
       return;
     }
 
-    document.title = storeName;
-  }, [location.pathname, storeName]);
+    document.title = STORE_NAME;
+  }, [location.pathname]);
 
   const routesContent = (
     <div key={renderedLocation.pathname} className="route-fade">
@@ -299,14 +298,6 @@ function App() {
           element={
             <ProtectedRoute roles={['rider']}>
               <RiderDeliveryHistoryPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/control/storename"
-          element={
-            <ProtectedRoute roles={['admin']}>
-              <ControlStoreNamePage />
             </ProtectedRoute>
           }
         />

@@ -1,16 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useStoreName } from '../context/StoreSettingsContext';
 import { userApi } from '../api/userApi';
 import { ensurePushSubscription, isIosNonStandalone, isPushSupported, PUSH_SUBSCRIBED_EVENT } from '../lib/pushSubscribe';
 
 const DISMISS_KEY = 'wg:alerts-card:dismissed:';
 
-const buildRoleCopy = (storeName) => ({
+const ROLE_COPY = {
   customer: {
     title: 'Enable Alerts',
-    description: `Get notified about your order status, plus deals and updates from ${storeName}.`,
+    description: 'Get notified about your order status, plus deals and updates from Wise Gourmet.',
   },
   staff: {
     title: 'Enable New Order Alerts',
@@ -24,11 +23,10 @@ const buildRoleCopy = (storeName) => ({
     title: 'Enable Support Alerts',
     description: 'Get notified when new support tickets arrive or customers reply.',
   },
-});
+};
 
 export default function EnableAlertsCard() {
   const { user, isAuthenticated } = useAuth();
-  const storeName = useStoreName();
   const [loading, setLoading] = useState(true);
   const [supported, setSupported] = useState(true);
   const [enabled, setEnabled] = useState(false);
@@ -38,7 +36,7 @@ export default function EnableAlertsCard() {
   const [message, setMessage] = useState('');
   const [dismissed, setDismissed] = useState(false);
 
-  const copy = useMemo(() => buildRoleCopy(storeName)[user?.role] || null, [storeName, user?.role]);
+  const copy = useMemo(() => ROLE_COPY[user?.role] || null, [user?.role]);
 
   const loadStatus = useCallback(async () => {
     if (!isAuthenticated || !user?.role || user.role === 'admin') {

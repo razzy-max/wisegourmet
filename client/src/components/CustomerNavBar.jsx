@@ -2,15 +2,13 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { useStoreName } from '../context/StoreSettingsContext';
 import ThemeToggle from './ThemeToggle';
-import { LeafIcon, CartIcon, MenuIcon, ReceiptIcon, ProfileIcon, SupportIcon, LogoutIcon } from './icons';
+import { CartIcon, MenuIcon, ReceiptIcon, ProfileIcon, SupportIcon, LogoutIcon } from './icons';
 
 export default function CustomerNavBar() {
   const navigate = useNavigate();
   const { logout, isAuthenticated } = useAuth();
   const { cartCount, cartPulse } = useCart();
-  const storeName = useStoreName();
   const [animateCart, setAnimateCart] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [canInstall, setCanInstall] = useState(false);
@@ -92,11 +90,8 @@ export default function CustomerNavBar() {
     <>
       <header className="nav-shell">
         <div className="nav-inner">
-          <Link className="brand" to="/">
-            <span className="brand-mark" aria-hidden="true">
-              <LeafIcon size={20} />
-            </span>{' '}
-            {storeName}
+          <Link className="brand brand-logo" to="/">
+            <img src="/logo.png" alt="Wise Gourmet" className="brand-logo-img" />
           </Link>
 
           <nav className="customer-nav-desktop">
