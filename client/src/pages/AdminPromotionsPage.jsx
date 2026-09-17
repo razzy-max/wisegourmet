@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { promotionApi } from '../api/promotionApi';
+import { promoCodeApi } from '../api/promoCodeApi';
 import { heroBackgroundApi } from '../api/heroBackgroundApi';
 import { menuApi } from '../api/menuApi';
 import { usePromotionsRealtime } from '../hooks/usePromotionsRealtime';
@@ -28,55 +29,10 @@ const blankForm = {
   ctaLabel: '',
   ctaLink: '',
   ctaType: 'link',
-  comboItems: [],
-  comboDiscountPercent: 10,
+  promoCode: '',
   imageUrl: '',
   isActive: true,
 };
-
-function ComboItemPicker({ menuItems, comboItems, onChange }) {
-  const isSelected = (id) => comboItems.some((entry) => entry.menuItem === id);
-  const getQuantity = (id) => comboItems.find((entry) => entry.menuItem === id)?.quantity || 1;
-
-  const toggleItem = (id) => {
-    if (isSelected(id)) {
-      onChange(comboItems.filter((entry) => entry.menuItem !== id));
-    } else {
-      onChange([...comboItems, { menuItem: id, quantity: 1 }]);
-    }
-  };
-
-  const setQuantity = (id, quantity) => {
-    onChange(
-      comboItems.map((entry) =>
-        entry.menuItem === id ? { ...entry, quantity: Math.max(1, Number(quantity) || 1) } : entry
-      )
-    );
-  };
-
-  return (
-    <div className="combo-item-picker">
-      {menuItems.length === 0 ? <p className="muted">No menu items available yet.</p> : null}
-      {menuItems.map((item) => (
-        <div className="combo-item-row" key={item._id}>
-          <label className="checkbox-row">
-            <input type="checkbox" checked={isSelected(item._id)} onChange={() => toggleItem(item._id)} />
-            <span>{item.name}</span>
-          </label>
-          {isSelected(item._id) ? (
-            <input
-              type="number"
-              min="1"
-              className="qty-input"
-              value={getQuantity(item._id)}
-              onChange={(event) => setQuantity(item._id, event.target.value)}
-            />
-          ) : null}
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export default function AdminPromotionsPage() {
   const [promotions, setPromotions] = useState([]);
@@ -92,12 +48,20 @@ export default function AdminPromotionsPage() {
   const [heroSaving, setHeroSaving] = useState(false);
   const [heroMessage, setHeroMessage] = useState('');
   const [menuItems, setMenuItems] = useState([]);
+  const [promoCodes, setPromoCodes] = useState([]);
 
   useEffect(() => {
     menuApi
       .list()
       .then((response) => setMenuItems(response.items || []))
       .catch(() => setMenuItems([]));
+  }, []);
+
+  useEffect(() => {
+    promoCodeApi
+      .listAdmin()
+      .then((response) => setPromoCodes(response.promoCodes || []))
+      .catch(() => setPromoCodes([]));
   }, []);
 
   const toImageDataUrl = async (fileList) => {
@@ -188,10 +152,9 @@ export default function AdminPromotionsPage() {
         title: form.title.trim(),
         subtitle: form.subtitle.trim(),
         ctaLabel: form.ctaLabel.trim(),
-        ctaLink: form.ctaType === 'combo' ? '' : form.ctaLink.trim(),
+        ctaLink: form.ctaType === 'link' ? form.ctaLink.trim() : '',
         ctaType: form.ctaType,
-        comboItems: form.ctaType === 'combo' ? form.comboItems : [],
-        comboDiscountPercent: form.ctaType === 'combo' ? Number(form.comboDiscountPercent) || 0 : 0,
+        promoCode: form.ctaType === 'code' ? form.promoCode : null,
         imageUrl: form.imageUrl,
         isActive: Boolean(form.isActive),
       });
@@ -225,12 +188,8 @@ export default function AdminPromotionsPage() {
       subtitle: promotion.subtitle || '',
       ctaLabel: promotion.ctaLabel || '',
       ctaLink: promotion.ctaLink || '',
-      ctaType: promotion.ctaType === 'combo' ? 'combo' : 'link',
-      comboItems: (promotion.comboItems || []).map((entry) => ({
-        menuItem: entry.menuItem?._id || entry.menuItem,
-        quantity: entry.quantity,
-      })),
-      comboDiscountPercent: promotion.comboDiscountPercent || 10,
+      ctaType: promotion.ctaType === 'code' ? 'code' : 'link',
+      promoCode: promotion.promoCode?._id || promotion.promoCode || '',
       imageUrl: promotion.imageUrl || '',
       isActive: promotion.isActive,
     });
@@ -264,10 +223,9 @@ export default function AdminPromotionsPage() {
         title: editForm.title.trim(),
         subtitle: editForm.subtitle.trim(),
         ctaLabel: editForm.ctaLabel.trim(),
-        ctaLink: editForm.ctaType === 'combo' ? '' : editForm.ctaLink.trim(),
+        ctaLink: editForm.ctaType === 'link' ? editForm.ctaLink.trim() : '',
         ctaType: editForm.ctaType,
-        comboItems: editForm.ctaType === 'combo' ? editForm.comboItems : [],
-        comboDiscountPercent: editForm.ctaType === 'combo' ? Number(editForm.comboDiscountPercent) || 0 : 0,
+        promoCode: editForm.ctaType === 'code' ? editForm.promoCode : null,
         isActive: Boolean(editForm.isActive),
       };
       if (editImageChanged) {
@@ -400,24 +358,25 @@ export default function AdminPromotionsPage() {
             onChange={(event) => setForm((prev) => ({ ...prev, ctaType: event.target.value }))}
           >
             <option value="link">CTA: Link</option>
-            <option value="combo">CTA: Combo Deal</option>
+            <option value="code">CTA: Promo Code</option>
           </select>
-          {form.ctaType === 'combo' ? (
+          {form.ctaType === 'code' ? (
             <>
-              <p className="muted">Select the items that make up this combo and the discount to apply.</p>
-              <ComboItemPicker
-                menuItems={menuItems}
-                comboItems={form.comboItems}
-                onChange={(comboItems) => setForm((prev) => ({ ...prev, comboItems }))}
-              />
-              <input
-                type="number"
-                min="0"
-                max="100"
-                placeholder="Discount % off the combo"
-                value={form.comboDiscountPercent}
-                onChange={(event) => setForm((prev) => ({ ...prev, comboDiscountPercent: event.target.value }))}
-              />
+              <p className="muted">
+                Tapping this banner's button applies the selected promo code. Manage codes on the Promo Codes page.
+              </p>
+              <select
+                value={form.promoCode}
+                onChange={(event) => setForm((prev) => ({ ...prev, promoCode: event.target.value }))}
+                required
+              >
+                <option value="">Select a promo code…</option>
+                {promoCodes.map((promoCode) => (
+                  <option key={promoCode._id} value={promoCode._id}>
+                    {promoCode.code}
+                  </option>
+                ))}
+              </select>
             </>
           ) : (
             <input
@@ -499,27 +458,21 @@ export default function AdminPromotionsPage() {
                       onChange={(event) => setEditForm((prev) => ({ ...prev, ctaType: event.target.value }))}
                     >
                       <option value="link">CTA: Link</option>
-                      <option value="combo">CTA: Combo Deal</option>
+                      <option value="code">CTA: Promo Code</option>
                     </select>
-                    {editForm.ctaType === 'combo' ? (
-                      <>
-                        <p className="muted">Select the items that make up this combo and the discount to apply.</p>
-                        <ComboItemPicker
-                          menuItems={menuItems}
-                          comboItems={editForm.comboItems}
-                          onChange={(comboItems) => setEditForm((prev) => ({ ...prev, comboItems }))}
-                        />
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          placeholder="Discount % off the combo"
-                          value={editForm.comboDiscountPercent}
-                          onChange={(event) =>
-                            setEditForm((prev) => ({ ...prev, comboDiscountPercent: event.target.value }))
-                          }
-                        />
-                      </>
+                    {editForm.ctaType === 'code' ? (
+                      <select
+                        value={editForm.promoCode}
+                        onChange={(event) => setEditForm((prev) => ({ ...prev, promoCode: event.target.value }))}
+                        required
+                      >
+                        <option value="">Select a promo code…</option>
+                        {promoCodes.map((promoCode) => (
+                          <option key={promoCode._id} value={promoCode._id}>
+                            {promoCode.code}
+                          </option>
+                        ))}
+                      </select>
                     ) : (
                       <input
                         placeholder="CTA link"
@@ -567,6 +520,10 @@ export default function AdminPromotionsPage() {
                         .map((entry) => `${entry.quantity}x ${entry.menuItem?.name || 'item'}`)
                         .join(', ')}{' '}
                       — {promotion.comboDiscountPercent}% off
+                    </p>
+                  ) : promotion.ctaType === 'code' ? (
+                    <p>
+                      Promo code: <strong>{promotion.promoCode?.code || 'Not selected'}</strong>
                     </p>
                   ) : promotion.ctaLabel ? (
                     <p>

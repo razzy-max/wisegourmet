@@ -23,14 +23,16 @@ const serializePromotion = (req, doc) => {
 const listPromotions = asyncHandler(async (req, res) => {
   const promotions = await Promotion.find({ isActive: true })
     .sort({ sortOrder: 1, createdAt: 1 })
-    .populate('comboItems.menuItem', 'name');
+    .populate('comboItems.menuItem', 'name')
+    .populate('promoCode');
   res.json({ promotions: promotions.map((item) => serializePromotion(req, item)) });
 });
 
 const listPromotionsAdmin = asyncHandler(async (req, res) => {
   const promotions = await Promotion.find({})
     .sort({ sortOrder: 1, createdAt: 1 })
-    .populate('comboItems.menuItem', 'name');
+    .populate('comboItems.menuItem', 'name')
+    .populate('promoCode');
   res.json({ promotions: promotions.map((item) => serializePromotion(req, item)) });
 });
 
@@ -60,6 +62,7 @@ const createPromotion = asyncHandler(async (req, res) => {
     ctaType,
     comboItems,
     comboDiscountPercent,
+    promoCode,
     isActive,
     sortOrder,
   } = req.body;
@@ -69,11 +72,16 @@ const createPromotion = asyncHandler(async (req, res) => {
     throw new Error('Title is required');
   }
 
-  const resolvedCtaType = ctaType === 'combo' ? 'combo' : 'link';
+  const resolvedCtaType = ['combo', 'code'].includes(ctaType) ? ctaType : 'link';
 
   if (resolvedCtaType === 'combo' && (!Array.isArray(comboItems) || comboItems.length === 0)) {
     res.status(400);
     throw new Error('Combo deals require at least one selected menu item');
+  }
+
+  if (resolvedCtaType === 'code' && !promoCode) {
+    res.status(400);
+    throw new Error('Selecting a promo code is required for this CTA type');
   }
 
   const parsedImage = parseDataUrl(imageUrl);
@@ -91,15 +99,17 @@ const createPromotion = asyncHandler(async (req, res) => {
     imageData: parsedImage ? parsedImage.base64 : '',
     imageContentType: parsedImage ? parsedImage.contentType : '',
     ctaLabel: ctaLabel || '',
-    ctaLink: resolvedCtaType === 'combo' ? '' : ctaLink || '',
+    ctaLink: resolvedCtaType === 'link' ? ctaLink || '' : '',
     ctaType: resolvedCtaType,
     comboItems: resolvedCtaType === 'combo' ? comboItems : [],
     comboDiscountPercent: resolvedCtaType === 'combo' ? Number(comboDiscountPercent) || 0 : 0,
+    promoCode: resolvedCtaType === 'code' ? promoCode : null,
     isActive: isActive === undefined ? true : Boolean(isActive),
     sortOrder: resolvedSortOrder,
   });
 
   await promotion.populate('comboItems.menuItem', 'name');
+  await promotion.populate('promoCode');
   notifyPromotionsChanged(req);
   res.status(201).json({ promotion: serializePromotion(req, promotion) });
 });
@@ -121,12 +131,18 @@ const updatePromotion = asyncHandler(async (req, res) => {
   });
 
   if (req.body.ctaType !== undefined) {
-    promotion.ctaType = req.body.ctaType === 'combo' ? 'combo' : 'link';
+    promotion.ctaType = ['combo', 'code'].includes(req.body.ctaType) ? req.body.ctaType : 'link';
     if (promotion.ctaType === 'link') {
       promotion.comboItems = [];
       promotion.comboDiscountPercent = 0;
+      promotion.promoCode = null;
+    } else if (promotion.ctaType === 'combo') {
+      promotion.ctaLink = '';
+      promotion.promoCode = null;
     } else {
       promotion.ctaLink = '';
+      promotion.comboItems = [];
+      promotion.comboDiscountPercent = 0;
     }
   }
 
@@ -141,6 +157,14 @@ const updatePromotion = asyncHandler(async (req, res) => {
     if (req.body.comboDiscountPercent !== undefined) {
       promotion.comboDiscountPercent = Number(req.body.comboDiscountPercent) || 0;
     }
+  }
+
+  if (promotion.ctaType === 'code' && req.body.promoCode !== undefined) {
+    if (!req.body.promoCode) {
+      res.status(400);
+      throw new Error('Selecting a promo code is required for this CTA type');
+    }
+    promotion.promoCode = req.body.promoCode;
   }
 
   if (req.body.isActive !== undefined) {
@@ -166,6 +190,7 @@ const updatePromotion = asyncHandler(async (req, res) => {
 
   await promotion.save();
   await promotion.populate('comboItems.menuItem', 'name');
+  await promotion.populate('promoCode');
   notifyPromotionsChanged(req);
   res.json({ promotion: serializePromotion(req, promotion) });
 });

@@ -15,6 +15,7 @@ const {
   verifySelfPickupPin,
   updateOrderStatus,
   updateOrderLocation,
+  cancelOrder,
 } = require('../controllers/orderController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -34,6 +35,7 @@ router.post('/:id/payment/initiate', protect, authorize('customer'), initiatePay
 router.post('/:id/payment/verify', protect, authorize('customer'), verifyPayment);
 router.patch('/:id/status', protect, authorize('admin', 'staff', 'rider'), updateOrderStatus);
 router.patch('/:id/location', protect, authorize('customer', 'rider'), updateOrderLocation);
+router.patch('/:id/cancel', protect, authorize('customer'), cancelOrder);
 router.get('/:id', protect, authorize('customer', 'admin', 'staff', 'rider', 'support'), getOrder);
 
 module.exports = router;

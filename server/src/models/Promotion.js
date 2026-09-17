@@ -38,8 +38,16 @@ const promotionSchema = new mongoose.Schema(
     },
     ctaType: {
       type: String,
-      enum: ['link', 'combo'],
+      enum: ['link', 'combo', 'code'],
       default: 'link',
+    },
+    // Used when ctaType === 'code': the banner's CTA applies this promo code
+    // instead of holding its own separate discount logic. 'combo' is kept
+    // as a legacy option so existing banners keep working unchanged.
+    promoCode: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'PromoCode',
+      default: null,
     },
     comboItems: {
       type: [

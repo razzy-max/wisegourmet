@@ -15,6 +15,7 @@ export default function AdminDrawer({ isOpen, onClose }) {
     { path: '/admin/support', label: 'Support' },
     { path: '/admin/zones', label: 'Zones' },
     { path: '/admin/promotions', label: 'Promotions' },
+    { path: '/admin/promo-codes', label: 'Promo Codes' },
     { path: '/admin/customers', label: 'Customers' },
     { path: '/admin/password', label: 'Settings' },
   ];

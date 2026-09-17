@@ -71,6 +71,40 @@ const appliedPromotionSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const appliedPromoCodeSchema = new mongoose.Schema(
+  {
+    promoCode: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'PromoCode',
+      required: true,
+    },
+    code: {
+      type: String,
+      default: '',
+    },
+    scope: {
+      type: String,
+      enum: ['storewide', 'items'],
+      default: 'storewide',
+    },
+    discountType: {
+      type: String,
+      enum: ['percent', 'fixed'],
+      default: 'percent',
+    },
+    discountValue: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    items: {
+      type: [comboItemSnapshotSchema],
+      default: [],
+    },
+  },
+  { _id: false }
+);
+
 const cartSchema = new mongoose.Schema(
   {
     user: {
@@ -85,6 +119,11 @@ const cartSchema = new mongoose.Schema(
     },
     appliedPromotion: {
       type: appliedPromotionSchema,
+      default: null,
+    },
+    // Mutually exclusive with appliedPromotion — applying one clears the other.
+    appliedPromoCode: {
+      type: appliedPromoCodeSchema,
       default: null,
     },
   },

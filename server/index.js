@@ -16,6 +16,7 @@ const userRoutes = require('./src/routes/userRoutes');
 const supportRoutes = require('./src/routes/supportRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
 const promotionRoutes = require('./src/routes/promotionRoutes');
+const promoCodeRoutes = require('./src/routes/promoCodeRoutes');
 const heroBackgroundRoutes = require('./src/routes/heroBackgroundRoutes');
 const { notFound, errorHandler } = require('./src/middleware/error');
 const ensureDemoData = require('./src/utils/bootstrapDemoData');
@@ -107,6 +108,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/promotions', promotionRoutes);
+app.use('/api/promo-codes', promoCodeRoutes);
 app.use('/api/hero-background', heroBackgroundRoutes);
 
 app.use(notFound);

@@ -32,6 +32,10 @@ const orderDiscountSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Promotion',
     },
+    promoCode: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'PromoCode',
+    },
     title: {
       type: String,
       default: '',

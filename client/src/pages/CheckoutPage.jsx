@@ -341,7 +341,13 @@ export default function CheckoutPage() {
           </p>
           {discountAmount > 0 ? (
             <p className="summary-total-row summary-discount-row">
-              Combo Deal — {order ? order.discount?.title : cart.appliedPromotion?.title}
+              {order
+                ? order.discount?.promoCode
+                  ? `Promo code — ${order.discount.title}`
+                  : `Combo Deal — ${order.discount?.title}`
+                : cart.appliedPromoCode
+                  ? `Promo code — ${cart.appliedPromoCode.code}`
+                  : `Combo Deal — ${cart.appliedPromotion?.title}`}
               <span>-₦{discountAmount.toLocaleString()}</span>
             </p>
           ) : null}
@@ -386,8 +392,11 @@ export default function CheckoutPage() {
           <p><strong>Subtotal:</strong> ₦{Number(order.subtotal || 0).toLocaleString()}</p>
           {order.discount?.amount > 0 ? (
             <p>
-              <strong>Combo Deal ({order.discount.title}, {order.discount.percent}% off):</strong> -₦
-              {Number(order.discount.amount).toLocaleString()}
+              <strong>
+                {order.discount.promoCode ? 'Promo code' : 'Combo Deal'} ({order.discount.title}
+                {order.discount.percent > 0 ? `, ${order.discount.percent}% off` : ''}):
+              </strong>{' '}
+              -₦{Number(order.discount.amount).toLocaleString()}
             </p>
           ) : null}
           <p><strong>Delivery fee:</strong> ₦{Number(order.deliveryFee || 0).toLocaleString()}</p>

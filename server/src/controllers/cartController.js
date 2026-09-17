@@ -1,8 +1,10 @@
 const Cart = require('../models/Cart');
 const MenuItem = require('../models/MenuItem');
 const Promotion = require('../models/Promotion');
+const PromoCode = require('../models/PromoCode');
 const asyncHandler = require('../utils/asyncHandler');
-const { computeComboDiscount, reconcileAppliedPromotion } = require('../utils/comboDiscount');
+const { reconcileCartDiscounts, computeCartDiscount } = require('../utils/cartDiscount');
+const { validatePromoCodeEligibility } = require('../utils/promoCodeDiscount');
 const { buildMenuItemImageUrl } = require('../utils/dataUrl');
 
 const MENU_ITEM_POPULATE_FIELDS = 'name price isAvailable availabilityStatus imageUrl imageContentType';
@@ -34,11 +36,11 @@ const getOrCreateCart = async (userId) => {
 
 const getCart = asyncHandler(async (req, res) => {
   const cart = await getOrCreateCart(req.user._id);
-  const changed = reconcileAppliedPromotion(cart);
+  const changed = reconcileCartDiscounts(cart);
   if (changed) {
     await cart.save();
   }
-  const discount = computeComboDiscount(cart.items, cart.appliedPromotion);
+  const discount = computeCartDiscount(cart);
   res.json({ cart: applyComputedImageUrls(req, cart), discount });
 });
 
@@ -93,10 +95,10 @@ const updateCartItem = asyncHandler(async (req, res) => {
     item.quantity = Number(quantity);
   }
 
-  reconcileAppliedPromotion(cart);
+  reconcileCartDiscounts(cart);
   await cart.save();
   const hydrated = await Cart.findById(cart._id).populate('items.menuItem', MENU_ITEM_POPULATE_FIELDS);
-  const discount = computeComboDiscount(hydrated.items, hydrated.appliedPromotion);
+  const discount = computeCartDiscount(hydrated);
   res.json({ cart: applyComputedImageUrls(req, hydrated), discount });
 });
 
@@ -111,11 +113,11 @@ const removeCartItem = asyncHandler(async (req, res) => {
   }
 
   cart.items.pull({ _id: itemId });
-  reconcileAppliedPromotion(cart);
+  reconcileCartDiscounts(cart);
   await cart.save();
 
   const hydrated = await Cart.findById(cart._id).populate('items.menuItem', MENU_ITEM_POPULATE_FIELDS);
-  const discount = computeComboDiscount(hydrated.items, hydrated.appliedPromotion);
+  const discount = computeCartDiscount(hydrated);
   res.json({ cart: applyComputedImageUrls(req, hydrated), discount });
 });
 
@@ -123,6 +125,7 @@ const clearCart = asyncHandler(async (req, res) => {
   const cart = await getOrCreateCart(req.user._id);
   cart.items = [];
   cart.appliedPromotion = null;
+  cart.appliedPromoCode = null;
   await cart.save();
   res.json({ cart });
 });
@@ -176,6 +179,7 @@ const applyPromotion = asyncHandler(async (req, res) => {
     }
   });
 
+  cart.appliedPromoCode = null; // only one discount mechanism active at a time
   cart.appliedPromotion = {
     promotion: promotion._id,
     title: promotion.title,
@@ -192,13 +196,103 @@ const applyPromotion = asyncHandler(async (req, res) => {
 
   await cart.save();
   const hydrated = await Cart.findById(cart._id).populate('items.menuItem', MENU_ITEM_POPULATE_FIELDS);
-  const discount = computeComboDiscount(hydrated.items, hydrated.appliedPromotion);
+  const discount = computeCartDiscount(hydrated);
   res.json({ cart: applyComputedImageUrls(req, hydrated), discount });
 });
 
 const clearPromotion = asyncHandler(async (req, res) => {
   const cart = await getOrCreateCart(req.user._id);
   cart.appliedPromotion = null;
+  await cart.save();
+  res.json({ cart });
+});
+
+const applyPromoCode = asyncHandler(async (req, res) => {
+  const { code } = req.body;
+  if (!code || !String(code).trim()) {
+    res.status(400);
+    throw new Error('A promo code is required');
+  }
+
+  const promoCode = await PromoCode.findOne({ code: String(code).trim().toUpperCase() });
+  if (!promoCode) {
+    res.status(400);
+    throw new Error('Invalid promo code');
+  }
+
+  const cart = await getOrCreateCart(req.user._id);
+  const subtotal = cart.items.reduce((sum, item) => sum + item.priceSnapshot * item.quantity, 0);
+
+  const eligibility = await validatePromoCodeEligibility(promoCode, req.user._id, subtotal);
+  if (!eligibility.valid) {
+    res.status(400);
+    throw new Error(eligibility.reason);
+  }
+
+  let itemsSnapshot = [];
+
+  if (promoCode.scope === 'items') {
+    const menuItems = await MenuItem.find({ _id: { $in: promoCode.items.map((item) => item.menuItem) } });
+
+    const hasUnavailable = promoCode.items.some((requiredItem) => {
+      const menuItem = menuItems.find((candidate) => String(candidate._id) === String(requiredItem.menuItem));
+      return !menuItem || !isInStock(menuItem);
+    });
+
+    if (hasUnavailable) {
+      res.status(400);
+      throw new Error('One or more items required by this promo code are currently unavailable');
+    }
+
+    promoCode.items.forEach((requiredItem) => {
+      const menuItem = menuItems.find((candidate) => String(candidate._id) === String(requiredItem.menuItem));
+      const existing = cart.items.find(
+        (item) => String(item.menuItem._id || item.menuItem) === String(requiredItem.menuItem)
+      );
+
+      if (existing) {
+        if (existing.quantity < requiredItem.quantity) {
+          existing.quantity = requiredItem.quantity;
+        }
+      } else {
+        cart.items.push({
+          menuItem: menuItem._id,
+          nameSnapshot: menuItem.name,
+          priceSnapshot: menuItem.price,
+          quantity: requiredItem.quantity,
+        });
+      }
+    });
+
+    itemsSnapshot = promoCode.items.map((requiredItem) => {
+      const menuItem = menuItems.find((candidate) => String(candidate._id) === String(requiredItem.menuItem));
+      return {
+        menuItem: requiredItem.menuItem,
+        quantity: requiredItem.quantity,
+        nameSnapshot: menuItem?.name || '',
+      };
+    });
+  }
+
+  cart.appliedPromotion = null; // only one discount mechanism active at a time
+  cart.appliedPromoCode = {
+    promoCode: promoCode._id,
+    code: promoCode.code,
+    scope: promoCode.scope,
+    discountType: promoCode.discountType,
+    discountValue: promoCode.discountValue,
+    items: itemsSnapshot,
+  };
+
+  await cart.save();
+  const hydrated = await Cart.findById(cart._id).populate('items.menuItem', MENU_ITEM_POPULATE_FIELDS);
+  const discount = computeCartDiscount(hydrated);
+  res.json({ cart: applyComputedImageUrls(req, hydrated), discount });
+});
+
+const removePromoCode = asyncHandler(async (req, res) => {
+  const cart = await getOrCreateCart(req.user._id);
+  cart.appliedPromoCode = null;
   await cart.save();
   res.json({ cart });
 });
@@ -211,4 +305,6 @@ module.exports = {
   clearCart,
   applyPromotion,
   clearPromotion,
+  applyPromoCode,
+  removePromoCode,
 };

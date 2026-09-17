@@ -2,11 +2,13 @@ const Cart = require('../models/Cart');
 const Order = require('../models/Order');
 const User = require('../models/User');
 const DeliveryZone = require('../models/DeliveryZone');
+const PromoCode = require('../models/PromoCode');
 const asyncHandler = require('../utils/asyncHandler');
 const { calculateDeliveryFee, DEFAULT_ZONE_FEES } = require('../utils/deliveryFee');
 const { ORDER_STATUS, canTransition } = require('../utils/orderStatus');
 const { sendPushToRoles, sendPushToUserIds } = require('../utils/pushNotifications');
-const { computeComboDiscount, reconcileAppliedPromotion } = require('../utils/comboDiscount');
+const { reconcileCartDiscounts, computeCartDiscount } = require('../utils/cartDiscount');
+const { validatePromoCodeEligibility } = require('../utils/promoCodeDiscount');
 
 const STAFF_ALLOWED_STATUSES = new Set([
   ORDER_STATUS.CONFIRMED,
@@ -135,8 +137,19 @@ const createOrderFromCart = asyncHandler(async (req, res) => {
     throw new Error('One or more cart items are unavailable');
   }
 
-  reconcileAppliedPromotion(cart);
-  const { discountAmount } = computeComboDiscount(cart.items, cart.appliedPromotion);
+  reconcileCartDiscounts(cart);
+
+  if (cart.appliedPromoCode) {
+    const cartSubtotal = cart.items.reduce((sum, item) => sum + item.priceSnapshot * item.quantity, 0);
+    const promoCode = await PromoCode.findById(cart.appliedPromoCode.promoCode);
+    const eligibility = await validatePromoCodeEligibility(promoCode, req.user._id, cartSubtotal);
+    if (!eligibility.valid) {
+      res.status(400);
+      throw new Error(`${eligibility.reason} Please remove it from your cart and try again.`);
+    }
+  }
+
+  const { discountAmount } = computeCartDiscount(cart);
 
   const items = cart.items.map((item) => ({
     menuItem: item.menuItem._id,
@@ -174,14 +187,25 @@ const createOrderFromCart = asyncHandler(async (req, res) => {
     customer: req.user._id,
     items,
     subtotal,
-    discount: cart.appliedPromotion
-      ? {
+    discount: (() => {
+      if (cart.appliedPromoCode) {
+        return {
+          promoCode: cart.appliedPromoCode.promoCode,
+          title: cart.appliedPromoCode.code,
+          percent: cart.appliedPromoCode.discountType === 'percent' ? cart.appliedPromoCode.discountValue : 0,
+          amount: discountAmount,
+        };
+      }
+      if (cart.appliedPromotion) {
+        return {
           promotion: cart.appliedPromotion.promotion,
           title: cart.appliedPromotion.title,
           percent: cart.appliedPromotion.discountPercent,
           amount: discountAmount,
-        }
-      : null,
+        };
+      }
+      return null;
+    })(),
     deliveryFee: feeResult.fee,
     total,
     fulfillmentType,
@@ -214,6 +238,7 @@ const createOrderFromCart = asyncHandler(async (req, res) => {
 
   cart.items = [];
   cart.appliedPromotion = null;
+  cart.appliedPromoCode = null;
   await cart.save();
   await User.updateOne({ _id: req.user._id }, { lastAutoReengagementSentAt: null });
 
@@ -529,6 +554,13 @@ const verifyPayment = asyncHandler(async (req, res) => {
     };
   }
 
+  // A promo code only counts as "used" once its order is actually paid —
+  // matches the same rule used for new-customer eligibility, so an
+  // abandoned/never-paid order never burns a limited-use code.
+  if (order.discount?.promoCode) {
+    await PromoCode.updateOne({ _id: order.discount.promoCode }, { $inc: { usageCount: 1 } });
+  }
+
   if (order.status === ORDER_STATUS.PENDING && canTransition(order.status, ORDER_STATUS.CONFIRMED)) {
     order.status = ORDER_STATUS.CONFIRMED;
     order.statusTimeline.push({
@@ -637,6 +669,41 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
       tag: `delivery-ready-${String(order._id)}`,
     });
   }
+
+  res.json({ order: hydrated });
+});
+
+const cancelOrder = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const order = await Order.findOne({ _id: id, customer: req.user._id });
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
+  }
+
+  // Customers can only back out of an order before staff have started acting
+  // on it and before payment has actually gone through — once either of
+  // those happens, cancelling is a staff/admin decision, not the customer's.
+  if (order.status !== ORDER_STATUS.PENDING || order.payment.status === 'paid') {
+    res.status(400);
+    throw new Error('This order can no longer be cancelled — it is already being processed or paid for.');
+  }
+
+  order.status = ORDER_STATUS.CANCELLED;
+  order.statusTimeline.push({
+    status: ORDER_STATUS.CANCELLED,
+    changedBy: req.user._id,
+    note: 'Cancelled by customer',
+  });
+
+  await order.save();
+
+  const hydrated = await Order.findById(order._id)
+    .populate('customer', 'fullName email phone role')
+    .populate('statusTimeline.changedBy', 'fullName role');
+
+  notifyOrderChanged(req, hydrated);
 
   res.json({ order: hydrated });
 });
@@ -837,4 +904,5 @@ module.exports = {
   verifySelfPickupPin,
   updateOrderStatus,
   updateOrderLocation,
+  cancelOrder,
 };

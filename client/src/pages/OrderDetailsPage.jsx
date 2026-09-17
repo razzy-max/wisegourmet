@@ -41,6 +41,8 @@ export default function OrderDetailsPage() {
   const [error, setError] = useState('');
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState('');
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelError, setCancelError] = useState('');
   const [riderLocation, setRiderLocation] = useState(null);
   const [customerLocation, setCustomerLocation] = useState(null);
 
@@ -97,6 +99,23 @@ export default function OrderDetailsPage() {
       setPaymentError(err.message || 'Failed to initiate payment');
     } finally {
       setPaymentLoading(false);
+    }
+  };
+
+  const handleCancelOrder = async () => {
+    if (!window.confirm('Cancel this order? This cannot be undone.')) {
+      return;
+    }
+
+    setCancelLoading(true);
+    setCancelError('');
+    try {
+      await orderApi.cancelOrder(id);
+      await load();
+    } catch (err) {
+      setCancelError(err.message || 'Failed to cancel order');
+    } finally {
+      setCancelLoading(false);
     }
   };
 
@@ -231,13 +250,26 @@ export default function OrderDetailsPage() {
             <button
               className="btn btn-primary order-payment-btn"
               onClick={handlePayNow}
-              disabled={paymentLoading}
+              disabled={paymentLoading || cancelLoading}
             >
               {paymentLoading ? 'Processing...' : 'Proceed to Payment'}
             </button>
             <p className="payment-hint">
               You'll be redirected to Paystack to complete the payment securely.
             </p>
+            {cancelError && (
+              <div className="error-message" style={{ marginTop: '0.75rem' }}>
+                {cancelError}
+              </div>
+            )}
+            <button
+              className="btn btn-ghost order-cancel-btn"
+              type="button"
+              onClick={handleCancelOrder}
+              disabled={paymentLoading || cancelLoading}
+            >
+              {cancelLoading ? 'Cancelling...' : 'Cancel Order'}
+            </button>
           </article>
         )}
       </div>

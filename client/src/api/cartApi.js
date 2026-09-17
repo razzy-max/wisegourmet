@@ -28,4 +28,10 @@ export const cartApi = {
   clearPromotion() {
     return apiRequest('/cart/promotion', { method: 'DELETE' });
   },
+  applyPromoCode(code) {
+    return apiRequest('/cart/promo-code', { method: 'POST', body: { code } });
+  },
+  removePromoCode() {
+    return apiRequest('/cart/promo-code', { method: 'DELETE' });
+  },
 };

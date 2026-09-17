@@ -58,4 +58,7 @@ export const orderApi = {
   updateLocation(id, payload) {
     return apiRequest(`/orders/${id}/location`, { method: 'PATCH', body: payload });
   },
+  cancelOrder(id) {
+    return apiRequest(`/orders/${id}/cancel`, { method: 'PATCH' });
+  },
 };

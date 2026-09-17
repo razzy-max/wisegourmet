@@ -108,16 +108,16 @@ function CategoryRail({ categories, selectedCategory, onSelect }) {
   );
 }
 
-function PromoSlideContent({ promotion, onApplyCombo }) {
+function PromoSlideContent({ promotion, onApplyDeal }) {
   const isInternalLink = promotion.ctaLink?.startsWith('/');
-  const isCombo = promotion.ctaType === 'combo';
+  const isDeal = promotion.ctaType === 'combo' || promotion.ctaType === 'code';
 
   return (
     <>
       <h2>{promotion.title}</h2>
       {promotion.subtitle ? <p>{promotion.subtitle}</p> : null}
-      {isCombo ? (
-        <button type="button" className="btn promo-cta" onClick={() => onApplyCombo(promotion)}>
+      {isDeal ? (
+        <button type="button" className="btn promo-cta" onClick={() => onApplyDeal(promotion)}>
           {promotion.ctaLabel || 'Get This Deal'}
         </button>
       ) : promotion.ctaLabel && promotion.ctaLink ? (
@@ -438,7 +438,7 @@ export default function HomeMenuPage() {
 
   useHeroBackgroundRealtime(fetchHeroBackground);
 
-  const handleApplyCombo = useCallback(
+  const handleApplyDeal = useCallback(
     async (promotion) => {
       if (!isAuthenticated || user.role !== 'customer') {
         showToast('Login as customer to grab this deal.');
@@ -446,7 +446,15 @@ export default function HomeMenuPage() {
       }
 
       try {
-        await cartApi.applyPromotion(promotion._id);
+        if (promotion.ctaType === 'code') {
+          if (!promotion.promoCode?.code) {
+            showToast('This deal is no longer available.');
+            return;
+          }
+          await cartApi.applyPromoCode(promotion.promoCode.code);
+        } else {
+          await cartApi.applyPromotion(promotion._id);
+        }
         await refreshCartCount();
         showToast(`${promotion.title} applied to your cart!`);
         navigate('/cart');
@@ -462,9 +470,9 @@ export default function HomeMenuPage() {
       promotions.map((promotion) => ({
         id: promotion._id,
         imageUrl: promotion.imageUrl,
-        content: <PromoSlideContent promotion={promotion} onApplyCombo={handleApplyCombo} />,
+        content: <PromoSlideContent promotion={promotion} onApplyDeal={handleApplyDeal} />,
       })),
-    [promotions, handleApplyCombo]
+    [promotions, handleApplyDeal]
   );
 
   const filteredItems = useMemo(() => {

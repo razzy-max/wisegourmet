@@ -13,6 +13,9 @@ export default function CartPage() {
   const [discount, setDiscount] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [promoCodeInput, setPromoCodeInput] = useState('');
+  const [promoCodeBusy, setPromoCodeBusy] = useState(false);
+  const [promoCodeMessage, setPromoCodeMessage] = useState('');
   const { refreshCartCount } = useCart();
 
   const load = async () => {
@@ -56,8 +59,30 @@ export default function CartPage() {
   };
 
   const removeAppliedDeal = async () => {
-    await cartApi.clearPromotion();
+    if (cart.appliedPromoCode) {
+      await cartApi.removePromoCode();
+    } else {
+      await cartApi.clearPromotion();
+    }
     await load();
+  };
+
+  const applyPromoCode = async (event) => {
+    event.preventDefault();
+    if (!promoCodeInput.trim()) return;
+
+    setPromoCodeBusy(true);
+    setPromoCodeMessage('');
+    try {
+      await cartApi.applyPromoCode(promoCodeInput.trim());
+      setPromoCodeInput('');
+      setPromoCodeMessage('Promo code applied.');
+      await load();
+    } catch (err) {
+      setPromoCodeMessage(err.message);
+    } finally {
+      setPromoCodeBusy(false);
+    }
   };
 
   return (
@@ -143,7 +168,9 @@ export default function CartPage() {
             {discountAmount > 0 ? (
               <>
                 <p className="summary-total-row summary-discount-row">
-                  Combo Deal — {cart.appliedPromotion?.title} ({cart.appliedPromotion?.discountPercent}% off)
+                  {cart.appliedPromoCode
+                    ? `Promo code — ${cart.appliedPromoCode.code}`
+                    : `Combo Deal — ${cart.appliedPromotion?.title} (${cart.appliedPromotion?.discountPercent}% off)`}
                   <span>-₦{discountAmount.toLocaleString()}</span>
                 </p>
                 <button className="btn btn-ghost cart-remove-deal-btn" type="button" onClick={removeAppliedDeal}>
@@ -152,6 +179,18 @@ export default function CartPage() {
               </>
             ) : null}
             <p className="summary-total grand-total">Total <span>₦{total.toLocaleString()}</span></p>
+            <form className="cart-promo-code-form" onSubmit={applyPromoCode}>
+              <input
+                placeholder="Have a promo code?"
+                value={promoCodeInput}
+                onChange={(event) => setPromoCodeInput(event.target.value)}
+                disabled={promoCodeBusy}
+              />
+              <button className="btn btn-ghost" type="submit" disabled={promoCodeBusy || !promoCodeInput.trim()}>
+                {promoCodeBusy ? 'Applying...' : 'Apply'}
+              </button>
+            </form>
+            {promoCodeMessage ? <p className="muted">{promoCodeMessage}</p> : null}
             <Link to="/checkout" className="btn cart-checkout-btn">
               Proceed to Checkout
             </Link>
