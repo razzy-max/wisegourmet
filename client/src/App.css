@@ -902,7 +902,10 @@ button {
   font: inherit;
 }
 
-input,
+/* Excludes checkbox/radio — this text-field styling (full width, padding,
+   border-radius) was being inherited by every checkbox in the app, forcing
+   its native square box to stretch to ~100% of its flex row's width. */
+input:not([type='checkbox']):not([type='radio']),
 textarea,
 select {
   width: 100%;
