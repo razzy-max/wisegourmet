@@ -3159,11 +3159,14 @@ input:-webkit-autofill::first-line {
 
 @media (max-width: 640px) {
   .page-wrap {
-    padding-bottom: 6.4rem;
+    /* Extra buffer keeps content from being hidden behind the fixed bottom
+       nav — extended by the same safe-area inset added to that nav, so the
+       buffer stays adequate on devices with a non-zero inset. */
+    padding-bottom: calc(6.4rem + env(safe-area-inset-bottom, 0px));
   }
 
   .cart-page {
-    padding-bottom: 9rem;
+    padding-bottom: calc(9rem + env(safe-area-inset-bottom, 0px));
   }
 
   .nav-shell {
@@ -3229,6 +3232,11 @@ input:-webkit-autofill::first-line {
     grid-template-columns: repeat(5, minmax(0, 1fr));
     z-index: 40;
     min-height: 68px;
+    /* Extends the bar's own background under Android's gesture-nav pill /
+       any bottom safe area (requires viewport-fit=cover in index.html)
+       instead of leaving a gap that can make the bar look like it's
+       floating above the true bottom edge. */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
   }
 
@@ -3306,7 +3314,10 @@ input:-webkit-autofill::first-line {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 68px;
+    /* Stacks directly above .mobile-bottom-nav, which now extends its own
+       height by the bottom safe-area inset — match that here too, or a gap
+       (or overlap) opens up between the two on devices with a non-zero inset. */
+    bottom: calc(68px + env(safe-area-inset-bottom, 0px));
     z-index: 41;
     background: var(--wg-card);
     border-top: 1px solid var(--wg-border);
