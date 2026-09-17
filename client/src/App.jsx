@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
@@ -33,6 +33,7 @@ import RiderDeliveryHistoryPage from './pages/RiderDeliveryHistoryPage';
 import AdminPasswordPage from './pages/AdminPasswordPage';
 import AdminDeliveryZonesPage from './pages/AdminDeliveryZonesPage';
 import AdminPromotionsPage from './pages/AdminPromotionsPage';
+import AdminPromoCodesPage from './pages/AdminPromoCodesPage';
 import AdminCustomersPage from './pages/AdminCustomersPage';
 import './App.css';
 
@@ -64,8 +65,21 @@ function App() {
   const { user, isAuthenticated } = useAuth();
   const isAdminLayout = isAuthenticated && user?.role === 'admin';
   const [renderedLocation, setRenderedLocation] = useState(location);
+  const previousPathnameRef = useRef(location.pathname);
 
   useAutoEnableNotifications(isAuthenticated, user?.role);
+
+  useEffect(() => {
+    // React Router doesn't reset scroll on navigation — without this, moving
+    // from a long scrolled-down page to a shorter one leaves the window at
+    // the old offset, showing blank space above the new page's content.
+    // Compares pathname only (not the full location) so in-page hash anchors
+    // like /rider/queue#active-deliveries still scroll normally.
+    if (location.pathname !== previousPathnameRef.current) {
+      window.scrollTo(0, 0);
+      previousPathnameRef.current = location.pathname;
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     if (location === renderedLocation) {
@@ -234,6 +248,14 @@ function App() {
           element={
             <ProtectedRoute roles={['admin']}>
               <AdminPromotionsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/promo-codes"
+          element={
+            <ProtectedRoute roles={['admin']}>
+              <AdminPromoCodesPage />
             </ProtectedRoute>
           }
         />

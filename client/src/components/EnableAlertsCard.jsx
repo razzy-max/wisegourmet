@@ -2,7 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { userApi } from '../api/userApi';
-import { ensurePushSubscription, isIosNonStandalone, isPushSupported, PUSH_SUBSCRIBED_EVENT } from '../lib/pushSubscribe';
+import {
+  ensurePushSubscription,
+  getServiceWorkerRegistration,
+  isIosNonStandalone,
+  isPushSupported,
+  PUSH_SUBSCRIBED_EVENT,
+} from '../lib/pushSubscribe';
 
 const DISMISS_KEY = 'wg:alerts-card:dismissed:';
 
@@ -56,8 +62,13 @@ export default function EnableAlertsCard() {
     try {
       const [configRes, registration] = await Promise.all([
         userApi.notificationConfig(),
-        navigator.serviceWorker.ready,
+        getServiceWorkerRegistration(),
       ]);
+
+      if (!registration) {
+        setSupported(false);
+        return;
+      }
 
       const deviceSubscription = await registration.pushManager.getSubscription();
       const statusRes = await userApi.notificationStatus(deviceSubscription?.endpoint || '');

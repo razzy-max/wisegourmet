@@ -81,7 +81,7 @@ export default function LoginPage() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="login-password"
-                  placeholder="placeholder"
+                  placeholder=" "
                   value={form.password}
                   onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
                   required

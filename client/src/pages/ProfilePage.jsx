@@ -5,7 +5,13 @@ import { authApi } from '../api/authApi';
 import { userApi } from '../api/userApi';
 import { useAuth } from '../context/AuthContext';
 import ToggleSwitch from '../components/ToggleSwitch';
-import { ensurePushSubscription, isIosNonStandalone, isPushSupported, PUSH_SUBSCRIBED_EVENT } from '../lib/pushSubscribe';
+import {
+  ensurePushSubscription,
+  getServiceWorkerRegistration,
+  isIosNonStandalone,
+  isPushSupported,
+  PUSH_SUBSCRIBED_EVENT,
+} from '../lib/pushSubscribe';
 
 const formatZoneLabel = (zoneKey) =>
   String(zoneKey || '')
@@ -89,8 +95,13 @@ export default function ProfilePage() {
     try {
       const [configRes, registration] = await Promise.all([
         userApi.notificationConfig(),
-        navigator.serviceWorker.ready,
+        getServiceWorkerRegistration(),
       ]);
+
+      if (!registration) {
+        setNotificationsSupported(false);
+        return;
+      }
 
       const deviceSubscription = await registration.pushManager.getSubscription();
       const statusRes = await userApi.notificationStatus(deviceSubscription?.endpoint || '');

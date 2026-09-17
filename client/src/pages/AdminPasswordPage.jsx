@@ -74,7 +74,7 @@ export default function AdminPasswordPage() {
           <input
             type={showPasswords.current ? 'text' : 'password'}
             id="current-password"
-            placeholder="placeholder"
+            placeholder=" "
             value={form.currentPassword}
             onChange={(event) => setForm((prev) => ({ ...prev, currentPassword: event.target.value }))}
             required
@@ -95,7 +95,7 @@ export default function AdminPasswordPage() {
           <input
             type={showPasswords.new ? 'text' : 'password'}
             id="new-password"
-            placeholder="placeholder"
+            placeholder=" "
             value={form.newPassword}
             onChange={(event) => setForm((prev) => ({ ...prev, newPassword: event.target.value }))}
             minLength={6}
@@ -135,7 +135,7 @@ export default function AdminPasswordPage() {
           <input
             type={showPasswords.confirm ? 'text' : 'password'}
             id="confirm-password"
-            placeholder="placeholder"
+            placeholder=" "
             value={form.confirmPassword}
             onChange={(event) => setForm((prev) => ({ ...prev, confirmPassword: event.target.value }))}
             minLength={6}

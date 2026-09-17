@@ -2,28 +2,29 @@
    so the stylesheet isn't render-blocking. */
 
 :root {
-  --wg-green: #3a6835;
-  --wg-green-dark: #2e542a;
-  --wg-green-light: #eef5ea;
-  --wg-amber: #e8a020;
-  --wg-amber-dark: #b97a00;
+  --wg-green: #fa6d01;
+  --wg-green-dark: #c25601;
+  --wg-green-light: #fff1e2;
+  --wg-amber: #d9a915;
+  --wg-amber-dark: #a97d0a;
   --wg-teal: #1f7a8c;
   --wg-red: #ba3932;
-  --wg-bg: #faf8f4;
+  --wg-success: #2f7d3c;
+  --wg-bg: #fdf7f1;
   --wg-card: #ffffff;
-  --wg-text: #253126;
-  --wg-muted: #5f6d60;
-  --wg-border: #ece8de;
+  --wg-text: #1a1613;
+  --wg-muted: #6b6259;
+  --wg-border: #ece4d8;
   --wg-shadow: 0 2px 16px rgba(0, 0, 0, 0.07);
-  --wg-shadow-hover: 0 8px 24px rgba(22, 42, 20, 0.14);
+  --wg-shadow-hover: 0 8px 24px rgba(30, 20, 10, 0.14);
   --wg-radius-sm: 8px;
   --wg-radius-md: 12px;
   --wg-radius-lg: 16px;
-  /* Fixed nav/header green — deliberately does NOT change between themes,
-     so the top nav stays a deep forest green in dark mode instead of
+  /* Fixed nav/header black — deliberately does NOT change between themes,
+     so the top nav stays the brand's near-black in dark mode instead of
      lightening along with --wg-green (which does lighten, for text/icon
      contrast against the darkened page background). */
-  --wg-green-header: #3a6835;
+  --wg-green-header: #1c1815;
 }
 
 /* ===== DARK MODE =====
@@ -33,55 +34,58 @@
    ThemeToggle sets data-theme to let a user override that explicitly. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --wg-green: #5a9450;
-    --wg-green-dark: #4a7d42;
-    --wg-green-light: #1e2a1a;
-    --wg-amber: #f0ac35;
-    --wg-amber-dark: #d99a1f;
+    --wg-green: #ff8f3d;
+    --wg-green-dark: #e6790f;
+    --wg-green-light: #2b1d10;
+    --wg-amber: #f2c94c;
+    --wg-amber-dark: #d9ac1f;
     --wg-teal: #4fb8cc;
     --wg-red: #e0776b;
-    --wg-bg: #14170f;
-    --wg-card: #1e2318;
-    --wg-text: #eef1e9;
-    --wg-muted: #9aa393;
-    --wg-border: #333a2d;
+    --wg-success: #5cb85f;
+    --wg-bg: #0d0b09;
+    --wg-card: #1e1a16;
+    --wg-text: #f5efe6;
+    --wg-muted: #a89b8d;
+    --wg-border: #332a20;
     --wg-shadow: 0 2px 16px rgba(0, 0, 0, 0.4);
     --wg-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.5);
   }
 }
 
 :root[data-theme='dark'] {
-  --wg-green: #5a9450;
-  --wg-green-dark: #4a7d42;
-  --wg-green-light: #1e2a1a;
-  --wg-amber: #f0ac35;
-  --wg-amber-dark: #d99a1f;
+  --wg-green: #ff8f3d;
+  --wg-green-dark: #e6790f;
+  --wg-green-light: #2b1d10;
+  --wg-amber: #f2c94c;
+  --wg-amber-dark: #d9ac1f;
   --wg-teal: #4fb8cc;
   --wg-red: #e0776b;
-  --wg-bg: #14170f;
-  --wg-card: #1e2318;
-  --wg-text: #eef1e9;
-  --wg-muted: #9aa393;
-  --wg-border: #333a2d;
+  --wg-success: #5cb85f;
+  --wg-bg: #0d0b09;
+  --wg-card: #1e1a16;
+  --wg-text: #f5efe6;
+  --wg-muted: #a89b8d;
+  --wg-border: #332a20;
   --wg-shadow: 0 2px 16px rgba(0, 0, 0, 0.4);
   --wg-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
 :root[data-theme='light'] {
-  --wg-green: #3a6835;
-  --wg-green-dark: #2e542a;
-  --wg-green-light: #eef5ea;
-  --wg-amber: #e8a020;
-  --wg-amber-dark: #b97a00;
+  --wg-green: #fa6d01;
+  --wg-green-dark: #c25601;
+  --wg-green-light: #fff1e2;
+  --wg-amber: #d9a915;
+  --wg-amber-dark: #a97d0a;
   --wg-teal: #1f7a8c;
   --wg-red: #ba3932;
-  --wg-bg: #faf8f4;
+  --wg-success: #2f7d3c;
+  --wg-bg: #fdf7f1;
   --wg-card: #ffffff;
-  --wg-text: #253126;
-  --wg-muted: #5f6d60;
-  --wg-border: #ece8de;
+  --wg-text: #1a1613;
+  --wg-muted: #6b6259;
+  --wg-border: #ece4d8;
   --wg-shadow: 0 2px 16px rgba(0, 0, 0, 0.07);
-  --wg-shadow-hover: 0 8px 24px rgba(22, 42, 20, 0.14);
+  --wg-shadow-hover: 0 8px 24px rgba(30, 20, 10, 0.14);
 }
 
 h1,
@@ -138,7 +142,7 @@ span {
 }
 
 .brand-logo-img {
-  height: 40px;
+  height: 68px;
   width: auto;
   display: block;
 }
@@ -216,7 +220,9 @@ nav {
 }
 
 .guest-register-link {
-  color: #233f21;
+  /* Fixed dark text — this button's amber background stays roughly the
+     same lightness in both themes, so the text color must too. */
+  color: #1a1613;
   background: var(--wg-amber);
   border: 1px solid #d6941d;
   font-weight: 700;
@@ -224,7 +230,7 @@ nav {
 
 .guest-register-link.active,
 .guest-register-link:hover {
-  color: #1d361b;
+  color: #1a1613;
   background: #f1b64d;
 }
 
@@ -241,13 +247,13 @@ nav {
 }
 
 .mobile-auth-link-ghost {
-  color: #edf6ec;
+  color: #f5efe6;
   border: 1px solid rgba(255, 255, 255, 0.55);
   background: transparent;
 }
 
 .mobile-auth-link-solid {
-  color: #1f3b1e;
+  color: #1a1613;
   background: #f2c56e;
   border: 1px solid rgba(242, 197, 110, 0.8);
 }
@@ -307,18 +313,18 @@ nav {
 }
 
 .cart-link-primary {
-  background: linear-gradient(135deg, #3a6835 0%, #2c5d29 100%);
+  background: linear-gradient(135deg, var(--wg-green) 0%, var(--wg-green-dark) 100%);
   color: #ffffff;
   border-radius: 24px;
   padding: 0.5rem 1.1rem;
   min-height: 44px;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 8px 18px rgba(58, 104, 53, 0.26), 0 0 0 1px rgba(232, 160, 32, 0.12) inset;
+  box-shadow: 0 8px 18px rgba(250, 109, 1, 0.26), 0 0 0 1px rgba(217, 169, 21, 0.12) inset;
 }
 
 .cart-link-primary:hover,
 .cart-link-primary.active {
-  background: linear-gradient(135deg, #426f3c 0%, #315f2d 100%);
+  filter: brightness(1.08);
   color: #ffffff;
 }
 
@@ -346,7 +352,7 @@ nav {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3a6835 0%, #2c5d29 100%);
+  background: linear-gradient(135deg, var(--wg-green) 0%, var(--wg-green-dark) 100%);
   color: #ffffff;
   display: inline-flex;
   align-items: center;
@@ -583,7 +589,7 @@ nav {
 .field-label {
   font-size: 0.92rem;
   font-weight: 600;
-  color: #35523a;
+  color: var(--wg-text);
 }
 
 .profile-form input:disabled,
@@ -752,7 +758,7 @@ nav {
 .stat-number {
   font-size: 1.55rem;
   font-weight: 800;
-  color: #1c4f2d;
+  color: var(--wg-text);
   margin: 0;
 }
 
@@ -775,7 +781,7 @@ nav {
   width: 100%;
   height: 220px;
   display: block;
-  background: linear-gradient(180deg, var(--wg-green-light), #f1f7ef);
+  background: linear-gradient(180deg, var(--wg-green-light), var(--wg-card));
   border: 1px solid var(--wg-border);
   border-radius: 10px;
 }
@@ -803,26 +809,26 @@ nav {
 }
 
 .status-label {
-  color: #35543d;
+  color: var(--wg-text);
   font-size: 0.86rem;
 }
 
 .status-track {
   height: 10px;
   border-radius: 999px;
-  background: #e8f0e5;
+  background: var(--wg-border);
   overflow: hidden;
 }
 
 .status-fill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #2d7d43, #4d965f);
+  background: linear-gradient(90deg, var(--wg-green), var(--wg-green-dark));
 }
 
 .status-count {
   font-weight: 700;
-  color: #264f33;
+  color: var(--wg-text);
 }
 
 .stats-table-wrap {
@@ -844,7 +850,7 @@ nav {
 }
 
 .stats-table th {
-  color: #38543e;
+  color: var(--wg-text);
   font-weight: 700;
 }
 
@@ -885,7 +891,7 @@ nav {
 
 .lightbox-content p {
   margin: 0.65rem 0 0;
-  color: #2a3d2d;
+  color: var(--wg-text);
   font-size: 0.92rem;
 }
 
@@ -918,7 +924,7 @@ select:focus {
 
 select {
   appearance: none;
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%232a7a40' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b6259' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
   padding-right: 2.5rem;
@@ -942,7 +948,7 @@ select:hover {
     background-position: right 0.85rem center;
     background-size: 14px;
     line-height: 1.5;
-    border: 1px solid #a0b19b;
+    border: 1px solid var(--wg-border);
   }
 
   .controls {
@@ -985,13 +991,13 @@ select:hover {
 .btn:disabled {
   opacity: 0.65;
   cursor: not-allowed;
-  background: #5d9070;
+  background: var(--wg-muted);
 }
 
 .btn-ghost {
   background: transparent;
-  border: 1px solid #86a788;
-  color: #214c2e;
+  border: 1px solid var(--wg-green);
+  color: var(--wg-green);
 }
 
 .btn-ghost:hover:not(:disabled) {
@@ -1001,7 +1007,7 @@ select:hover {
 
 .btn-ghost:disabled {
   opacity: 0.5;
-  border-color: #b8cab3;
+  border-color: var(--wg-border);
   cursor: not-allowed;
 }
 
@@ -1047,7 +1053,7 @@ select:hover {
 
 .btn-danger:disabled {
   opacity: 0.65;
-  background: #d97169;
+  background: var(--wg-red);
   cursor: not-allowed;
 }
 
@@ -1057,11 +1063,11 @@ select:hover {
 }
 
 .muted {
-  color: #4b5f4d;
+  color: var(--wg-muted);
 }
 
 .message {
-  color: #1d7d38;
+  color: var(--wg-success);
 }
 
 .cart-feedback {
@@ -1080,14 +1086,14 @@ select:hover {
 }
 
 .error {
-  color: #b72a22;
+  color: var(--wg-red);
 }
 
 .loading-wrap {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  color: #2a4b33;
+  color: var(--wg-green);
   font-weight: 600;
 }
 
@@ -1095,7 +1101,7 @@ select:hover {
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: #2d7d43;
+  background: var(--wg-green);
   animation: loading-bounce 0.9s infinite ease-in-out;
 }
 
@@ -1163,7 +1169,7 @@ select:hover {
 .qty-btn:hover,
 .qty-btn:focus-visible {
   background: var(--wg-green-light);
-  color: #17361f;
+  color: var(--wg-text);
   outline: none;
 }
 
@@ -1308,9 +1314,9 @@ select:hover {
   max-height: 200px;
   object-fit: cover;
   border-radius: 12px;
-  border: 1px dashed #bad0b5;
-  background: linear-gradient(135deg, #eef5ea, #dfeadb);
-  color: #4d6651;
+  border: 1px dashed var(--wg-border);
+  background: var(--wg-green-light);
+  color: var(--wg-muted);
   display: grid;
   place-items: center;
   text-align: center;
@@ -1382,16 +1388,16 @@ select:hover {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #9ca3af;
+  background: var(--wg-muted);
   flex-shrink: 0;
 }
 
 .status-dot.in-stock {
-  background: #3aa33f;
+  background: var(--wg-success);
 }
 
 .status-dot.offline {
-  background: #9ca3af;
+  background: var(--wg-muted);
 }
 
 .menu-price {
@@ -1514,6 +1520,16 @@ select:hover {
   font-size: 0.8rem;
   padding: 0.3rem 0.7rem;
   margin-bottom: 0.4rem;
+}
+
+.cart-promo-code-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.cart-promo-code-form input {
+  flex: 1;
 }
 
 .combo-item-picker {
@@ -1956,6 +1972,18 @@ select:hover {
   margin: 0;
   opacity: 0.9;
   line-height: 1.4;
+}
+
+.order-cancel-btn {
+  width: 100%;
+  margin-top: 0.75rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: #ffffff;
+}
+
+.order-cancel-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .error-message {
@@ -3144,7 +3172,7 @@ input:-webkit-autofill::first-line {
   }
 
   .brand-logo-img {
-    height: 32px;
+    height: 52px;
   }
 
   .customer-nav-desktop {

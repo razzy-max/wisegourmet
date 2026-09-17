@@ -24,6 +24,25 @@ export function isPushSupported() {
   );
 }
 
+// navigator.serviceWorker.ready never resolves if no service worker is ever
+// going to register (e.g. local dev, where registration is intentionally
+// production-only) — awaiting it directly would hang forever. Race it
+// against a short timeout instead, resolving to null rather than hanging.
+export async function getServiceWorkerRegistration(timeoutMs = 3000) {
+  if (!('serviceWorker' in navigator)) {
+    return null;
+  }
+
+  try {
+    return await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+    ]);
+  } catch {
+    return null;
+  }
+}
+
 // Every iOS browser (Safari, Chrome, Firefox, Edge) is required by Apple to
 // run on WebKit, and Web Push only actually works from a page added to the
 // Home Screen (standalone display mode) — a plain browser tab will report
@@ -60,7 +79,11 @@ export async function ensurePushSubscription(publicKey) {
     throw new Error('Notification permission was not granted.');
   }
 
-  const registration = await navigator.serviceWorker.ready;
+  const registration = await getServiceWorkerRegistration();
+  if (!registration) {
+    throw new Error('Notifications are not available in this environment right now.');
+  }
+
   let subscription = await registration.pushManager.getSubscription();
 
   if (!subscription) {

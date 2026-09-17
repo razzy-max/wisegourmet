@@ -162,25 +162,25 @@ export default function AdminDashboardPage() {
           <div className="overview-stats">
             <div className="overview-stat">
               <span className="stat-label">Confirmed</span>
-              <span className="stat-number" style={{ color: '#e8a020' }}>
+              <span className="stat-number" style={{ color: 'var(--wg-amber)' }}>
                 {displayConfirmed}
               </span>
             </div>
             <div className="overview-stat">
               <span className="stat-label">Preparing</span>
-              <span className="stat-number" style={{ color: '#e8a020' }}>
+              <span className="stat-number" style={{ color: 'var(--wg-amber)' }}>
                 {displayPreparing}
               </span>
             </div>
             <div className="overview-stat">
               <span className="stat-label">Ready</span>
-              <span className="stat-number" style={{ color: '#e8a020' }}>
+              <span className="stat-number" style={{ color: 'var(--wg-amber)' }}>
                 {displayReady}
               </span>
             </div>
             <div className="overview-stat">
               <span className="stat-label">Fulfilled</span>
-              <span className="stat-number" style={{ color: '#3a6835' }}>
+              <span className="stat-number" style={{ color: 'var(--wg-success)' }}>
                 {displayFulfilled}
               </span>
             </div>

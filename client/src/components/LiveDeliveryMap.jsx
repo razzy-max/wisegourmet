@@ -115,7 +115,7 @@ export default function LiveDeliveryMap({
         />
         <FitBounds points={boundsPoints} />
         {routePath && routePath.length > 1 ? (
-          <Polyline positions={routePath} pathOptions={{ color: '#2f7a3d', weight: 4, opacity: 0.85 }} />
+          <Polyline positions={routePath} pathOptions={{ color: '#2b2118', weight: 4, opacity: 0.85 }} />
         ) : null}
         {hasRider ? (
           <Marker position={[riderLocation.lat, riderLocation.lng]} icon={riderIcon}>

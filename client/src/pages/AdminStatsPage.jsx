@@ -14,15 +14,15 @@ const rangeOptions = [
 const money = (value) => `₦${Number(value || 0).toLocaleString()}`;
 
 const STATUS_COLORS = {
-  delivered: '#3a6835',
-  picked_up: '#3a6835',
-  arrived: '#3a6835',
-  confirmed: '#e8a020',
-  preparing: '#e8a020',
-  ready_for_pickup: '#e8a020',
-  on_the_way: '#2f6f8f',
-  pending: '#9ca3af',
-  cancelled: '#b64632',
+  delivered: 'var(--wg-success)',
+  picked_up: 'var(--wg-success)',
+  arrived: 'var(--wg-success)',
+  confirmed: 'var(--wg-amber)',
+  preparing: 'var(--wg-amber)',
+  ready_for_pickup: 'var(--wg-amber)',
+  on_the_way: 'var(--wg-teal)',
+  pending: 'var(--wg-muted)',
+  cancelled: 'var(--wg-red)',
 };
 
 const statusLabel = (status) =>
@@ -94,8 +94,8 @@ function AreaChart({ data = [] }) {
       <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" aria-label="Revenue trend">
         <defs>
           <linearGradient id="revenueAreaFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#2f5d32" stopOpacity="0.32" />
-            <stop offset="100%" stopColor="#2f5d32" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--wg-green)" stopOpacity="0.32" />
+            <stop offset="100%" stopColor="var(--wg-green)" stopOpacity="0" />
           </linearGradient>
         </defs>
         <line x1="0" y1={padding} x2={width} y2={padding} stroke="#e6e1d2" strokeWidth="1" />
@@ -107,12 +107,12 @@ function AreaChart({ data = [] }) {
           className="trend-polyline"
           d={linePath}
           fill="none"
-          stroke="#2d7d43"
+          stroke="var(--wg-green)"
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <circle cx={peak.x} cy={peak.y} r="4.5" fill="#2d7d43" />
+        <circle cx={peak.x} cy={peak.y} r="4.5" fill="var(--wg-green)" />
       </svg>
       <div className="chart-labels">
         {visibleLabels.map((point) => (

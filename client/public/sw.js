@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wise-gourmet-v4';
+const CACHE_NAME = 'wise-gourmet-v5';
 const CACHE_PREFIX = 'wise-gourmet-v';
 const APP_SHELL = [
   '/',
@@ -9,10 +9,18 @@ const APP_SHELL = [
   '/icon-512.png',
 ];
 
+// Registered on the Vite dev server too (so notifications work there), but
+// Vite's module chunks change on every restart/HMR cycle — caching them
+// would serve stale versions back on a normal refresh. Skip all caching on
+// localhost; push/notificationclick below still work in every environment.
+const IS_LOCAL_DEV = ['localhost', '127.0.0.1'].includes(self.location.hostname);
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
-  );
+  if (!IS_LOCAL_DEV) {
+    event.waitUntil(
+      caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+    );
+  }
   self.skipWaiting();
 });
 
@@ -30,6 +38,10 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  if (IS_LOCAL_DEV) {
+    return;
+  }
+
   if (event.request.method !== 'GET') {
     return;
   }

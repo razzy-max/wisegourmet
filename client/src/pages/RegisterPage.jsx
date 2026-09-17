@@ -89,7 +89,7 @@ export default function RegisterPage() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="register-password"
-                  placeholder="placeholder"
+                  placeholder=" "
                   value={form.password}
                   onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
                   required

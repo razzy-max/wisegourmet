@@ -30,7 +30,7 @@
   justify-content: space-between;
   gap: 2rem;
   padding: 2.6rem 2.1rem;
-  background: linear-gradient(150deg, var(--wg-green-header), #2e542a);
+  background: linear-gradient(150deg, var(--wg-green-header), #2b1a0c);
   color: #ffffff;
 }
 
@@ -41,7 +41,7 @@
 }
 
 .auth-brand-logo {
-  height: 48px;
+  height: 88px;
   width: auto;
   flex-shrink: 0;
 }
@@ -194,7 +194,7 @@
   }
 
   .auth-brand-logo {
-    height: 36px;
+    height: 64px;
   }
 
   .auth-testimonial {

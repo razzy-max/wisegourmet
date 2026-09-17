@@ -177,7 +177,10 @@ export default function AdminTeamPage() {
               </div>
 
               <div className="member-status">
-                <span className="status-dot" style={{ background: user.isActive ? '#3a6835' : '#ccc' }} />
+                <span
+                  className="status-dot"
+                  style={{ background: user.isActive ? 'var(--wg-success)' : 'var(--wg-muted)' }}
+                />
                 <span>{user.isActive ? 'Active' : 'Inactive'}</span>
               </div>
 

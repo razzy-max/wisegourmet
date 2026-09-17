@@ -7,11 +7,10 @@ import { CartProvider } from './context/CartContext';
 import { ThemeProvider } from './context/ThemeContext';
 import './index.css';
 
-// Service workers have no business running against the Vite dev server —
-// its module scripts change on every restart/HMR cycle, and the SW's
-// cache-first fetch handler would serve stale ones back on a normal
-// refresh. Only register it in the actual built/deployed app.
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+// Registered in every environment, including dev, so notifications work
+// there too — sw.js itself skips its caching behavior on localhost, which
+// is the part that used to serve stale Vite dev chunks back on a refresh.
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch((error) => {
       console.error('Service worker registration failed:', error);
