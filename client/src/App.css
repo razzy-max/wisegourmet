@@ -2483,7 +2483,12 @@ select:hover {
 }
 
 .admin-shell-main {
-  flex: 1 1 auto;
+  /* flex-basis: 0 (not auto) — with auto, this item's hypothetical size for
+     flex-wrap's line-fit test is based on its content's preferred width,
+     which can exceed the space next to the sidebar depending on what a
+     given page renders, wrapping it onto its own row below the sidebar
+     instead of beside it. Confirmed by direct browser measurement. */
+  flex: 1 1 0;
   min-width: 0;
 }
 
