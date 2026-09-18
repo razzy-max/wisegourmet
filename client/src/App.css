@@ -2479,20 +2479,28 @@ select:hover {
 /* ===== ADMIN SIDEBAR LAYOUT ===== */
 
 .admin-shell {
+  /* Column by default (mobile): topbar sits above main, each sized to its
+     own content. Row only from the desktop breakpoint, where the sidebar
+     and main sit side by side. Using flex-wrap + a shared row for both
+     layouts previously let the topbar and main end up on the same flex
+     line, which stretched the topbar to main's full content height —
+     a giant colored bar with the real page squeezed into a sliver next
+     to it. Confirmed by direct browser measurement. */
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   min-height: 100vh;
-  align-items: stretch;
 }
 
 .admin-shell-main {
-  /* flex-basis: 0 (not auto) — with auto, this item's hypothetical size for
-     flex-wrap's line-fit test is based on its content's preferred width,
-     which can exceed the space next to the sidebar depending on what a
-     given page renders, wrapping it onto its own row below the sidebar
-     instead of beside it. Confirmed by direct browser measurement. */
   flex: 1 1 0;
   min-width: 0;
+}
+
+@media (min-width: 641px) {
+  .admin-shell {
+    flex-direction: row;
+    align-items: stretch;
+  }
 }
 
 .admin-sidebar {
@@ -2597,7 +2605,7 @@ select:hover {
 
 .admin-mobile-topbar {
   display: flex;
-  flex: 1 0 100%;
+  flex: 0 0 auto;
 }
 
 @media (min-width: 641px) {
