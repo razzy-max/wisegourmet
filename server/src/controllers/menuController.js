@@ -59,7 +59,12 @@ const listMenu = asyncHandler(async (req, res) => {
 });
 
 const listCategories = asyncHandler(async (_req, res) => {
-  const categories = await Category.find({ isActive: true }).sort({ name: 1 });
+  const categories = await Category.find({ isActive: true }).sort({ sortOrder: 1, name: 1 });
+  res.json({ categories });
+});
+
+const listCategoriesAdmin = asyncHandler(async (_req, res) => {
+  const categories = await Category.find({}).sort({ sortOrder: 1, name: 1 });
   res.json({ categories });
 });
 
@@ -77,9 +82,35 @@ const createCategory = asyncHandler(async (req, res) => {
     throw new Error('Category already exists');
   }
 
-  const category = await Category.create({ name, slug });
+  const lastCategory = await Category.findOne().sort({ sortOrder: -1 }).select('sortOrder');
+  const sortOrder = lastCategory ? lastCategory.sortOrder + 1 : 0;
+
+  const category = await Category.create({ name, slug, sortOrder });
   notifyMenuChanged(req);
   res.status(201).json({ category });
+});
+
+const reorderCategories = asyncHandler(async (req, res) => {
+  const { orderedIds } = req.body;
+
+  if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+    res.status(400);
+    throw new Error('orderedIds must be a non-empty array');
+  }
+
+  await Category.bulkWrite(
+    orderedIds.map((id, index) => ({
+      updateOne: {
+        filter: { _id: id },
+        update: { $set: { sortOrder: index } },
+      },
+    }))
+  );
+
+  notifyMenuChanged(req);
+
+  const categories = await Category.find({}).sort({ sortOrder: 1, name: 1 });
+  res.json({ categories });
 });
 
 const updateCategory = asyncHandler(async (req, res) => {
@@ -259,7 +290,9 @@ const getMenuItemImage = asyncHandler(async (req, res) => {
 module.exports = {
   listMenu,
   listCategories,
+  listCategoriesAdmin,
   createCategory,
+  reorderCategories,
   updateCategory,
   deleteCategory,
   createMenuItem,

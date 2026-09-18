@@ -14,6 +14,8 @@ const parseDataUrl = (value) => {
 };
 
 const buildMenuItemImageUrl = (req, item) =>
-  item?.imageContentType ? `${req.protocol}://${req.get('host')}/api/menu/${item._id}/image` : item?.imageUrl || '';
+  item?.imageContentType
+    ? `${req.protocol}://${req.get('host')}/api/menu/${item._id}/image?v=${new Date(item.updatedAt || 0).getTime()}`
+    : item?.imageUrl || '';
 
 module.exports = { parseDataUrl, buildMenuItemImageUrl };

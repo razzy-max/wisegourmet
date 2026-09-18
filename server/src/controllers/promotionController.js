@@ -10,7 +10,9 @@ const notifyPromotionsChanged = (req) => {
 };
 
 const buildImageUrl = (req, item) =>
-  item.imageContentType ? `${req.protocol}://${req.get('host')}/api/promotions/${item._id}/image` : item.imageUrl || '';
+  item.imageContentType
+    ? `${req.protocol}://${req.get('host')}/api/promotions/${item._id}/image?v=${new Date(item.updatedAt || 0).getTime()}`
+    : item.imageUrl || '';
 
 const serializePromotion = (req, doc) => {
   const item = doc.toObject ? doc.toObject() : { ...doc };

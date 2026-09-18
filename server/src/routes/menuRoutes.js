@@ -2,7 +2,9 @@ const express = require('express');
 const {
   listMenu,
   listCategories,
+  listCategoriesAdmin,
   createCategory,
+  reorderCategories,
   updateCategory,
   deleteCategory,
   createMenuItem,
@@ -16,9 +18,11 @@ const router = express.Router();
 
 router.get('/', listMenu);
 router.get('/categories', listCategories);
+router.get('/categories/admin', protect, authorize('admin'), listCategoriesAdmin);
 router.get('/:id/image', getMenuItemImage);
 
 router.post('/categories', protect, authorize('admin'), createCategory);
+router.patch('/categories/reorder', protect, authorize('admin'), reorderCategories);
 router.put('/categories/:id', protect, authorize('admin'), updateCategory);
 router.delete('/categories/:id', protect, authorize('admin'), deleteCategory);
 

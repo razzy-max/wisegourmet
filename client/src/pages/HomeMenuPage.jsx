@@ -364,14 +364,6 @@ export default function HomeMenuPage() {
       }
 
       const menuRes = menuResult.value;
-      const orderedItems = [...(menuRes.items || [])].sort((a, b) => {
-        const aRank = statusOrder[normalizeStatus(a)] ?? 99;
-        const bRank = statusOrder[normalizeStatus(b)] ?? 99;
-        if (aRank !== bRank) {
-          return aRank - bRank;
-        }
-        return String(a.name || '').localeCompare(String(b.name || ''));
-      });
 
       let nextCategories = cachedCategories;
 
@@ -380,6 +372,22 @@ export default function HomeMenuPage() {
       } else if (!hasCachedData) {
         showToast('Menu categories are taking longer than expected.');
       }
+
+      const categoryOrderMap = new Map(nextCategories.map((category, index) => [category._id, index]));
+
+      const orderedItems = [...(menuRes.items || [])].sort((a, b) => {
+        const aCategoryRank = categoryOrderMap.get(a.category?._id) ?? 99;
+        const bCategoryRank = categoryOrderMap.get(b.category?._id) ?? 99;
+        if (aCategoryRank !== bCategoryRank) {
+          return aCategoryRank - bCategoryRank;
+        }
+        const aRank = statusOrder[normalizeStatus(a)] ?? 99;
+        const bRank = statusOrder[normalizeStatus(b)] ?? 99;
+        if (aRank !== bRank) {
+          return aRank - bRank;
+        }
+        return String(a.name || '').localeCompare(String(b.name || ''));
+      });
 
       setItems(orderedItems);
       setCategories(nextCategories);
@@ -475,6 +483,11 @@ export default function HomeMenuPage() {
     [promotions, handleApplyDeal]
   );
 
+  const categoryOrderMap = useMemo(
+    () => new Map(categories.map((category, index) => [category._id, index])),
+    [categories]
+  );
+
   const filteredItems = useMemo(() => {
     const normalizedSearch = String(search || '').trim().toLowerCase();
 
@@ -496,6 +509,11 @@ export default function HomeMenuPage() {
         return haystack.includes(normalizedSearch);
       })
       .sort((a, b) => {
+        const aCategoryRank = categoryOrderMap.get(a.category?._id) ?? 99;
+        const bCategoryRank = categoryOrderMap.get(b.category?._id) ?? 99;
+        if (aCategoryRank !== bCategoryRank) {
+          return aCategoryRank - bCategoryRank;
+        }
         const aRank = statusOrder[normalizeStatus(a)] ?? 99;
         const bRank = statusOrder[normalizeStatus(b)] ?? 99;
         if (aRank !== bRank) {
@@ -503,7 +521,7 @@ export default function HomeMenuPage() {
         }
         return String(a.name || '').localeCompare(String(b.name || ''));
       });
-  }, [items, search, selectedCategory]);
+  }, [items, search, selectedCategory, categoryOrderMap]);
 
   useEffect(() => {
     return () => {

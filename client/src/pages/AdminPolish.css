@@ -286,6 +286,33 @@
   font-weight: 600;
 }
 
+.category-manage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.category-manage-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  background: var(--wg-surface, rgba(0, 0, 0, 0.03));
+}
+
+.category-manage-name {
+  font-weight: 600;
+  flex: 1 1 auto;
+}
+
+.category-manage-name-input {
+  flex: 1 1 auto;
+  min-width: 8rem;
+}
+
 .row-item .row-desc {
   font-size: 0.78rem;
   color: var(--wg-muted);

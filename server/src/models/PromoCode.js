@@ -45,6 +45,13 @@ const promoCodeSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    // 0 means no cap. Mainly useful for discountType 'percent' so a big cart doesn't
+    // trigger an unexpectedly large discount.
+    maxDiscountAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     items: {
       type: [promoCodeItemSchema],
       default: [],

@@ -10,7 +10,11 @@ const computePromoCodeDiscount = (cartItems, subtotal, appliedPromoCode) => {
       appliedPromoCode.discountType === 'percent'
         ? subtotal * (appliedPromoCode.discountValue / 100)
         : appliedPromoCode.discountValue;
-    return { discountAmount: Math.min(Math.round(raw), subtotal) };
+    let discountAmount = Math.min(Math.round(raw), subtotal);
+    if (appliedPromoCode.maxDiscountAmount > 0) {
+      discountAmount = Math.min(discountAmount, appliedPromoCode.maxDiscountAmount);
+    }
+    return { discountAmount };
   }
 
   // scope === 'items' — same "buy this set, get a discount" mechanic as combo promotions.
@@ -39,7 +43,12 @@ const computePromoCodeDiscount = (cartItems, subtotal, appliedPromoCode) => {
       ? eligibleAmount * (appliedPromoCode.discountValue / 100)
       : Math.min(appliedPromoCode.discountValue, eligibleAmount);
 
-  return { discountAmount: Math.round(raw) };
+  let discountAmount = Math.round(raw);
+  if (appliedPromoCode.maxDiscountAmount > 0) {
+    discountAmount = Math.min(discountAmount, appliedPromoCode.maxDiscountAmount);
+  }
+
+  return { discountAmount };
 };
 
 const reconcileAppliedPromoCode = (cart) => {

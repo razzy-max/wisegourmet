@@ -9,6 +9,7 @@ const blankForm = {
   scope: 'storewide',
   discountType: 'percent',
   discountValue: 10,
+  maxDiscountAmount: 0,
   items: [],
   newCustomersOnly: false,
   minOrderValue: 0,
@@ -107,6 +108,21 @@ function PromoCodeFields({ form, setForm, menuItems }) {
           required
         />
       </div>
+      {form.discountType === 'percent' ? (
+        <>
+          <div className="field-label">Maximum discount amount (₦, 0 = no cap)</div>
+          <input
+            type="number"
+            min="0"
+            placeholder="e.g. 3000"
+            value={form.maxDiscountAmount}
+            onChange={(event) => setForm((prev) => ({ ...prev, maxDiscountAmount: event.target.value }))}
+          />
+          <p className="muted">
+            Caps how much a % discount can take off one order, so a large cart doesn't discount more than this.
+          </p>
+        </>
+      ) : null}
       <label className="checkbox-row">
         <input
           type="checkbox"
@@ -178,6 +194,9 @@ const describePromoCode = (promoCode) => {
   parts.push(
     promoCode.discountType === 'percent' ? `${promoCode.discountValue}% off` : `₦${promoCode.discountValue.toLocaleString()} off`
   );
+  if (promoCode.discountType === 'percent' && promoCode.maxDiscountAmount > 0) {
+    parts.push(`Up to ₦${promoCode.maxDiscountAmount.toLocaleString()}`);
+  }
   if (promoCode.newCustomersOnly) parts.push('First-time customers only');
   if (promoCode.minOrderValue > 0) parts.push(`Min order ₦${promoCode.minOrderValue.toLocaleString()}`);
   if (promoCode.usageLimitPerUser > 0) parts.push(`${promoCode.usageLimitPerUser}/customer`);
@@ -227,6 +246,7 @@ export default function AdminPromoCodesPage() {
     scope: source.scope,
     discountType: source.discountType,
     discountValue: Number(source.discountValue) || 0,
+    maxDiscountAmount: Number(source.maxDiscountAmount) || 0,
     items: source.scope === 'items' ? source.items : [],
     newCustomersOnly: Boolean(source.newCustomersOnly),
     minOrderValue: Number(source.minOrderValue) || 0,
@@ -263,6 +283,7 @@ export default function AdminPromoCodesPage() {
       scope: promoCode.scope,
       discountType: promoCode.discountType,
       discountValue: promoCode.discountValue,
+      maxDiscountAmount: promoCode.maxDiscountAmount || 0,
       items: (promoCode.items || []).map((entry) => ({
         menuItem: entry.menuItem?._id || entry.menuItem,
         quantity: entry.quantity,

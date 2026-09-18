@@ -10,7 +10,9 @@ const notifyHeroBackgroundChanged = (req) => {
 };
 
 const buildImageUrl = (req, doc) =>
-  doc?.imageContentType ? `${req.protocol}://${req.get('host')}/api/hero-background/image` : doc?.imageUrl || '';
+  doc?.imageContentType
+    ? `${req.protocol}://${req.get('host')}/api/hero-background/image?v=${new Date(doc.updatedAt || 0).getTime()}`
+    : doc?.imageUrl || '';
 
 const getHeroBackground = asyncHandler(async (req, res) => {
   const doc = await HeroBackground.findOne();

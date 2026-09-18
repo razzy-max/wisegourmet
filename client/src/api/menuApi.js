@@ -11,8 +11,14 @@ export const menuApi = {
   categories() {
     return apiRequest('/menu/categories');
   },
+  categoriesAdmin() {
+    return apiRequest('/menu/categories/admin');
+  },
   createCategory(payload) {
     return apiRequest('/menu/categories', { method: 'POST', body: payload });
+  },
+  reorderCategories(orderedIds) {
+    return apiRequest('/menu/categories/reorder', { method: 'PATCH', body: { orderedIds } });
   },
   updateCategory(id, payload) {
     return apiRequest(`/menu/categories/${id}`, { method: 'PUT', body: payload });

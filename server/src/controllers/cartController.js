@@ -281,6 +281,7 @@ const applyPromoCode = asyncHandler(async (req, res) => {
     scope: promoCode.scope,
     discountType: promoCode.discountType,
     discountValue: promoCode.discountValue,
+    maxDiscountAmount: promoCode.maxDiscountAmount,
     items: itemsSnapshot,
   };
 

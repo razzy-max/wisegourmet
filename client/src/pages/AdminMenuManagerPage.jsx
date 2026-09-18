@@ -36,6 +36,8 @@ export default function AdminMenuManagerPage() {
   const [items, setItems] = useState([]);
   const [loadingItems, setLoadingItems] = useState(false);
   const [newCategory, setNewCategory] = useState('');
+  const [editingCategoryId, setEditingCategoryId] = useState('');
+  const [editCategoryName, setEditCategoryName] = useState('');
   const [newItem, setNewItem] = useState(emptyItemForm);
   const [editingItemId, setEditingItemId] = useState('');
   const [editItem, setEditItem] = useState(emptyItemForm);
@@ -49,6 +51,8 @@ export default function AdminMenuManagerPage() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [selectedIds, setSelectedIds] = useState(new Set());
 
+  const activeCategories = useMemo(() => categories.filter((category) => category.isActive !== false), [categories]);
+
   const toImageDataUrl = async (fileList) => {
     const attachments = await filesToAttachments(fileList || []);
     return attachments[0]?.dataUrl || '';
@@ -60,7 +64,7 @@ export default function AdminMenuManagerPage() {
     }
 
     try {
-      const [categoryRes, itemRes] = await Promise.all([menuApi.categories(), menuApi.list()]);
+      const [categoryRes, itemRes] = await Promise.all([menuApi.categoriesAdmin(), menuApi.list()]);
       setCategories(categoryRes.categories || []);
       setItems(itemRes.items || []);
     } finally {
@@ -179,6 +183,66 @@ export default function AdminMenuManagerPage() {
       await menuApi.createCategory({ name: newCategory });
       setNewCategory('');
       await load();
+    } catch (error) {
+      setMessage(error.message);
+    }
+  };
+
+  const moveCategory = async (index, direction) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= categories.length) {
+      return;
+    }
+
+    const reordered = [...categories];
+    [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
+    setCategories(reordered);
+
+    try {
+      await menuApi.reorderCategories(reordered.map((category) => category._id));
+      await load({ silent: true });
+    } catch (error) {
+      setMessage(error.message);
+      await load();
+    }
+  };
+
+  const toggleCategoryActive = async (category) => {
+    setMessage('');
+    try {
+      await menuApi.updateCategory(category._id, { isActive: !category.isActive });
+      await load({ silent: true });
+    } catch (error) {
+      setMessage(error.message);
+    }
+  };
+
+  const startEditCategory = (category) => {
+    setEditingCategoryId(category._id);
+    setEditCategoryName(category.name);
+  };
+
+  const cancelEditCategory = () => {
+    setEditingCategoryId('');
+    setEditCategoryName('');
+  };
+
+  const saveEditCategory = async (categoryId) => {
+    setMessage('');
+    try {
+      await menuApi.updateCategory(categoryId, { name: editCategoryName });
+      cancelEditCategory();
+      await load({ silent: true });
+    } catch (error) {
+      setMessage(error.message);
+    }
+  };
+
+  const removeCategory = async (category) => {
+    setMessage('');
+    try {
+      await menuApi.deleteCategory(category._id);
+      await load({ silent: true });
     } catch (error) {
       setMessage(error.message);
     }
@@ -322,6 +386,66 @@ export default function AdminMenuManagerPage() {
               Create
             </button>
           </form>
+
+          <div className="category-manage-list">
+            {categories.map((category, index) => (
+              <div className="category-manage-row" key={category._id}>
+                <span className={`status-badge ${category.isActive !== false ? 'status-success' : 'status-muted'}`}>
+                  {category.isActive !== false ? 'Active' : 'Disabled'}
+                </span>
+                {editingCategoryId === category._id ? (
+                  <input
+                    className="category-manage-name-input"
+                    value={editCategoryName}
+                    onChange={(event) => setEditCategoryName(event.target.value)}
+                    autoFocus
+                  />
+                ) : (
+                  <span className="category-manage-name">{category.name}</span>
+                )}
+                <div className="row">
+                  {editingCategoryId === category._id ? (
+                    <>
+                      <button className="btn" type="button" onClick={() => saveEditCategory(category._id)}>
+                        Save
+                      </button>
+                      <button className="btn btn-ghost" type="button" onClick={cancelEditCategory}>
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        className="btn btn-ghost"
+                        type="button"
+                        onClick={() => moveCategory(index, -1)}
+                        disabled={index === 0}
+                      >
+                        Move up
+                      </button>
+                      <button
+                        className="btn btn-ghost"
+                        type="button"
+                        onClick={() => moveCategory(index, 1)}
+                        disabled={index === categories.length - 1}
+                      >
+                        Move down
+                      </button>
+                      <button className="btn btn-ghost" type="button" onClick={() => toggleCategoryActive(category)}>
+                        {category.isActive !== false ? 'Disable' : 'Enable'}
+                      </button>
+                      <button className="btn btn-ghost" type="button" onClick={() => startEditCategory(category)}>
+                        Rename
+                      </button>
+                      <button className="btn btn-danger" type="button" onClick={() => removeCategory(category)}>
+                        Delete
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </article>
 
         <article className="panel">
@@ -368,7 +492,7 @@ export default function AdminMenuManagerPage() {
               required
             >
               <option value="">Select category</option>
-              {categories.map((category) => (
+              {activeCategories.map((category) => (
                 <option key={category._id} value={category._id}>
                   {category.name}
                 </option>
@@ -554,7 +678,7 @@ export default function AdminMenuManagerPage() {
                                 onChange={(event) => setEditItem((prev) => ({ ...prev, category: event.target.value }))}
                               >
                                 <option value="">Select category</option>
-                                {categories.map((category) => (
+                                {activeCategories.map((category) => (
                                   <option key={category._id} value={category._id}>
                                     {category.name}
                                   </option>
