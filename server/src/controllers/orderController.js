@@ -1,6 +1,7 @@
 const Cart = require('../models/Cart');
 const Order = require('../models/Order');
 const User = require('../models/User');
+const Branch = require('../models/Branch');
 const DeliveryZone = require('../models/DeliveryZone');
 const PromoCode = require('../models/PromoCode');
 const asyncHandler = require('../utils/asyncHandler');
@@ -9,6 +10,8 @@ const { ORDER_STATUS, canTransition } = require('../utils/orderStatus');
 const { sendPushToRoles, sendPushToUserIds } = require('../utils/pushNotifications');
 const { reconcileCartDiscounts, computeCartDiscount } = require('../utils/cartDiscount');
 const { validatePromoCodeEligibility } = require('../utils/promoCodeDiscount');
+const { isBranchScopingEnabled } = require('../utils/branchScoping');
+const { getFeasibleBranchIds, findRemovableConflicts } = require('../utils/branchAvailability');
 
 const STAFF_ALLOWED_STATUSES = new Set([
   ORDER_STATUS.CONFIRMED,
@@ -43,7 +46,20 @@ const notifyOrderChanged = (req, order) => {
     updatedAt: new Date().toISOString(),
   };
 
-  io.emit('orders:changed', payload);
+  if (isBranchScopingEnabled() && order.branch) {
+    payload.branch = String(order.branch);
+    // Kitchen staff for this branch, riders everywhere (they're not branch
+    // restricted), admins, and the customer who placed it.
+    io.to([`branch:${String(order.branch)}`, 'admins', 'riders', `customer:${String(order.customer)}`]).emit(
+      'orders:changed',
+      payload
+    );
+  } else {
+    // Scoping off, or a legacy order with no branch — today's exact
+    // behavior: everyone hears about every order.
+    io.emit('orders:changed', payload);
+  }
+
   io.to(`order:${String(order._id)}`).emit('order:changed', payload);
 };
 
@@ -68,8 +84,12 @@ const sendCustomerStatusPush = async (order) => {
   });
 };
 
-const getZoneFeeMap = async () => {
-  const zones = await DeliveryZone.find({ isActive: true }).sort({ sortOrder: 1, label: 1 }).lean();
+// `branchId` is optional — no client sends one until the branch picker
+// (multi-branch rollout Stage 4) is turned on, so omitting it preserves
+// today's exact behavior: one shared zone list for the whole business.
+const getZoneFeeMap = async (branchId = null) => {
+  const filter = { isActive: true, ...(branchId ? { branch: branchId } : {}) };
+  const zones = await DeliveryZone.find(filter).sort({ sortOrder: 1, label: 1 }).lean();
 
   if (!zones.length) {
     return DEFAULT_ZONE_FEES;
@@ -81,25 +101,67 @@ const getZoneFeeMap = async () => {
   }, {});
 };
 
-const getDeliveryZones = asyncHandler(async (_req, res) => {
-  const zones = await DeliveryZone.find({ isActive: true })
-    .sort({ sortOrder: 1, label: 1 })
-    .select('key label fee sortOrder')
-    .lean();
+const getDeliveryZones = asyncHandler(async (req, res) => {
+  const { branch } = req.query;
 
-  if (zones.length) {
-    res.json({ zones });
+  // An explicit branch always wins (kept for completeness/future use —
+  // no current customer call passes one).
+  if (branch || !isBranchScopingEnabled()) {
+    const filter = { isActive: true, ...(branch ? { branch } : {}) };
+    const zones = await DeliveryZone.find(filter)
+      .sort({ sortOrder: 1, label: 1 })
+      .select('key label fee sortOrder')
+      .lean();
+
+    if (zones.length) {
+      res.json({ zones });
+      return;
+    }
+
+    const fallback = Object.entries(DEFAULT_ZONE_FEES).map(([key, fee], index) => ({
+      key,
+      label: key.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
+      fee,
+      sortOrder: index,
+    }));
+
+    res.json({ zones: fallback });
     return;
   }
 
-  const fallback = Object.entries(DEFAULT_ZONE_FEES).map(([key, fee], index) => ({
-    key,
-    label: key.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
-    fee,
-    sortOrder: index,
-  }));
+  // Branching on, no explicit branch — resolve from the customer's own
+  // cart: only branches that can supply everything in it are offered, so
+  // whichever zone the customer picks unambiguously resolves a branch at
+  // order-creation time.
+  const cart = await Cart.findOne({ user: req.user._id }).populate('items.menuItem', '_id');
+  const cartItemIds = (cart?.items || []).map((item) => String(item.menuItem?._id || item.menuItem));
+  const feasibleBranchIds = await getFeasibleBranchIds(cartItemIds);
 
-  res.json({ zones: fallback });
+  const [zones, feasibleBranches] = await Promise.all([
+    DeliveryZone.find({ isActive: true, branch: { $in: feasibleBranchIds } })
+      .sort({ sortOrder: 1, label: 1 })
+      .select('key label fee branch')
+      .lean(),
+    Branch.find({ _id: { $in: feasibleBranchIds } }).select('name').lean(),
+  ]);
+
+  // Merge by key, keeping the cheapest fee when the same zone exists at
+  // more than one feasible branch — the customer just sees one zone list,
+  // and order-creation independently resolves which branch actually fills
+  // it (cheapest offering that zone) at checkout time. Relies on branch
+  // admins naming zones consistently (same key/label) across branches.
+  const zonesByKey = new Map();
+  zones.forEach((zone) => {
+    const existing = zonesByKey.get(zone.key);
+    if (!existing || Number(zone.fee) < Number(existing.fee)) {
+      zonesByKey.set(zone.key, { key: zone.key, label: zone.label, fee: zone.fee });
+    }
+  });
+
+  res.json({
+    zones: [...zonesByKey.values()].sort((a, b) => a.label.localeCompare(b.label)),
+    feasibleBranches: feasibleBranches.map((b) => ({ _id: String(b._id), name: b.name })),
+  });
 });
 
 const createOrderFromCart = asyncHandler(async (req, res) => {
@@ -109,6 +171,7 @@ const createOrderFromCart = asyncHandler(async (req, res) => {
     deliveryMode = 'zone',
     zone = 'outside',
     distanceKm = 0,
+    branch = null,
   } = req.body;
 
   if (!['delivery', 'self_pickup'].includes(fulfillmentType)) {
@@ -131,10 +194,83 @@ const createOrderFromCart = asyncHandler(async (req, res) => {
     throw new Error('Cart is empty');
   }
 
-  const hasUnavailable = cart.items.some((item) => !item.menuItem || !isInStock(item.menuItem));
-  if (hasUnavailable) {
-    res.status(400);
-    throw new Error('One or more cart items are unavailable');
+  const cartItemIds = cart.items.map((item) => String(item.menuItem?._id));
+
+  // Resolve which single branch fulfills this order. An explicit `branch`
+  // (from the self-pickup "pick up from" selector, shown only when more
+  // than one branch is feasible) always wins when branching is on.
+  let branchDoc = null;
+
+  if (isBranchScopingEnabled()) {
+    const feasibleBranchIds = await getFeasibleBranchIds(cartItemIds);
+
+    if (feasibleBranchIds.length === 0) {
+      const culpritIds = await findRemovableConflicts(cartItemIds);
+      const culpritNames = cart.items
+        .filter((item) => culpritIds.includes(String(item.menuItem?._id)))
+        .map((item) => item.nameSnapshot || item.menuItem?.name || 'an item');
+
+      res.status(400);
+      throw new Error(
+        culpritNames.length
+          ? `Your cart can't be fulfilled together anymore — ${culpritNames.join(' or ')} is no longer available with the rest. Please review your cart.`
+          : 'One or more cart items are unavailable. Please review your cart.'
+      );
+    }
+
+    if (fulfillmentType === 'self_pickup') {
+      // The "pick up from" selector only appears (and sends `branch`) when
+      // more than one branch is feasible — the customer needs to know
+      // where to physically collect food, so branch identity surfaces here.
+      if (branch) {
+        if (!feasibleBranchIds.includes(String(branch))) {
+          res.status(400);
+          throw new Error('That branch can no longer fulfill your cart. Please revisit checkout.');
+        }
+        branchDoc = await Branch.findById(branch).select('name addressLine');
+      } else if (feasibleBranchIds.length > 1) {
+        res.status(400);
+        throw new Error('Please choose which branch to pick up from.');
+      } else {
+        branchDoc = await Branch.findById(feasibleBranchIds[0]).select('name addressLine');
+      }
+    } else {
+      // Delivery — the customer only ever picks a zone (merged across
+      // feasible branches by key), never a branch, so resolve it here:
+      // whichever feasible branch offers the chosen zone, cheapest if more
+      // than one does. Recomputed as the source of truth rather than
+      // trusting client state, since stock/zones could have changed since
+      // the checkout page loaded.
+      const zonesAtFeasibleBranches = await DeliveryZone.find({
+        isActive: true,
+        branch: { $in: feasibleBranchIds },
+        key: zone,
+      })
+        .sort({ fee: 1 })
+        .select('branch fee')
+        .lean();
+
+      if (!zonesAtFeasibleBranches.length) {
+        res.status(400);
+        throw new Error('That delivery zone is no longer available for your cart. Please revisit checkout.');
+      }
+
+      branchDoc = await Branch.findById(zonesAtFeasibleBranches[0].branch).select('name addressLine');
+    }
+  } else {
+    // Branching off — today's exact original behavior, regardless of
+    // whether a branch happens to be passed (an explicit branch is
+    // accepted but purely informational here, kept for backward
+    // compatibility / future use).
+    const hasUnavailable = cart.items.some((item) => !item.menuItem || !isInStock(item.menuItem));
+    if (hasUnavailable) {
+      res.status(400);
+      throw new Error('One or more cart items are unavailable');
+    }
+
+    if (branch) {
+      branchDoc = await Branch.findById(branch).select('name addressLine');
+    }
   }
 
   reconcileCartDiscounts(cart);
@@ -169,7 +305,7 @@ const createOrderFromCart = asyncHandler(async (req, res) => {
   };
 
   if (fulfillmentType === 'delivery') {
-    const zoneFeeMap = await getZoneFeeMap();
+    const zoneFeeMap = await getZoneFeeMap(branchDoc?._id || null);
     feeResult = calculateDeliveryFee({
       mode: deliveryMode,
       zone,
@@ -185,6 +321,7 @@ const createOrderFromCart = asyncHandler(async (req, res) => {
 
   const order = await Order.create({
     customer: req.user._id,
+    branch: branchDoc?._id || null,
     items,
     subtotal,
     discount: (() => {
@@ -218,7 +355,9 @@ const createOrderFromCart = asyncHandler(async (req, res) => {
       fullText:
         fulfillmentType === 'delivery'
           ? deliveryAddress.fullText
-          : 'Self pickup at Wise Gourmet kitchen',
+          : branchDoc
+            ? `Self pickup at ${branchDoc.name}${branchDoc.addressLine ? ` (${branchDoc.addressLine})` : ''}`
+            : 'Self pickup at Wise Gourmet kitchen',
       area: fulfillmentType === 'delivery' ? deliveryAddress.area || '' : '',
       landmark: fulfillmentType === 'delivery' ? deliveryAddress.landmark || '' : '',
       notes: fulfillmentType === 'delivery' ? deliveryAddress.notes || '' : '',
@@ -249,12 +388,16 @@ const createOrderFromCart = asyncHandler(async (req, res) => {
 
   notifyOrderChanged(req, hydrated);
 
-  await sendPushToRoles(['staff'], {
-    title: 'New Order Placed',
-    body: `Order #${String(order._id).slice(-6)} was placed and is awaiting processing.`,
-    url: '/admin/orders',
-    tag: `new-order-${String(order._id)}`,
-  });
+  await sendPushToRoles(
+    ['staff'],
+    {
+      title: 'New Order Placed',
+      body: `Order #${String(order._id).slice(-6)} was placed and is awaiting processing.`,
+      url: '/admin/orders',
+      tag: `new-order-${String(order._id)}`,
+    },
+    isBranchScopingEnabled() && order.branch ? { branchId: String(order.branch) } : {}
+  );
 
   res.status(201).json({ order: hydrated });
 });
@@ -277,9 +420,12 @@ const getOrder = asyncHandler(async (req, res) => {
     query.customer = req.user._id;
   } else if (req.user.role === 'rider') {
     query.assignedRider = req.user._id;
+  } else if (isBranchScopingEnabled() && ['staff', 'branch_admin'].includes(req.user.role)) {
+    query.branch = { $in: [...req.user.branches, null] };
   }
 
   const order = await Order.findOne(query)
+    .populate('branch', 'name city addressLine')
     .populate('customer', 'fullName email phone')
     .populate('assignedRider', 'fullName phone')
     .populate('kitchenHandledBy', 'fullName phone')
@@ -293,9 +439,23 @@ const getOrder = asyncHandler(async (req, res) => {
   res.json({ order });
 });
 
-const getAllOrders = asyncHandler(async (_req, res) => {
-  const orders = await Order.find({})
+const getAllOrders = asyncHandler(async (req, res) => {
+  const query = {};
+
+  if (isBranchScopingEnabled()) {
+    if (['staff', 'branch_admin'].includes(req.user.role)) {
+      // Kitchen work is location-bound — force-scoped regardless of any
+      // client-supplied filter. A legacy/unassigned order (branch: null)
+      // stays visible to everyone rather than silently vanishing.
+      query.branch = { $in: [...req.user.branches, null] };
+    } else if (req.user.role === 'admin' && req.query.branch) {
+      query.branch = req.query.branch;
+    }
+  }
+
+  const orders = await Order.find(query)
     .sort({ createdAt: -1 })
+    .populate('branch', 'name city addressLine')
     .populate('customer', 'fullName email phone role')
     .populate('assignedRider', 'fullName email role')
     .populate('kitchenHandledBy', 'fullName email phone role')
@@ -307,6 +467,7 @@ const getAllOrders = asyncHandler(async (_req, res) => {
 const getRiderOrders = asyncHandler(async (req, res) => {
   const orders = await Order.find({ assignedRider: req.user._id })
     .sort({ createdAt: -1 })
+    .populate('branch', 'name city addressLine')
     .populate('customer', 'fullName email phone role')
     .populate('assignedRider', 'fullName email role')
     .populate('kitchenHandledBy', 'fullName email phone role')
@@ -316,12 +477,17 @@ const getRiderOrders = asyncHandler(async (req, res) => {
 });
 
 const getRiderQueue = asyncHandler(async (req, res) => {
+  // Deliberately no branch filter — a rider sees every branch's ready
+  // orders and judges for themselves whether a given job is worth taking,
+  // using the populated branch (pickup point) and delivery address
+  // (drop-off) shown on each card.
   const orders = await Order.find({
     status: ORDER_STATUS.READY_FOR_PICKUP,
     fulfillmentType: 'delivery',
     $or: [{ assignedRider: null }, { assignedRider: req.user._id }],
   })
     .sort({ createdAt: -1 })
+    .populate('branch', 'name city addressLine')
     .populate('customer', 'fullName email phone role')
     .populate('assignedRider', 'fullName email role')
     .populate('kitchenHandledBy', 'fullName email phone role')
@@ -392,6 +558,17 @@ const assignRider = asyncHandler(async (req, res) => {
     throw new Error('Order not found');
   }
 
+  if (
+    isBranchScopingEnabled() &&
+    ['staff', 'branch_admin'].includes(req.user.role) &&
+    order.branch &&
+    !req.user.branches.some((ownId) => String(ownId) === String(order.branch))
+  ) {
+    res.status(403);
+    throw new Error('This order belongs to a different branch');
+  }
+
+  // Riders are never branch-restricted — any active rider can be assigned.
   const rider = await User.findOne({ _id: riderId, role: 'rider', isActive: true });
   if (!rider) {
     res.status(400);
@@ -582,12 +759,16 @@ const verifyPayment = asyncHandler(async (req, res) => {
 
   await sendCustomerStatusPush(hydrated);
 
-  await sendPushToRoles(['staff'], {
-    title: 'Order Confirmed and Paid',
-    body: `Order #${String(order._id).slice(-6)} payment verified and ready for kitchen flow.`,
-    url: '/staff/kitchen',
-    tag: `order-confirmed-${String(order._id)}`,
-  });
+  await sendPushToRoles(
+    ['staff'],
+    {
+      title: 'Order Confirmed and Paid',
+      body: `Order #${String(order._id).slice(-6)} payment verified and ready for kitchen flow.`,
+      url: '/staff/kitchen',
+      tag: `order-confirmed-${String(order._id)}`,
+    },
+    isBranchScopingEnabled() && order.branch ? { branchId: String(order.branch) } : {}
+  );
 
   res.json({ order: hydrated });
 });
@@ -624,13 +805,23 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     }
   }
 
-  if (req.user.role === 'admin' || req.user.role === 'staff') {
+  if (['admin', 'staff', 'branch_admin'].includes(req.user.role)) {
     if (!STAFF_ALLOWED_STATUSES.has(status) && status !== ORDER_STATUS.CANCELLED) {
       res.status(403);
       throw new Error('Admin/staff is not allowed to set this status directly');
     }
 
-    if (req.user.role === 'staff') {
+    if (['staff', 'branch_admin'].includes(req.user.role)) {
+      // Kitchen work is location-bound — can't touch another branch's order.
+      if (
+        isBranchScopingEnabled() &&
+        order.branch &&
+        !req.user.branches.some((ownId) => String(ownId) === String(order.branch))
+      ) {
+        res.status(403);
+        throw new Error('This order belongs to a different branch');
+      }
+
       if (order.kitchenHandledBy && String(order.kitchenHandledBy) !== String(req.user._id)) {
         res.status(403);
         throw new Error('This order is already being handled by another staff member');
@@ -786,7 +977,16 @@ const verifySelfPickupPin = asyncHandler(async (req, res) => {
     throw new Error('Order must be ready for pickup before PIN verification');
   }
 
-  if (req.user.role === 'staff') {
+  if (['staff', 'branch_admin'].includes(req.user.role)) {
+    if (
+      isBranchScopingEnabled() &&
+      order.branch &&
+      !req.user.branches.some((ownId) => String(ownId) === String(order.branch))
+    ) {
+      res.status(403);
+      throw new Error('This order belongs to a different branch');
+    }
+
     if (order.kitchenHandledBy && String(order.kitchenHandledBy) !== String(req.user._id)) {
       res.status(403);
       throw new Error('This order is already being handled by another staff member');

@@ -8,7 +8,7 @@ import EnableAlertsCard from '../components/EnableAlertsCard';
 import PinEntryForm from '../components/PinEntryForm';
 import Skeleton from '../components/Skeleton';
 import LiveDeliveryMap from '../components/LiveDeliveryMap';
-import { MapPinIcon } from '../components/icons';
+import { MapPinIcon, ProfileIcon, PhoneIcon, TruckIcon, PackageIcon } from '../components/icons';
 import { getStatusLabel, getStatusBadgeClass } from '../utils/statusHelpers';
 import './OpsPages.css';
 
@@ -47,22 +47,58 @@ function ActiveDeliveryCard({
 
   return (
     <article
-      className="panel order-card-enter"
+      className={`panel order-card-enter ops-order-card ops-status-${order.status}`}
       style={{ '--order-card-delay': `${Math.min(index, 8) * 0.05}s` }}
     >
       <div className="zone-card-top">
-        <h4>Order {order._id.slice(-6)}</h4>
+        <div className="ops-order-icon-title">
+          <span className="icon-badge">
+            <TruckIcon size={16} />
+          </span>
+          <h4>Order {order._id.slice(-6)}</h4>
+        </div>
         <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
           {getStatusLabel(order.status)}
         </span>
       </div>
-      <p>Customer: {order.customer?.fullName || 'Unknown'}</p>
-      <p>Phone: {order.customer?.phone || 'Not provided'}</p>
-      <p>Being handled by: {order.assignedRider?.fullName || 'You'}</p>
-      <p>Address: {order.deliveryAddress?.fullText || 'Not provided'}</p>
-      {order.deliveryAddress?.area ? <p>Area: {order.deliveryAddress.area}</p> : null}
-      {order.deliveryAddress?.landmark ? <p>Landmark: {order.deliveryAddress.landmark}</p> : null}
-      {order.deliveryAddress?.notes ? <p>Notes: {order.deliveryAddress.notes}</p> : null}
+
+      {order.branch?.name ? (
+        <span className="ops-branch-pill">
+          <MapPinIcon size={12} />
+          From: {order.branch.name}
+        </span>
+      ) : null}
+
+      <div className="ops-info-grid">
+        <div className="ops-info-row">
+          <ProfileIcon size={15} />
+          <span>{order.customer?.fullName || 'Unknown customer'}</span>
+        </div>
+        <div className="ops-info-row">
+          <PhoneIcon size={15} />
+          <span>{order.customer?.phone || 'Not provided'}</span>
+        </div>
+        <div className="ops-info-row">
+          <MapPinIcon size={15} />
+          <span>{order.deliveryAddress?.fullText || 'Address not provided'}</span>
+        </div>
+        {order.deliveryAddress?.landmark ? (
+          <div className="ops-info-row">
+            <span className="ops-info-label">Landmark:</span>
+            <span>{order.deliveryAddress.landmark}</span>
+          </div>
+        ) : null}
+        {order.deliveryAddress?.notes ? (
+          <div className="ops-info-row">
+            <span className="ops-info-label">Notes:</span>
+            <span>{order.deliveryAddress.notes}</span>
+          </div>
+        ) : null}
+        <div className="ops-info-row">
+          <span className="ops-info-label">Handled by:</span>
+          <span>{order.assignedRider?.fullName || 'You'}</span>
+        </div>
+      </div>
 
       {showMap && (
         <div className="live-map-wrap">
@@ -254,29 +290,69 @@ export default function RiderQueuePage() {
         <div className="grid">
           {queueOrders.map((order, index) => (
             <article
-              className="panel order-card-enter"
+              className={`panel order-card-enter ops-order-card ops-status-${order.status}`}
               key={order._id}
               style={{ '--order-card-delay': `${Math.min(index, 8) * 0.05}s` }}
             >
               <div className="zone-card-top">
-                <h4>Order {order._id.slice(-6)}</h4>
+                <div className="ops-order-icon-title">
+                  <span className="icon-badge">
+                    <PackageIcon size={16} />
+                  </span>
+                  <h4>Order {order._id.slice(-6)}</h4>
+                </div>
                 <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
                   {getStatusLabel(order.status)}
                 </span>
               </div>
-              <p>Customer: {order.customer?.fullName || 'Unknown'}</p>
-              <p>Phone: {order.customer?.phone || 'Not provided'}</p>
-              <p>
-                Accepted by:{' '}
-                {order.assignedRider?.fullName ? order.assignedRider.fullName : 'Available for pickup'}
-              </p>
-              <p>Address: {order.deliveryAddress?.fullText || 'Not provided'}</p>
-              {order.deliveryAddress?.area ? <p>Area: {order.deliveryAddress.area}</p> : null}
-              {order.deliveryAddress?.landmark ? <p>Landmark: {order.deliveryAddress.landmark}</p> : null}
-              {order.deliveryAddress?.notes ? <p>Notes: {order.deliveryAddress.notes}</p> : null}
+
+              <div className="row" style={{ gap: '0.4rem', flexWrap: 'wrap', margin: '0.4rem 0' }}>
+                {order.branch?.name ? (
+                  <span className="ops-branch-pill">
+                    <MapPinIcon size={12} />
+                    From: {order.branch.name}
+                  </span>
+                ) : null}
+                <span className="ops-branch-pill" style={{ background: 'var(--wg-border)', color: 'var(--wg-text)' }}>
+                  <TruckIcon size={12} />
+                  To: {order.deliveryAddress?.area || 'Customer address'}
+                </span>
+              </div>
+
+              <div className="ops-info-grid">
+                <div className="ops-info-row">
+                  <ProfileIcon size={15} />
+                  <span>{order.customer?.fullName || 'Unknown customer'}</span>
+                </div>
+                <div className="ops-info-row">
+                  <PhoneIcon size={15} />
+                  <span>{order.customer?.phone || 'Not provided'}</span>
+                </div>
+                <div className="ops-info-row">
+                  <MapPinIcon size={15} />
+                  <span>{order.deliveryAddress?.fullText || 'Address not provided'}</span>
+                </div>
+                {order.deliveryAddress?.landmark ? (
+                  <div className="ops-info-row">
+                    <span className="ops-info-label">Landmark:</span>
+                    <span>{order.deliveryAddress.landmark}</span>
+                  </div>
+                ) : null}
+                {order.deliveryAddress?.notes ? (
+                  <div className="ops-info-row">
+                    <span className="ops-info-label">Notes:</span>
+                    <span>{order.deliveryAddress.notes}</span>
+                  </div>
+                ) : null}
+                <div className="ops-info-row">
+                  <span className="ops-info-label">Accepted by:</span>
+                  <span>{order.assignedRider?.fullName || 'Available for pickup'}</span>
+                </div>
+              </div>
+
               <button
-                className="btn" 
-                type="button" 
+                className="btn"
+                type="button"
                 onClick={() => acceptOrder(order._id)}
                 disabled={acceptingOrderId === order._id}
               >

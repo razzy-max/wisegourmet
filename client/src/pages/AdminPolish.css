@@ -1,5 +1,12 @@
 /* ===== ADMIN POLISH (shared across admin dashboard/list pages) ===== */
 
+.branch-checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem 0;
+}
+
 /* --- Quick-link icon badges (AdminDashboardPage) --- */
 
 .admin-card-icon-badge {
@@ -209,8 +216,24 @@
 
 /* Data table proper — same visual language as .stats-table, extended with row states */
 
+/* On mobile these tables are wider than the screen and scroll horizontally
+   inside this wrapper — without a hint, a clipped-mid-column right edge
+   (e.g. a price cut off as "N16,5") reads as broken rather than
+   scrollable. The two local-attachment gradients fade to match the panel
+   background and hide the shadow once scrolled all the way to that edge,
+   so the hint disappears exactly when there's nothing left to scroll to. */
 .data-table-wrap {
   overflow-x: auto;
+  background-image:
+    linear-gradient(to right, var(--wg-card) 50%, transparent),
+    linear-gradient(to left, var(--wg-card) 50%, transparent),
+    linear-gradient(to right, rgba(0, 0, 0, 0.12), transparent),
+    linear-gradient(to left, rgba(0, 0, 0, 0.12), transparent);
+  background-position: left center, right center, left center, right center;
+  background-repeat: no-repeat;
+  background-color: var(--wg-card);
+  background-size: 24px 100%, 24px 100%, 10px 100%, 10px 100%;
+  background-attachment: local, local, scroll, scroll;
 }
 
 .data-table {
@@ -339,6 +362,124 @@
   padding-top: 0.85rem;
   font-size: 0.78rem;
   color: var(--wg-muted);
+}
+
+/* ===== STOCK CARDS (branch_admin/staff read-only stock toggle view) ===== */
+
+.stock-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.stock-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.stock-card.stock-card-sold-out {
+  opacity: 0.82;
+}
+
+.stock-card-top {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.stock-card-thumb {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: var(--wg-radius-sm);
+  overflow: hidden;
+  background: var(--wg-green-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--wg-green-dark, var(--wg-green));
+}
+
+.stock-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stock-card-info {
+  min-width: 0;
+}
+
+.stock-card-info h4 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.stock-card-info .cat-tag {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--wg-green-light);
+  color: var(--wg-green-dark, var(--wg-green));
+}
+
+.stock-card-price {
+  margin: 0.4rem 0 0;
+  font-weight: 700;
+  color: var(--wg-text);
+}
+
+.stock-toggle {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+}
+
+.stock-toggle-btn {
+  border: 1px solid var(--wg-border);
+  background: var(--wg-card);
+  color: var(--wg-muted);
+  border-radius: var(--wg-radius-sm);
+  padding: 0.55rem 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 42px;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.stock-toggle-btn:hover {
+  border-color: var(--wg-green);
+}
+
+.stock-toggle-btn.active.stock-toggle-in_stock {
+  background: var(--wg-success);
+  border-color: var(--wg-success);
+  color: #fff;
+}
+
+.stock-toggle-btn.active.stock-toggle-sold_out {
+  background: var(--wg-red);
+  border-color: var(--wg-red);
+  color: #fff;
+}
+
+.stock-toggle-btn.active.stock-toggle-unavailable {
+  background: var(--wg-amber-dark);
+  border-color: var(--wg-amber-dark);
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .stock-card-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ===== KPI CARDS (AdminStatsPage) ===== */

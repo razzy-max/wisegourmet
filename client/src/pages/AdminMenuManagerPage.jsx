@@ -1,5 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { menuApi } from '../api/menuApi';
+import { useAuth } from '../context/AuthContext';
+import { useBranch } from '../context/BranchContext';
 import { filesToAttachments } from '../utils/attachments';
 import Skeleton from '../components/Skeleton';
 import EmptyState from '../components/EmptyState';
@@ -22,6 +24,23 @@ const sortOptions = [
 
 const normalizeStatus = (item) => item.availabilityStatus || (item.isAvailable ? 'in_stock' : 'unavailable');
 
+function StockToggle({ value, onChange }) {
+  return (
+    <div className="stock-toggle" role="group" aria-label="Availability status">
+      {availabilityOptions.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          className={`stock-toggle-btn stock-toggle-${option.value}${value === option.value ? ' active' : ''}`}
+          onClick={() => onChange(option.value)}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 const emptyItemForm = {
   name: '',
   description: '',
@@ -32,9 +51,16 @@ const emptyItemForm = {
 };
 
 export default function AdminMenuManagerPage() {
+  const { user } = useAuth();
+  const { branches } = useBranch();
+  const isOwner = user?.role === 'admin';
+  const myBranchId = user?.branches?.[0] || '';
+  const myBranchName = branches.find((branch) => branch._id === myBranchId)?.name || '';
+
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
   const [loadingItems, setLoadingItems] = useState(false);
+  const [stockBranchId, setStockBranchId] = useState('');
   const [newCategory, setNewCategory] = useState('');
   const [editingCategoryId, setEditingCategoryId] = useState('');
   const [editCategoryName, setEditCategoryName] = useState('');
@@ -53,6 +79,10 @@ export default function AdminMenuManagerPage() {
 
   const activeCategories = useMemo(() => categories.filter((category) => category.isActive !== false), [categories]);
 
+  // Which branch's stock this page is showing/editing right now — the
+  // owner picks from every branch, everyone else is locked to their own.
+  const stockScopeBranchId = isOwner ? stockBranchId : myBranchId;
+
   const toImageDataUrl = async (fileList) => {
     const attachments = await filesToAttachments(fileList || []);
     return attachments[0]?.dataUrl || '';
@@ -64,7 +94,10 @@ export default function AdminMenuManagerPage() {
     }
 
     try {
-      const [categoryRes, itemRes] = await Promise.all([menuApi.categoriesAdmin(), menuApi.list()]);
+      const [categoryRes, itemRes] = await Promise.all([
+        menuApi.categoriesAdmin(),
+        menuApi.list(stockScopeBranchId ? { branch: stockScopeBranchId } : {}),
+      ]);
       setCategories(categoryRes.categories || []);
       setItems(itemRes.items || []);
     } finally {
@@ -75,8 +108,18 @@ export default function AdminMenuManagerPage() {
   };
 
   useEffect(() => {
+    if (isOwner && branches.length) {
+      setStockBranchId((current) => current || branches[0]._id);
+    }
+  }, [isOwner, branches]);
+
+  useEffect(() => {
+    if (isOwner && !stockBranchId) {
+      return;
+    }
     load().catch((error) => setMessage(error.message));
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stockScopeBranchId]);
 
   const categoryCounts = useMemo(() => {
     const counts = {};
@@ -151,7 +194,7 @@ export default function AdminMenuManagerPage() {
     setMessage('Updating selected items...');
     try {
       await Promise.all(
-        Array.from(selectedIds).map((id) => menuApi.updateItem(id, { availabilityStatus: 'sold_out' }))
+        Array.from(selectedIds).map((id) => menuApi.updateBranchStatus(id, stockScopeBranchId, 'sold_out'))
       );
       clearSelection();
       await load();
@@ -342,7 +385,7 @@ export default function AdminMenuManagerPage() {
   const updateStatus = async (itemId, availabilityStatus) => {
     setMessage('');
     try {
-      await menuApi.updateItem(itemId, { availabilityStatus });
+      await menuApi.updateBranchStatus(itemId, stockScopeBranchId, availabilityStatus);
       await load();
     } catch (error) {
       setMessage(error.message);
@@ -372,82 +415,107 @@ export default function AdminMenuManagerPage() {
       </div>
       {message ? <p className="error">{message}</p> : null}
 
-      <div className="grid">
-        <article className="panel">
-          <h3>Create Category</h3>
-          <form className="form" onSubmit={createCategory}>
-            <input
-              placeholder="Category name"
-              value={newCategory}
-              onChange={(event) => setNewCategory(event.target.value)}
-              required
-            />
-            <button className="btn" type="submit">
-              Create
-            </button>
-          </form>
-
-          <div className="category-manage-list">
-            {categories.map((category, index) => (
-              <div className="category-manage-row" key={category._id}>
-                <span className={`status-badge ${category.isActive !== false ? 'status-success' : 'status-muted'}`}>
-                  {category.isActive !== false ? 'Active' : 'Disabled'}
-                </span>
-                {editingCategoryId === category._id ? (
-                  <input
-                    className="category-manage-name-input"
-                    value={editCategoryName}
-                    onChange={(event) => setEditCategoryName(event.target.value)}
-                    autoFocus
-                  />
-                ) : (
-                  <span className="category-manage-name">{category.name}</span>
-                )}
-                <div className="row">
-                  {editingCategoryId === category._id ? (
-                    <>
-                      <button className="btn" type="button" onClick={() => saveEditCategory(category._id)}>
-                        Save
-                      </button>
-                      <button className="btn btn-ghost" type="button" onClick={cancelEditCategory}>
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        className="btn btn-ghost"
-                        type="button"
-                        onClick={() => moveCategory(index, -1)}
-                        disabled={index === 0}
-                      >
-                        Move up
-                      </button>
-                      <button
-                        className="btn btn-ghost"
-                        type="button"
-                        onClick={() => moveCategory(index, 1)}
-                        disabled={index === categories.length - 1}
-                      >
-                        Move down
-                      </button>
-                      <button className="btn btn-ghost" type="button" onClick={() => toggleCategoryActive(category)}>
-                        {category.isActive !== false ? 'Disable' : 'Enable'}
-                      </button>
-                      <button className="btn btn-ghost" type="button" onClick={() => startEditCategory(category)}>
-                        Rename
-                      </button>
-                      <button className="btn btn-danger" type="button" onClick={() => removeCategory(category)}>
-                        Delete
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
+      {isOwner ? (
+        <div className="field-label" style={{ margin: '0.75rem 0' }}>
+          Stock for branch:{' '}
+          <select value={stockBranchId} onChange={(event) => setStockBranchId(event.target.value)}>
+            {branches.map((branch) => (
+              <option key={branch._id} value={branch._id}>
+                {branch.name}
+              </option>
             ))}
-          </div>
-        </article>
+          </select>
+        </div>
+      ) : myBranchId ? (
+        <p className="ops-branch-pill" style={{ margin: '0.75rem 0' }}>
+          Managing stock for: {myBranchName || 'your branch'}
+        </p>
+      ) : (
+        <p className="error" style={{ margin: '0.75rem 0' }}>
+          You haven't been assigned to a branch yet — ask your admin to assign you one from the Team page. Stock
+          changes won't save until then.
+        </p>
+      )}
 
+      <div className="grid">
+        {isOwner ? (
+          <article className="panel">
+            <h3>Create Category</h3>
+            <form className="form" onSubmit={createCategory}>
+              <input
+                placeholder="Category name"
+                value={newCategory}
+                onChange={(event) => setNewCategory(event.target.value)}
+                required
+              />
+              <button className="btn" type="submit">
+                Create
+              </button>
+            </form>
+
+            <div className="category-manage-list">
+              {categories.map((category, index) => (
+                <div className="category-manage-row" key={category._id}>
+                  <span className={`status-badge ${category.isActive !== false ? 'status-success' : 'status-muted'}`}>
+                    {category.isActive !== false ? 'Active' : 'Disabled'}
+                  </span>
+                  {editingCategoryId === category._id ? (
+                    <input
+                      className="category-manage-name-input"
+                      value={editCategoryName}
+                      onChange={(event) => setEditCategoryName(event.target.value)}
+                      autoFocus
+                    />
+                  ) : (
+                    <span className="category-manage-name">{category.name}</span>
+                  )}
+                  <div className="row">
+                    {editingCategoryId === category._id ? (
+                      <>
+                        <button className="btn" type="button" onClick={() => saveEditCategory(category._id)}>
+                          Save
+                        </button>
+                        <button className="btn btn-ghost" type="button" onClick={cancelEditCategory}>
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          className="btn btn-ghost"
+                          type="button"
+                          onClick={() => moveCategory(index, -1)}
+                          disabled={index === 0}
+                        >
+                          Move up
+                        </button>
+                        <button
+                          className="btn btn-ghost"
+                          type="button"
+                          onClick={() => moveCategory(index, 1)}
+                          disabled={index === categories.length - 1}
+                        >
+                          Move down
+                        </button>
+                        <button className="btn btn-ghost" type="button" onClick={() => toggleCategoryActive(category)}>
+                          {category.isActive !== false ? 'Disable' : 'Enable'}
+                        </button>
+                        <button className="btn btn-ghost" type="button" onClick={() => startEditCategory(category)}>
+                          Rename
+                        </button>
+                        <button className="btn btn-danger" type="button" onClick={() => removeCategory(category)}>
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
+        ) : null}
+
+        {isOwner ? (
         <article className="panel">
           <h3>Create Menu Item</h3>
           <form className="form" onSubmit={createItem}>
@@ -515,6 +583,7 @@ export default function AdminMenuManagerPage() {
             </button>
           </form>
         </article>
+        ) : null}
       </div>
 
       <article className="panel" style={{ marginTop: '1.2rem' }}>
@@ -557,7 +626,7 @@ export default function AdminMenuManagerPage() {
             <span>{selectedIds.size} selected</span>
             <span className="sp" />
             <button type="button" onClick={bulkMarkSoldOut}>Mark sold out</button>
-            <button type="button" onClick={bulkDelete}>Delete</button>
+            {isOwner ? <button type="button" onClick={bulkDelete}>Delete</button> : null}
             <button type="button" onClick={clearSelection}>Clear</button>
           </div>
         ) : null}
@@ -581,7 +650,7 @@ export default function AdminMenuManagerPage() {
           />
         ) : null}
 
-        {filteredItems.length > 0 ? (
+        {filteredItems.length > 0 && isOwner ? (
           <div className="data-table-wrap">
             <table className="data-table">
               <thead>
@@ -710,7 +779,12 @@ export default function AdminMenuManagerPage() {
                                 <button className="btn btn-ghost" type="button" onClick={cancelEdit} disabled={savingItemId === item._id}>
                                   Cancel
                                 </button>
-                                <button className="btn btn-danger" type="button" onClick={() => deleteItem(item._id)} disabled={savingItemId === item._id}>
+                                <button
+                                  className="btn btn-danger"
+                                  type="button"
+                                  onClick={() => deleteItem(item._id)}
+                                  disabled={savingItemId === item._id}
+                                >
                                   Delete item
                                 </button>
                               </div>
@@ -723,6 +797,33 @@ export default function AdminMenuManagerPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        ) : null}
+
+        {filteredItems.length > 0 && !isOwner ? (
+          <div className="stock-card-grid">
+            {filteredItems.map((item) => {
+              const status = normalizeStatus(item);
+              return (
+                <article key={item._id} className={`panel stock-card${status === 'sold_out' ? ' stock-card-sold-out' : ''}`}>
+                  <div className="stock-card-top">
+                    <div className="stock-card-thumb">
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.name} loading="lazy" />
+                      ) : (
+                        <FoodIcon size={20} />
+                      )}
+                    </div>
+                    <div className="stock-card-info">
+                      <h4>{item.name}</h4>
+                      <span className="cat-tag">{item.category?.name || 'Uncategorized'}</span>
+                      <p className="stock-card-price">₦{Number(item.price || 0).toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <StockToggle value={status} onChange={(next) => updateStatus(item._id, next)} />
+                </article>
+              );
+            })}
           </div>
         ) : null}
 

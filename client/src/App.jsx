@@ -32,6 +32,7 @@ import RiderQueuePage from './pages/RiderQueuePage';
 import RiderDeliveryHistoryPage from './pages/RiderDeliveryHistoryPage';
 import AdminPasswordPage from './pages/AdminPasswordPage';
 import AdminDeliveryZonesPage from './pages/AdminDeliveryZonesPage';
+import AdminBranchesPage from './pages/AdminBranchesPage';
 import AdminPromotionsPage from './pages/AdminPromotionsPage';
 import AdminPromoCodesPage from './pages/AdminPromoCodesPage';
 import AdminCustomersPage from './pages/AdminCustomersPage';
@@ -48,6 +49,7 @@ function NavBarSelector() {
 
   switch (user?.role) {
     case 'admin':
+    case 'branch_admin':
       return <AdminNavBar />;
     case 'staff':
       return <StaffNavBar />;
@@ -63,7 +65,7 @@ function NavBarSelector() {
 function App() {
   const location = useLocation();
   const { user, isAuthenticated } = useAuth();
-  const isAdminLayout = isAuthenticated && user?.role === 'admin';
+  const isAdminLayout = isAuthenticated && ['admin', 'branch_admin'].includes(user?.role);
   const [renderedLocation, setRenderedLocation] = useState(location);
 
   useAutoEnableNotifications(isAuthenticated, user?.role);
@@ -209,7 +211,7 @@ function App() {
         <Route
           path="/admin"
           element={
-            <ProtectedRoute roles={['admin']}>
+            <ProtectedRoute roles={['admin', 'branch_admin']}>
               <AdminDashboardPage />
             </ProtectedRoute>
           }
@@ -217,7 +219,7 @@ function App() {
         <Route
           path="/admin/stats"
           element={
-            <ProtectedRoute roles={['admin']}>
+            <ProtectedRoute roles={['admin', 'branch_admin']}>
               <AdminStatsPage />
             </ProtectedRoute>
           }
@@ -225,7 +227,7 @@ function App() {
         <Route
           path="/admin/menu"
           element={
-            <ProtectedRoute roles={['admin', 'staff']}>
+            <ProtectedRoute roles={['admin', 'branch_admin', 'staff']}>
               <AdminMenuManagerPage />
             </ProtectedRoute>
           }
@@ -233,7 +235,7 @@ function App() {
         <Route
           path="/admin/orders"
           element={
-            <ProtectedRoute roles={['admin', 'staff', 'rider']}>
+            <ProtectedRoute roles={['admin', 'branch_admin', 'staff', 'rider']}>
               <AdminOrdersPage />
             </ProtectedRoute>
           }
@@ -241,8 +243,16 @@ function App() {
         <Route
           path="/admin/zones"
           element={
-            <ProtectedRoute roles={['admin']}>
+            <ProtectedRoute roles={['admin', 'branch_admin']}>
               <AdminDeliveryZonesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/branches"
+          element={
+            <ProtectedRoute roles={['admin']}>
+              <AdminBranchesPage />
             </ProtectedRoute>
           }
         />
@@ -273,7 +283,7 @@ function App() {
         <Route
           path="/admin/password"
           element={
-            <ProtectedRoute roles={['admin']}>
+            <ProtectedRoute roles={['admin', 'branch_admin']}>
               <AdminPasswordPage />
             </ProtectedRoute>
           }
@@ -281,7 +291,7 @@ function App() {
         <Route
           path="/admin/team"
           element={
-            <ProtectedRoute roles={['admin']}>
+            <ProtectedRoute roles={['admin', 'branch_admin']}>
               <AdminTeamPage />
             </ProtectedRoute>
           }

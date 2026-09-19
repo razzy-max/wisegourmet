@@ -21,6 +21,7 @@ export default function LoginPage() {
       login(response);
       switch (response.user.role) {
         case 'admin':
+        case 'branch_admin':
           navigate('/admin');
           break;
         case 'staff':

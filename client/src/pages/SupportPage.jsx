@@ -14,6 +14,9 @@ const initialForm = {
   attachments: [],
 };
 
+const ticketStatusLabels = { open: 'Open', in_progress: 'In Progress', resolved: 'Resolved' };
+const getTicketStatusLabel = (status) => ticketStatusLabels[status] || status;
+
 export default function SupportPage() {
   const [searchParams] = useSearchParams();
   const [form, setForm] = useState(initialForm);
@@ -168,7 +171,7 @@ export default function SupportPage() {
             {tickets.map((ticket) => (
               <Link className="panel ticket-card" key={ticket._id} to={`/support/tickets/${ticket._id}`}>
                 <p><strong>{ticket.subject}</strong></p>
-                <p>Status: {ticket.status}</p>
+                <p>Status: {getTicketStatusLabel(ticket.status)}</p>
                 <p>Linked order: {ticket.order?._id ? ticket.order._id.slice(-6) : 'None'}</p>
                 <p>{ticket.messages?.[ticket.messages.length - 1]?.text || ticket.reply || 'Open ticket to view the conversation'}</p>
               </Link>

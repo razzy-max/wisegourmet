@@ -7,6 +7,7 @@ const {
 	listRiders,
 	listTeamMembers,
 	createTeamMember,
+	updateTeamMemberBranches,
 	deleteTeamMember,
 	resetTeamMemberPassword,
 	getNotificationConfig,
@@ -23,10 +24,11 @@ router.post('/customers/notify', protect, authorize('admin'), sendReEngagementMe
 router.get('/reengagement-settings', protect, authorize('admin'), getReengagementSettings);
 router.put('/reengagement-settings', protect, authorize('admin'), updateReengagementSettings);
 router.get('/riders', protect, authorize('admin', 'staff'), listRiders);
-router.get('/team', protect, authorize('admin'), listTeamMembers);
-router.post('/team', protect, authorize('admin'), createTeamMember);
-router.delete('/team/:id', protect, authorize('admin'), deleteTeamMember);
-router.patch('/team/:id/password', protect, authorize('admin'), resetTeamMemberPassword);
+router.get('/team', protect, authorize('admin', 'branch_admin'), listTeamMembers);
+router.post('/team', protect, authorize('admin', 'branch_admin'), createTeamMember);
+router.patch('/team/:id/branches', protect, authorize('admin', 'branch_admin'), updateTeamMemberBranches);
+router.delete('/team/:id', protect, authorize('admin', 'branch_admin'), deleteTeamMember);
+router.patch('/team/:id/password', protect, authorize('admin', 'branch_admin'), resetTeamMemberPassword);
 router.get('/notifications/config', protect, getNotificationConfig);
 router.get('/notifications/status', protect, getNotificationStatus);
 router.post('/notifications/subscribe', protect, subscribeNotifications);

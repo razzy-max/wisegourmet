@@ -22,6 +22,9 @@ export const userApi = {
   createTeamMember(payload) {
     return apiRequest('/users/team', { method: 'POST', body: payload });
   },
+  updateTeamMemberBranches(id, branches) {
+    return apiRequest(`/users/team/${id}/branches`, { method: 'PATCH', body: { branches } });
+  },
   deleteTeamMember(id) {
     return apiRequest(`/users/team/${id}`, { method: 'DELETE' });
   },

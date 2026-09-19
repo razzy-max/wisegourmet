@@ -6,6 +6,8 @@ const asyncHandler = require('../utils/asyncHandler');
 const { reconcileCartDiscounts, computeCartDiscount } = require('../utils/cartDiscount');
 const { validatePromoCodeEligibility } = require('../utils/promoCodeDiscount');
 const { buildMenuItemImageUrl } = require('../utils/dataUrl');
+const { isBranchScopingEnabled } = require('../utils/branchScoping');
+const { getFeasibleBranchIds, findRemovableConflicts } = require('../utils/branchAvailability');
 
 const MENU_ITEM_POPULATE_FIELDS = 'name price isAvailable availabilityStatus imageUrl imageContentType';
 
@@ -52,12 +54,46 @@ const addCartItem = asyncHandler(async (req, res) => {
   }
 
   const menuItem = await MenuItem.findById(menuItemId);
-  if (!menuItem || !isInStock(menuItem)) {
+  if (!menuItem) {
     res.status(400);
     throw new Error('Menu item unavailable');
   }
 
   const cart = await getOrCreateCart(req.user._id);
+
+  if (isBranchScopingEnabled()) {
+    // With one combined menu, "in stock" means "some branch has it" — but
+    // adding this item must still leave at least one branch able to supply
+    // the *whole* cart, or the order would have nowhere to be fulfilled.
+    const existingItemIds = cart.items.map((item) => String(item.menuItem._id || item.menuItem));
+    const feasibleBranchIds = await getFeasibleBranchIds([...existingItemIds, menuItemId]);
+
+    if (feasibleBranchIds.length === 0) {
+      // "Remove the thing I'm trying to add" isn't useful advice — name
+      // only the pre-existing cart item(s) whose removal would fix it.
+      const culpritIds = (await findRemovableConflicts([...existingItemIds, menuItemId])).filter(
+        (id) => id !== String(menuItemId)
+      );
+      const conflictingNames = cart.items
+        .filter((item) => culpritIds.includes(String(item.menuItem._id || item.menuItem)))
+        .map((item) => item.nameSnapshot || item.menuItem?.name || 'that item');
+
+      res.status(400);
+      if (conflictingNames.length === 0) {
+        // Empty cart (this item is out of stock everywhere) — no existing
+        // item to blame.
+        throw new Error(`${menuItem.name} isn't available to add right now.`);
+      }
+      const conflictText = conflictingNames.join(' and ');
+      throw new Error(
+        `${menuItem.name}'s from a different branch than ${conflictText} — remove ${conflictText} to add ${menuItem.name}, or check out now and order ${menuItem.name} separately after.`
+      );
+    }
+  } else if (!isInStock(menuItem)) {
+    res.status(400);
+    throw new Error('Menu item unavailable');
+  }
+
   const existing = cart.items.find((item) => String(item.menuItem._id || item.menuItem) === String(menuItemId));
 
   if (existing) {
@@ -159,6 +195,33 @@ const applyPromotion = asyncHandler(async (req, res) => {
 
   const cart = await getOrCreateCart(req.user._id);
 
+  if (isBranchScopingEnabled()) {
+    // Combo items get added automatically here, bypassing the normal
+    // add-to-cart button — still needs the same "can one branch fulfill
+    // the whole cart" guard, or a combo could silently create an
+    // unfulfillable cart.
+    const existingItemIds = cart.items.map((item) => String(item.menuItem._id || item.menuItem));
+    const comboItemIds = promotion.comboItems.map((item) => String(item.menuItem));
+    const candidateItemIds = [...new Set([...existingItemIds, ...comboItemIds])];
+    const feasibleBranchIds = await getFeasibleBranchIds(candidateItemIds);
+
+    if (feasibleBranchIds.length === 0) {
+      const culpritIds = (await findRemovableConflicts(candidateItemIds)).filter(
+        (id) => !comboItemIds.includes(id)
+      );
+      const conflictingNames = cart.items
+        .filter((item) => culpritIds.includes(String(item.menuItem._id || item.menuItem)))
+        .map((item) => item.nameSnapshot || item.menuItem?.name || 'that item');
+
+      res.status(400);
+      throw new Error(
+        conflictingNames.length
+          ? `This deal isn't available from the same branch as ${conflictingNames.join(' and ')} — remove ${conflictingNames.join(' and ')} to apply it, or check out separately.`
+          : "This deal isn't available with the rest of your cart right now."
+      );
+    }
+  }
+
   promotion.comboItems.forEach((requiredItem) => {
     const menuItem = menuItems.find((candidate) => String(candidate._id) === String(requiredItem.menuItem));
     const existing = cart.items.find(
@@ -242,6 +305,29 @@ const applyPromoCode = asyncHandler(async (req, res) => {
     if (hasUnavailable) {
       res.status(400);
       throw new Error('One or more items required by this promo code are currently unavailable');
+    }
+
+    if (isBranchScopingEnabled()) {
+      const existingItemIds = cart.items.map((item) => String(item.menuItem._id || item.menuItem));
+      const promoItemIds = promoCode.items.map((item) => String(item.menuItem));
+      const candidateItemIds = [...new Set([...existingItemIds, ...promoItemIds])];
+      const feasibleBranchIds = await getFeasibleBranchIds(candidateItemIds);
+
+      if (feasibleBranchIds.length === 0) {
+        const culpritIds = (await findRemovableConflicts(candidateItemIds)).filter(
+          (id) => !promoItemIds.includes(id)
+        );
+        const conflictingNames = cart.items
+          .filter((item) => culpritIds.includes(String(item.menuItem._id || item.menuItem)))
+          .map((item) => item.nameSnapshot || item.menuItem?.name || 'that item');
+
+        res.status(400);
+        throw new Error(
+          conflictingNames.length
+            ? `This promo code isn't available from the same branch as ${conflictingNames.join(' and ')} — remove ${conflictingNames.join(' and ')} to apply it, or check out separately.`
+            : "This promo code isn't available with the rest of your cart right now."
+        );
+      }
     }
 
     promoCode.items.forEach((requiredItem) => {

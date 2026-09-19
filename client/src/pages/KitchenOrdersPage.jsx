@@ -5,6 +5,7 @@ import EnableAlertsCard from '../components/EnableAlertsCard';
 import PinEntryForm from '../components/PinEntryForm';
 import Skeleton from '../components/Skeleton';
 import { getStatusLabel, getStatusBadgeClass } from '../utils/statusHelpers';
+import { ChefHatIcon, ProfileIcon, CardIcon, UsersIcon, MapPinIcon, TruckIcon, FoodIcon } from '../components/icons';
 import './OpsPages.css';
 
 const KITCHEN_STATUSES = ['confirmed', 'preparing'];
@@ -90,7 +91,7 @@ export default function KitchenOrdersPage() {
     <section className="page-wrap">
       <EnableAlertsCard />
       <h1>Kitchen Dashboard</h1>
-      <p className="muted">Manage confirmed orders and move them to ready_for_pickup.</p>
+      <p className="muted">Manage confirmed orders and move them to ready for pickup/dispatch.</p>
       {message ? <p className="message">{message}</p> : null}
       {error ? <p className="error">{error}</p> : null}
       {loading ? <Skeleton variant="card" count={3} /> : null}
@@ -99,35 +100,64 @@ export default function KitchenOrdersPage() {
       <div className="grid">
         {kitchenOrders.map((order, index) => (
           <article
-            className="panel order-card-enter"
+            className={`panel order-card-enter ops-order-card ops-status-${order.status}`}
             key={order._id}
             style={{ '--order-card-delay': `${Math.min(index, 8) * 0.05}s` }}
           >
             <div className="zone-card-top">
-              <h3>Order {order._id.slice(-6)}</h3>
+              <div className="ops-order-icon-title">
+                <span className="icon-badge">
+                  <ChefHatIcon size={16} />
+                </span>
+                <h3>Order {order._id.slice(-6)}</h3>
+              </div>
               <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
                 {getStatusLabel(order.status)}
               </span>
             </div>
-            <p>Customer: {order.customer?.fullName || 'Unknown'}</p>
-            <p>Fulfillment: {order.fulfillmentType === 'self_pickup' ? 'Self pickup' : 'Delivery'}</p>
-            <p>Total: ₦{Number(order.total || 0).toLocaleString()}</p>
-            <p>
-              Handled by:{' '}
-              {order.kitchenHandledBy?.fullName ? order.kitchenHandledBy.fullName : 'Unclaimed yet'}
-            </p>
-            <p>
-              {order.fulfillmentType === 'self_pickup'
-                ? 'Pickup at kitchen counter'
-                : `Address: ${order.deliveryAddress?.fullText || 'Not provided'}`}
-            </p>
+
+            {order.branch?.name ? (
+              <span className="ops-branch-pill">
+                <MapPinIcon size={12} />
+                {order.branch.name}
+              </span>
+            ) : null}
+
+            <div className="ops-info-grid">
+              <div className="ops-info-row">
+                <ProfileIcon size={15} />
+                <span>{order.customer?.fullName || 'Unknown customer'}</span>
+              </div>
+              <div className="ops-info-row">
+                {order.fulfillmentType === 'self_pickup' ? <FoodIcon size={15} /> : <TruckIcon size={15} />}
+                <span>{order.fulfillmentType === 'self_pickup' ? 'Self pickup' : 'Delivery'}</span>
+              </div>
+              <div className="ops-info-row">
+                <CardIcon size={15} />
+                <span>₦{Number(order.total || 0).toLocaleString()}</span>
+              </div>
+              <div className="ops-info-row">
+                <UsersIcon size={15} />
+                <span className="ops-info-label">Handled by:</span>
+                <span>{order.kitchenHandledBy?.fullName || 'Unclaimed yet'}</span>
+              </div>
+              <div className="ops-info-row">
+                <MapPinIcon size={15} />
+                <span>
+                  {order.fulfillmentType === 'self_pickup'
+                    ? 'Pickup at kitchen counter'
+                    : order.deliveryAddress?.fullText || 'Address not provided'}
+                </span>
+              </div>
+            </div>
 
             <div>
               <strong>Items</strong>
-              <ul className="timeline">
+              <ul className="ops-items-list">
                 {(order.items || []).map((item, index) => (
                   <li key={`${order._id}-${index}`}>
-                    {item.quantity}x {item.name}
+                    <span>{item.name}</span>
+                    <span>×{item.quantity}</span>
                   </li>
                 ))}
               </ul>

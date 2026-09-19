@@ -82,6 +82,13 @@ const orderSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    // Not required at the schema level yet — legacy orders predate branches.
+    // Presence is enforced in the controller once every creation path sets it.
+    branch: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Branch',
+      default: null,
+    },
     items: {
       type: [orderItemSchema],
       default: [],

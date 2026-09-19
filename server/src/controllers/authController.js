@@ -14,6 +14,7 @@ const sanitizeUser = (user) => ({
   email: user.email,
   phone: user.phone,
   role: user.role,
+  branches: user.branches || [],
   isActive: user.isActive,
   createdAt: user.createdAt,
   savedAddress: user.savedAddress || {

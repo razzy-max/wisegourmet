@@ -194,8 +194,7 @@ function MenuItemCard({ item, quantity, onQuantityChange, onAddToCart }) {
   );
 }
 
-const MENU_CACHE_KEY_PREFIX = 'wg:menu:';
-const MENU_CACHE_KEY = `${MENU_CACHE_KEY_PREFIX}all`;
+const MENU_CACHE_KEY = 'wg:menu:all';
 let menuMemoryCache = null;
 
 const normalizeStatus = (item) => item.availabilityStatus || (item.isAvailable ? 'in_stock' : 'unavailable');
@@ -319,13 +318,19 @@ export default function HomeMenuPage() {
     setToastMessage(text);
     setToastStage('enter');
 
+    // Short confirmations ("Item added to cart!") only need a couple of
+    // seconds, but longer explanatory messages (e.g. a branch-conflict
+    // rejection) need real reading time — scale the hold duration with
+    // length instead of a one-size-fits-all 2s.
+    const holdMs = Math.min(6000, Math.max(2000, text.length * 40));
+
     toastHoldTimerRef.current = setTimeout(() => {
       setToastStage('exit');
       toastExitTimerRef.current = setTimeout(() => {
         setToastMessage('');
         setToastStage('idle');
       }, 300);
-    }, 2000);
+    }, holdMs);
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -354,10 +359,7 @@ export default function HomeMenuPage() {
     // a time-based cache, which could otherwise show a stale menu after an admin change.
 
     try {
-      const [menuResult, categoryResult] = await Promise.allSettled([
-        menuApi.list(),
-        menuApi.categories(),
-      ]);
+      const [menuResult, categoryResult] = await Promise.allSettled([menuApi.list(), menuApi.categories()]);
 
       if (menuResult.status !== 'fulfilled') {
         throw menuResult.reason;
@@ -604,7 +606,11 @@ export default function HomeMenuPage() {
         />
       </div>
       {toastMessage ? (
-        <div className={`cart-toast cart-toast-${toastStage}`} role="status" aria-live="polite">
+        <div
+          className={`cart-toast cart-toast-${toastStage}${toastMessage.length > 60 ? ' cart-toast-long' : ''}`}
+          role="status"
+          aria-live="polite"
+        >
           <span>{toastMessage}</span>
         </div>
       ) : null}

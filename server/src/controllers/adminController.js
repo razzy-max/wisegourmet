@@ -79,8 +79,16 @@ const getTimelineTime = (order, status) => {
 const getOverviewStats = asyncHandler(async (req, res) => {
   const { range, startDate, endDate } = parseRange(req.query);
 
+  const branchFilter =
+    req.user.role === 'branch_admin'
+      ? { branch: { $in: req.user.branches } }
+      : req.query.branch
+        ? { branch: req.query.branch }
+        : {};
+
   const periodOrders = await Order.find({
     createdAt: { $gte: startDate, $lte: endDate },
+    ...branchFilter,
   }).lean();
 
   const paidOrders = periodOrders.filter((order) => order.payment?.status === 'paid');
@@ -198,6 +206,7 @@ const getOverviewStats = asyncHandler(async (req, res) => {
   const previousPaidOrders = await Order.find({
     createdAt: { $gte: previousStartDate, $lte: previousEndDate },
     'payment.status': 'paid',
+    ...branchFilter,
   })
     .select('total')
     .lean();
@@ -300,15 +309,40 @@ const purgeSeededData = asyncHandler(async (_req, res) => {
   });
 });
 
-const getDeliveryZones = asyncHandler(async (_req, res) => {
-  const zones = await DeliveryZone.find({}).sort({ sortOrder: 1, label: 1 }).lean();
+// A branch_admin only ever operates on their own branch's zones; true admin
+// can either look at everything or scope to one branch via ?branch=.
+const resolveZoneBranchScope = (req) => {
+  if (req.user.role === 'branch_admin') {
+    return String(req.user.branches[0] || '');
+  }
+  return req.query.branch ? String(req.query.branch) : null;
+};
 
-  if (zones.length) {
+const assertBranchOwnership = (req, res, branchId) => {
+  if (req.user.role !== 'branch_admin') {
+    return;
+  }
+  const owns = req.user.branches.some((ownId) => String(ownId) === String(branchId));
+  if (!owns) {
+    res.status(403);
+    throw new Error('You can only manage delivery zones for your own branch');
+  }
+};
+
+const getDeliveryZones = asyncHandler(async (req, res) => {
+  const branchScope = resolveZoneBranchScope(req);
+  const filter = branchScope ? { branch: branchScope } : {};
+  const zones = await DeliveryZone.find(filter).sort({ sortOrder: 1, label: 1 }).lean();
+
+  if (zones.length || !branchScope) {
     res.json({ zones });
     return;
   }
 
+  // A specific, real branch with zero zones yet — give it sensible starter
+  // fees instead of silently inheriting nothing.
   const defaults = Object.entries(DEFAULT_ZONE_FEES).map(([key, fee], index) => ({
+    branch: branchScope,
     key,
     label: key.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
     fee,
@@ -322,20 +356,24 @@ const getDeliveryZones = asyncHandler(async (_req, res) => {
 
 const createDeliveryZone = asyncHandler(async (req, res) => {
   const { key, label, fee, isActive = true, sortOrder = 0 } = req.body;
+  const branch = req.user.role === 'branch_admin' ? req.user.branches[0] : req.body.branch;
 
-  if (!key || !label || fee === undefined) {
+  if (!branch || !key || !label || fee === undefined) {
     res.status(400);
-    throw new Error('key, label, and fee are required');
+    throw new Error('branch, key, label, and fee are required');
   }
 
+  assertBranchOwnership(req, res, branch);
+
   const normalizedKey = String(key).toLowerCase().trim();
-  const exists = await DeliveryZone.findOne({ key: normalizedKey });
+  const exists = await DeliveryZone.findOne({ branch, key: normalizedKey });
   if (exists) {
     res.status(400);
-    throw new Error('A zone with this key already exists');
+    throw new Error('A zone with this key already exists for this branch');
   }
 
   const zone = await DeliveryZone.create({
+    branch,
     key: normalizedKey,
     label: String(label).trim(),
     fee: Number(fee),
@@ -356,12 +394,14 @@ const updateDeliveryZone = asyncHandler(async (req, res) => {
     throw new Error('Delivery zone not found');
   }
 
+  assertBranchOwnership(req, res, zone.branch);
+
   if (key !== undefined) {
     const normalizedKey = String(key).toLowerCase().trim();
-    const duplicate = await DeliveryZone.findOne({ key: normalizedKey, _id: { $ne: id } });
+    const duplicate = await DeliveryZone.findOne({ branch: zone.branch, key: normalizedKey, _id: { $ne: id } });
     if (duplicate) {
       res.status(400);
-      throw new Error('A zone with this key already exists');
+      throw new Error('A zone with this key already exists for this branch');
     }
     zone.key = normalizedKey;
   }
@@ -383,6 +423,8 @@ const deleteDeliveryZone = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Delivery zone not found');
   }
+
+  assertBranchOwnership(req, res, zone.branch);
 
   await zone.deleteOne();
   res.json({ ok: true });

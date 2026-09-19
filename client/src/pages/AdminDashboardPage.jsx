@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { orderApi } from '../api/orderApi';
 import { supportApi } from '../api/supportApi';
+import { useAuth } from '../context/AuthContext';
 import { useOrdersRealtime } from '../hooks/useOrdersRealtime';
 import { ChartIcon, FoodIcon, PackageIcon, TeamIcon, KeyIcon, ZoneIcon, ReceiptIcon, MessageIcon } from '../components/icons';
 import { getStatusLabel } from '../utils/statusHelpers';
@@ -63,6 +64,12 @@ function useCountUp(value, duration = 400) {
 }
 
 export default function AdminDashboardPage() {
+  const { user } = useAuth();
+  // Support tickets are the `support` role's domain, not branch_admin's —
+  // and the list-all-tickets endpoint is admin/support only server-side, so
+  // calling it as branch_admin would just 403 on every dashboard load.
+  const isOwner = user?.role === 'admin';
+
   const [orders, setOrders] = useState([]);
   const [tickets, setTickets] = useState([]);
 
@@ -76,13 +83,16 @@ export default function AdminDashboardPage() {
   }, []);
 
   const loadTickets = useCallback(async () => {
+    if (!isOwner) {
+      return;
+    }
     try {
       const response = await supportApi.allTickets();
       setTickets(response.tickets || []);
     } catch {
       setTickets([]);
     }
-  }, []);
+  }, [isOwner]);
 
   useEffect(() => {
     load();

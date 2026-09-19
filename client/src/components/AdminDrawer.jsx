@@ -2,23 +2,29 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { CloseIcon } from './icons';
 
+const SHARED_NAV_ITEMS = [
+  { path: '/admin', label: 'Dashboard' },
+  { path: '/admin/stats', label: 'Stats' },
+  { path: '/admin/menu', label: 'Menu' },
+  { path: '/admin/orders', label: 'Orders' },
+  { path: '/admin/team', label: 'Team' },
+  { path: '/admin/zones', label: 'Zones' },
+  { path: '/admin/password', label: 'Settings' },
+];
+
+const OWNER_ONLY_NAV_ITEMS = [
+  { path: '/admin/branches', label: 'Branches' },
+  { path: '/admin/promotions', label: 'Promotions' },
+  { path: '/admin/promo-codes', label: 'Promo Codes' },
+  { path: '/admin/customers', label: 'Customers' },
+  { path: '/admin/support', label: 'Support' },
+];
+
 export default function AdminDrawer({ isOpen, onClose }) {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
 
-  const navItems = [
-    { path: '/admin', label: 'Dashboard' },
-    { path: '/admin/stats', label: 'Stats' },
-    { path: '/admin/menu', label: 'Menu' },
-    { path: '/admin/orders', label: 'Orders' },
-    { path: '/admin/team', label: 'Team' },
-    { path: '/admin/support', label: 'Support' },
-    { path: '/admin/zones', label: 'Zones' },
-    { path: '/admin/promotions', label: 'Promotions' },
-    { path: '/admin/promo-codes', label: 'Promo Codes' },
-    { path: '/admin/customers', label: 'Customers' },
-    { path: '/admin/password', label: 'Settings' },
-  ];
+  const navItems = user?.role === 'admin' ? [...SHARED_NAV_ITEMS, ...OWNER_ONLY_NAV_ITEMS] : SHARED_NAV_ITEMS;
 
   const isActive = (path) => {
     if (path === '/admin') {

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { authApi } from '../api/authApi';
 import { authStorage } from '../utils/authStorage';
+import { identifySocket, deidentifySocket } from '../lib/socket';
 
 const AuthContext = createContext(null);
 
@@ -15,6 +16,8 @@ export function AuthProvider({ children }) {
       return;
     }
 
+    identifySocket(token);
+
     authApi
       .me()
       .then((response) => {
@@ -24,6 +27,7 @@ export function AuthProvider({ children }) {
       .catch(() => {
         authStorage.clearSession();
         setUser(null);
+        deidentifySocket();
       })
       .finally(() => {
         setLoading(false);
@@ -38,10 +42,12 @@ export function AuthProvider({ children }) {
       login(session) {
         authStorage.setSession(session.token, session.user);
         setUser(session.user);
+        identifySocket(session.token);
       },
       logout() {
         authStorage.clearSession();
         setUser(null);
+        deidentifySocket();
       },
     }),
     [user, loading]

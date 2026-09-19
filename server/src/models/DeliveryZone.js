@@ -2,10 +2,16 @@ const mongoose = require('mongoose');
 
 const deliveryZoneSchema = new mongoose.Schema(
   {
+    // Not required at the schema level yet — legacy zones predate branches;
+    // backfilled by the migration script, then hardened once confirmed complete.
+    branch: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Branch',
+      default: null,
+    },
     key: {
       type: String,
       required: true,
-      unique: true,
       lowercase: true,
       trim: true,
     },
@@ -32,5 +38,8 @@ const deliveryZoneSchema = new mongoose.Schema(
 );
 
 deliveryZoneSchema.index({ sortOrder: 1, label: 1 });
+// Compound, not a bare unique on `key` — two branches can each have their own
+// "zone_a"/"outside" zone without colliding.
+deliveryZoneSchema.index({ branch: 1, key: 1 }, { unique: true });
 
 module.exports = mongoose.model('DeliveryZone', deliveryZoneSchema);

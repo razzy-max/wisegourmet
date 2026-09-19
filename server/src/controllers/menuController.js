@@ -1,9 +1,12 @@
 const mongoose = require('mongoose');
 const Category = require('../models/Category');
 const MenuItem = require('../models/MenuItem');
+const BranchMenuItemStatus = require('../models/BranchMenuItemStatus');
 const asyncHandler = require('../utils/asyncHandler');
 const slugify = require('../utils/slugify');
 const { parseDataUrl, buildMenuItemImageUrl } = require('../utils/dataUrl');
+const { isBranchScopingEnabled } = require('../utils/branchScoping');
+const { getAvailabilityByBranch, isStatusInStock } = require('../utils/branchAvailability');
 
 const notifyMenuChanged = (req) => {
   const io = req.app.get('io');
@@ -21,7 +24,7 @@ const serializeMenuItem = (req, doc) => {
 };
 
 const listMenu = asyncHandler(async (req, res) => {
-  const { category, search } = req.query;
+  const { category, search, branch } = req.query;
   const availabilityFilter = {
     $or: [
       { availabilityStatus: { $in: ['in_stock', 'sold_out'] } },
@@ -55,7 +58,60 @@ const listMenu = asyncHandler(async (req, res) => {
     .populate('category', 'name slug')
     .sort({ createdAt: -1 });
 
-  res.json({ items: menuItems.map((item) => serializeMenuItem(req, item)) });
+  // An explicit branch (admin/staff/branch_admin managing one branch's
+  // stock) always wins and collapses to that single branch's status.
+  if (branch) {
+    const overrides = await BranchMenuItemStatus.find({
+      branch,
+      menuItem: { $in: menuItems.map((item) => item._id) },
+    }).lean();
+    const branchStatusById = new Map(overrides.map((entry) => [String(entry.menuItem), entry.availabilityStatus]));
+
+    res.json({
+      items: menuItems.map((item) => {
+        const serialized = serializeMenuItem(req, item);
+        const override = branchStatusById.get(String(item._id));
+        if (override) {
+          serialized.availabilityStatus = override;
+        }
+        return serialized;
+      }),
+    });
+    return;
+  }
+
+  // No branch given — the customer's call. With branching off, every item
+  // just keeps its own store-wide availabilityStatus (today's exact
+  // behavior). With branching on, an item is shown as available if *any*
+  // active branch has it — the customer sees one combined menu; which
+  // branch actually fulfills it gets resolved later at checkout.
+  if (!isBranchScopingEnabled()) {
+    res.json({ items: menuItems.map((item) => serializeMenuItem(req, item)) });
+    return;
+  }
+
+  const availability = await getAvailabilityByBranch(menuItems.map((item) => item._id));
+
+  res.json({
+    items: menuItems.map((item) => {
+      const serialized = serializeMenuItem(req, item);
+      const perBranch = availability.get(String(item._id)) || new Map();
+      const availableBranchIds = [...perBranch.entries()]
+        .filter(([, status]) => isStatusInStock(status))
+        .map(([branchId]) => branchId);
+
+      serialized.availableBranchIds = availableBranchIds;
+      if (availableBranchIds.length > 0) {
+        serialized.availabilityStatus = 'in_stock';
+      } else if (!isStatusInStock(serialized.availabilityStatus)) {
+        // Keep the item's own fallback reason (sold_out vs unavailable)
+        // when no branch has it, rather than flattening to one value.
+      } else {
+        serialized.availabilityStatus = 'sold_out';
+      }
+      return serialized;
+    }),
+  });
 });
 
 const listCategories = asyncHandler(async (_req, res) => {
@@ -258,6 +314,42 @@ const updateMenuItem = asyncHandler(async (req, res) => {
   res.json({ item: serializeMenuItem(req, populated) });
 });
 
+// Sets a menu item's stock status for one specific branch, without touching
+// the item's own store-wide `availabilityStatus` (which stays the fallback
+// used by any branch with no override of its own — see BranchMenuItemStatus).
+const updateBranchMenuItemStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { availabilityStatus } = req.body;
+  // Non-admins can only ever act on their own branch — infer it rather than
+  // trusting a client-supplied value when one isn't explicitly given.
+  const branch = req.user.role === 'admin' ? req.body.branch : req.user.branches[0];
+
+  if (!branch || !['in_stock', 'sold_out', 'unavailable'].includes(availabilityStatus)) {
+    res.status(400);
+    throw new Error('branch and a valid availabilityStatus are required');
+  }
+
+  if (req.user.role !== 'admin' && !req.user.branches.some((ownId) => String(ownId) === String(branch))) {
+    res.status(403);
+    throw new Error('You can only set stock status for your own branch');
+  }
+
+  const menuItem = await MenuItem.findById(id);
+  if (!menuItem) {
+    res.status(404);
+    throw new Error('Menu item not found');
+  }
+
+  const status = await BranchMenuItemStatus.findOneAndUpdate(
+    { branch, menuItem: id },
+    { $set: { availabilityStatus } },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+
+  notifyMenuChanged(req);
+  res.json({ status });
+});
+
 const deleteMenuItem = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const item = await MenuItem.findByIdAndDelete(id);
@@ -297,6 +389,7 @@ module.exports = {
   deleteCategory,
   createMenuItem,
   updateMenuItem,
+  updateBranchMenuItemStatus,
   deleteMenuItem,
   getMenuItemImage,
 };

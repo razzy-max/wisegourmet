@@ -32,6 +32,9 @@ export const menuApi = {
   updateItem(id, payload) {
     return apiRequest(`/menu/${id}`, { method: 'PUT', body: payload });
   },
+  updateBranchStatus(id, branch, availabilityStatus) {
+    return apiRequest(`/menu/${id}/branch-status`, { method: 'PATCH', body: { branch, availabilityStatus } });
+  },
   deleteItem(id) {
     return apiRequest(`/menu/${id}`, { method: 'DELETE' });
   },

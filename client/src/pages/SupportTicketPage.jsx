@@ -13,6 +13,9 @@ const initialComposer = {
   attachments: [],
 };
 
+const ticketStatusLabels = { open: 'Open', in_progress: 'In Progress', resolved: 'Resolved' };
+const getTicketStatusLabel = (status) => ticketStatusLabels[status] || status;
+
 export default function SupportTicketPage() {
   const { id } = useParams();
   const { user } = useAuth();
@@ -193,7 +196,7 @@ export default function SupportTicketPage() {
       <div className="grid ticket-layout">
         <article className="panel ticket-thread">
           <div className="ticket-meta">
-            <p><strong>Status:</strong> {ticket.status}</p>
+            <p><strong>Status:</strong> {getTicketStatusLabel(ticket.status)}</p>
             <p>
               <strong>Order:</strong>{' '}
               {ticket.order?._id ? (

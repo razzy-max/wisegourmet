@@ -42,3 +42,98 @@
   align-items: center;
   gap: 0.4rem;
 }
+
+/* Denser, icon-led order cards for the kitchen/rider ops pages. */
+
+.ops-order-card {
+  border-left: 3px solid var(--wg-border);
+  transition: border-color 0.2s ease;
+}
+
+.ops-order-card.ops-status-confirmed,
+.ops-order-card.ops-status-preparing {
+  border-left-color: var(--wg-warning, #d97706);
+}
+
+.ops-order-card.ops-status-ready_for_pickup {
+  border-left-color: var(--wg-green);
+}
+
+.ops-order-card.ops-status-picked_up,
+.ops-order-card.ops-status-on_the_way {
+  border-left-color: var(--wg-info, #3b82f6);
+}
+
+.ops-order-icon-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ops-order-icon-title .icon-badge {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--wg-green-light);
+  color: var(--wg-green);
+  flex-shrink: 0;
+}
+
+.ops-info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0.75rem 0;
+}
+
+.ops-info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  color: var(--wg-text);
+}
+
+.ops-info-row svg {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  color: var(--wg-muted);
+}
+
+.ops-info-row .ops-info-label {
+  color: var(--wg-muted);
+  margin-right: 0.3rem;
+}
+
+.ops-branch-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--wg-green-light);
+  color: var(--wg-green);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.ops-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ops-items-list li {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.5rem;
+  background: var(--wg-green-light);
+  border-radius: 8px;
+}

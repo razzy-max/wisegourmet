@@ -8,8 +8,9 @@ export const adminApi = {
     const query = new URLSearchParams(cleanParams).toString();
     return apiRequest(`/admin/stats/overview${query ? `?${query}` : ''}`);
   },
-  getDeliveryZones() {
-    return apiRequest('/admin/delivery-zones');
+  getDeliveryZones(branch = '') {
+    const query = branch ? `?branch=${encodeURIComponent(branch)}` : '';
+    return apiRequest(`/admin/delivery-zones${query}`);
   },
   createDeliveryZone(payload) {
     return apiRequest('/admin/delivery-zones', { method: 'POST', body: payload });

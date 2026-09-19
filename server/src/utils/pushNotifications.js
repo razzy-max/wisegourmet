@@ -63,12 +63,21 @@ const sendToUserRecord = async (user, payload) => {
   await cleanupInvalidSubscriptions(user._id, staleEndpoints);
 };
 
-const sendPushToRoles = async (roles = [], payload = {}) => {
+// `branchId`, when given, only pings users assigned to that branch — used
+// for kitchen work, which is location-bound. Omit it (the default) for
+// today's exact behavior: every user with a matching role, everywhere.
+// Riders are intentionally never branch-filtered — see the multi-branch plan.
+const sendPushToRoles = async (roles = [], payload = {}, { branchId = null } = {}) => {
   if (!isPushConfigured() || !roles.length) {
     return;
   }
 
-  const users = await User.find({ role: { $in: roles }, isActive: true }).select('_id pushSubscriptions');
+  const query = { role: { $in: roles }, isActive: true };
+  if (branchId) {
+    query.branches = branchId;
+  }
+
+  const users = await User.find(query).select('_id pushSubscriptions');
   const normalizedPayload = buildPayload(payload);
 
   await Promise.all(users.map((user) => sendToUserRecord(user, normalizedPayload)));

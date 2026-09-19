@@ -28,12 +28,21 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['customer', 'staff', 'admin', 'rider', 'support'],
+      enum: ['customer', 'staff', 'admin', 'branch_admin', 'rider', 'support'],
       default: 'customer',
     },
     isActive: {
       type: Boolean,
       default: true,
+    },
+    // Which branch(es) this account is scoped to. Meaningful for
+    // staff/branch_admin (kitchen work is location-bound — enforced as a
+    // single entry by the admin UI/controller) and rider (can hold several,
+    // since riders float between branches; advisory only, never restricts
+    // what a rider can see or claim). Empty/unset for customer/admin/support.
+    branches: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Branch' }],
+      default: [],
     },
     savedAddress: {
       fullText: {

@@ -115,9 +115,9 @@ export default function AdminOrdersPage() {
               <thead>
                 <tr>
                   <th>Order</th>
-                  <th>Customer</th>
                   <th className="num">Total</th>
                   <th>Status</th>
+                  <th>Customer</th>
                   <th>Kitchen</th>
                   <th>Rider</th>
                   <th></th>
@@ -144,6 +144,12 @@ export default function AdminOrdersPage() {
                           </div>
                         </div>
                       </td>
+                      <td className="num tabular">₦{Number(order.total || 0).toLocaleString()}</td>
+                      <td>
+                        <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
+                          {getStatusLabel(order.status)}
+                        </span>
+                      </td>
                       <td>
                         <div className="row-name">{order.customer?.fullName || 'Unknown'}</div>
                         {order.customer?.phone && (
@@ -151,12 +157,6 @@ export default function AdminOrdersPage() {
                             <a href={`tel:${order.customer.phone}`}>{order.customer.phone}</a>
                           </div>
                         )}
-                      </td>
-                      <td className="num tabular">₦{Number(order.total || 0).toLocaleString()}</td>
-                      <td>
-                        <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
-                          {getStatusLabel(order.status)}
-                        </span>
                       </td>
                       <td>
                         {order.kitchenHandledBy ? (

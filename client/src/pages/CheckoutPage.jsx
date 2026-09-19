@@ -8,15 +8,21 @@ import PinDisplay from '../components/PinDisplay';
 import { CheckCircleIcon } from '../components/icons';
 import './OrderFlow.css';
 
-const getZoneLabel = (zoneKey, zones = []) => {
-  if (!zoneKey) return 'Select zone';
-  const matched = zones.find((zone) => zone.key === zoneKey);
-  return matched?.label || zoneKey.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+// Zones are merged by key across feasible branches (server picks the
+// cheapest branch offering the chosen key at order-creation time), so the
+// customer only ever picks a zone key here — never a branch.
+const getZoneLabel = (key, zones = []) => {
+  if (!key) return 'Select zone';
+  const matched = zones.find((zone) => zone.key === key);
+  if (matched) return matched.label;
+  return key.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
 export default function CheckoutPage() {
   const [searchParams] = useSearchParams();
   const { refreshCartCount } = useCart();
+  const [feasibleBranches, setFeasibleBranches] = useState([]);
+  const [pickupBranchId, setPickupBranchId] = useState('');
   const [form, setForm] = useState({
     fullText: '',
     area: '',
@@ -94,6 +100,10 @@ export default function CheckoutPage() {
         if (fetchedZones.length) {
           setForm((prev) => (prev.zone ? prev : { ...prev, zone: fetchedZones[0].key }));
         }
+
+        const branches = response.feasibleBranches || [];
+        setFeasibleBranches(branches);
+        setPickupBranchId((prev) => prev || branches[0]?._id || '');
       } catch {
         setZones([]);
       }
@@ -161,11 +171,18 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (fulfillmentType === 'self_pickup' && feasibleBranches.length > 1 && !pickupBranchId) {
+      setError('Please choose which branch to pick up from.');
+      setLoading(false);
+      return;
+    }
+
     try {
       // 1. Create order
       const createResponse = await orderApi.create({
         fulfillmentType,
         deliveryMode: 'zone',
+        branch: fulfillmentType === 'self_pickup' && feasibleBranches.length > 1 ? pickupBranchId : undefined,
         zone: fulfillmentType === 'delivery' ? form.zone : undefined,
         deliveryAddress:
           fulfillmentType === 'delivery'
@@ -248,7 +265,27 @@ export default function CheckoutPage() {
             {fulfillmentType === 'self_pickup' ? (
               <article className="pickup-info-card field-full">
                 <h4>Pickup Instructions</h4>
-                <p>Pick up from Wise Gourmet kitchen once your order is marked Ready for Pickup.</p>
+                {feasibleBranches.length > 1 ? (
+                  <label className="floating-field field-full" style={{ marginTop: '0.5rem' }}>
+                    <select
+                      value={pickupBranchId}
+                      onChange={(event) => setPickupBranchId(event.target.value)}
+                      required
+                    >
+                      <option value="" disabled>
+                        Select pickup branch
+                      </option>
+                      {feasibleBranches.map((branch) => (
+                        <option key={branch._id} value={branch._id}>
+                          {branch.name}
+                        </option>
+                      ))}
+                    </select>
+                    <span>Pick up from</span>
+                  </label>
+                ) : (
+                  <p>Pick up from Wise Gourmet once your order is marked Ready for Pickup.</p>
+                )}
                 <p className="muted">No delivery fee will be charged for this option.</p>
               </article>
             ) : null}

@@ -1,25 +1,30 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useBranch } from '../context/BranchContext';
 import SimpleNavDrawer from './SimpleNavDrawer';
 import ThemeToggle from './ThemeToggle';
 import { MenuIcon } from './icons';
 
 const NAV_ITEMS = [
   { path: '/staff/kitchen', label: 'Kitchen' },
+  { path: '/admin/menu', label: 'Menu Stock' },
   { path: '/staff/history', label: 'History' },
 ];
 
 export default function StaffNavBar() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+  const { branches } = useBranch();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const myBranchId = user?.branches?.[0] || '';
+  const myBranchName = branches.find((branch) => branch._id === myBranchId)?.name;
 
   return (
     <>
       <header className="nav-shell">
         <div className="nav-inner">
           <Link className="brand" to="/staff/kitchen">
-            Wise Gourmet (Kitchen)
+            Wise Gourmet (Kitchen){myBranchName ? ` — ${myBranchName}` : ''}
           </Link>
 
           <nav className="admin-nav-desktop">

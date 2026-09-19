@@ -25,16 +25,28 @@ const normalizeSubscription = (subscription) => {
 };
 
 const listRiders = asyncHandler(async (_req, res) => {
+  // Riders aren't branch-restricted (any rider can accept any branch's
+  // delivery) — `branches` here is advisory only, shown so an admin/staff
+  // member assigning a rider by hand can see who typically covers where.
   const riders = await User.find({ role: 'rider', isActive: true })
-    .select('fullName email phone role')
+    .select('fullName email phone role branches')
+    .populate('branches', 'name city')
     .sort({ fullName: 1 });
 
   res.json({ riders });
 });
 
-const listTeamMembers = asyncHandler(async (_req, res) => {
-  const users = await User.find({ role: { $in: ['staff', 'rider', 'support'] } })
-    .select('fullName email phone role isActive createdAt')
+const listTeamMembers = asyncHandler(async (req, res) => {
+  const query = { role: { $in: ['staff', 'branch_admin', 'rider', 'support'] } };
+
+  // A branch_admin only manages their own branch's team, not the whole business.
+  if (req.user.role === 'branch_admin') {
+    query.branches = { $in: req.user.branches };
+  }
+
+  const users = await User.find(query)
+    .select('fullName email phone role branches isActive createdAt')
+    .populate('branches', 'name city')
     .sort({ createdAt: -1 });
 
   res.json({ users });
@@ -114,15 +126,35 @@ const updateReengagementSettings = asyncHandler(async (req, res) => {
 
 const createTeamMember = asyncHandler(async (req, res) => {
   const { fullName, email, password, phone = '', role } = req.body;
+  let { branches } = req.body;
 
   if (!fullName || !email || !password || !role) {
     res.status(400);
     throw new Error('fullName, email, password and role are required');
   }
 
-  if (!['staff', 'rider', 'support'].includes(role)) {
+  const allowedRoles =
+    req.user.role === 'branch_admin' ? ['staff', 'rider'] : ['staff', 'branch_admin', 'rider', 'support'];
+
+  if (!allowedRoles.includes(role)) {
     res.status(400);
-    throw new Error('Role must be staff, rider, or support');
+    throw new Error(`Role must be one of: ${allowedRoles.join(', ')}`);
+  }
+
+  // A branch_admin can only ever staff their own branch(es) — whatever they
+  // send for `branches` is ignored in favor of their own assignment.
+  if (req.user.role === 'branch_admin') {
+    branches = req.user.branches;
+  }
+
+  if (['staff', 'branch_admin', 'rider'].includes(role) && (!Array.isArray(branches) || branches.length === 0)) {
+    res.status(400);
+    throw new Error('branches is required for staff, branch_admin, and rider accounts');
+  }
+
+  if (['staff', 'branch_admin'].includes(role) && branches.length > 1) {
+    res.status(400);
+    throw new Error('staff and branch_admin accounts belong to exactly one branch');
   }
 
   const normalizedEmail = String(email).toLowerCase().trim();
@@ -138,6 +170,7 @@ const createTeamMember = asyncHandler(async (req, res) => {
     password,
     phone,
     role,
+    branches: ['staff', 'branch_admin', 'rider'].includes(role) ? branches : [],
     isActive: true,
   });
 
@@ -148,10 +181,70 @@ const createTeamMember = asyncHandler(async (req, res) => {
       email: user.email,
       phone: user.phone,
       role: user.role,
+      branches: user.branches,
       isActive: user.isActive,
       createdAt: user.createdAt,
     },
     temporaryPassword: password,
+  });
+});
+
+// Assigns/reassigns which branch(es) an existing team member belongs to —
+// the only way to fix accounts that predate branches (e.g. seeded demo
+// staff/riders) without deleting and recreating them.
+const updateTeamMemberBranches = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { branches } = req.body;
+
+  if (!Array.isArray(branches) || branches.length === 0) {
+    res.status(400);
+    throw new Error('branches must be a non-empty array');
+  }
+
+  const user = await User.findById(id);
+  if (!user) {
+    res.status(404);
+    throw new Error('Team member not found');
+  }
+
+  if (!['staff', 'branch_admin', 'rider'].includes(user.role)) {
+    res.status(400);
+    throw new Error('Only staff, branch_admin, or rider accounts have a branch assignment');
+  }
+
+  if (['staff', 'branch_admin'].includes(user.role) && branches.length > 1) {
+    res.status(400);
+    throw new Error('staff and branch_admin accounts belong to exactly one branch');
+  }
+
+  if (req.user.role === 'branch_admin') {
+    // A branch_admin can only touch staff/rider already on their own team,
+    // and can only (re)assign them to their own branch — not move them
+    // elsewhere or reach into another branch's roster.
+    const isOwnBranchStaffOrRider =
+      ['staff', 'rider'].includes(user.role) &&
+      user.branches.some((branchId) => req.user.branches.some((ownId) => String(ownId) === String(branchId)));
+    const targetIsOwnBranch = branches.every((branchId) =>
+      req.user.branches.some((ownId) => String(ownId) === String(branchId))
+    );
+
+    if (!isOwnBranchStaffOrRider || !targetIsOwnBranch) {
+      res.status(403);
+      throw new Error('You can only manage staff/rider accounts on your own branch');
+    }
+  }
+
+  user.branches = branches;
+  await user.save();
+
+  res.json({
+    user: {
+      id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      role: user.role,
+      branches: user.branches,
+    },
   });
 });
 
@@ -164,9 +257,20 @@ const deleteTeamMember = asyncHandler(async (req, res) => {
     throw new Error('Team member not found');
   }
 
-  if (!['staff', 'rider', 'support'].includes(user.role)) {
+  if (!['staff', 'branch_admin', 'rider', 'support'].includes(user.role)) {
     res.status(400);
-    throw new Error('Only staff, rider, or support accounts can be deleted here');
+    throw new Error('Only staff, branch_admin, rider, or support accounts can be deleted here');
+  }
+
+  if (req.user.role === 'branch_admin') {
+    const isOwnBranchStaffOrRider =
+      ['staff', 'rider'].includes(user.role) &&
+      user.branches.some((branchId) => req.user.branches.some((ownId) => String(ownId) === String(branchId)));
+
+    if (!isOwnBranchStaffOrRider) {
+      res.status(403);
+      throw new Error('You can only manage staff/rider accounts on your own branch');
+    }
   }
 
   await User.deleteOne({ _id: user._id });
@@ -182,15 +286,26 @@ const resetTeamMemberPassword = asyncHandler(async (req, res) => {
     throw new Error('newPassword with minimum length 6 is required');
   }
 
-  const user = await User.findById(id).select('+password');
+  const user = await User.findById(id).select('+password branches');
   if (!user) {
     res.status(404);
     throw new Error('Team member not found');
   }
 
-  if (!['staff', 'rider', 'support'].includes(user.role)) {
+  if (!['staff', 'branch_admin', 'rider', 'support'].includes(user.role)) {
     res.status(400);
-    throw new Error('Only staff, rider, or support accounts can be reset here');
+    throw new Error('Only staff, branch_admin, rider, or support accounts can be reset here');
+  }
+
+  if (req.user.role === 'branch_admin') {
+    const isOwnBranchStaffOrRider =
+      ['staff', 'rider'].includes(user.role) &&
+      user.branches.some((branchId) => req.user.branches.some((ownId) => String(ownId) === String(branchId)));
+
+    if (!isOwnBranchStaffOrRider) {
+      res.status(403);
+      throw new Error('You can only manage staff/rider accounts on your own branch');
+    }
   }
 
   user.password = newPassword;
@@ -309,6 +424,7 @@ module.exports = {
   listRiders,
   listTeamMembers,
   createTeamMember,
+  updateTeamMemberBranches,
   deleteTeamMember,
   resetTeamMemberPassword,
   getNotificationConfig,

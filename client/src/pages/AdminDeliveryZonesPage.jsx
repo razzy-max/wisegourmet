@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminApi } from '../api/adminApi';
+import { branchApi } from '../api/branchApi';
+import { useAuth } from '../context/AuthContext';
 import { useInView } from '../hooks/useInView';
 import Skeleton from '../components/Skeleton';
 import './AdminPolish.css';
@@ -25,7 +27,12 @@ const blankForm = {
 };
 
 export default function AdminDeliveryZonesPage() {
+  const { user } = useAuth();
+  const isOwner = user?.role === 'admin';
+
   const [zones, setZones] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [branchFilter, setBranchFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -34,10 +41,26 @@ export default function AdminDeliveryZonesPage() {
   const [editingId, setEditingId] = useState('');
   const [editForm, setEditForm] = useState(blankForm);
 
+  useEffect(() => {
+    // A branch_admin's zones are inferred server-side from their own
+    // account — only the owner needs a picker across every branch.
+    if (!isOwner) {
+      return;
+    }
+    branchApi
+      .list()
+      .then((response) => {
+        const activeBranches = response.branches || [];
+        setBranches(activeBranches);
+        setBranchFilter((current) => current || activeBranches[0]?._id || '');
+      })
+      .catch((err) => setError(err.message));
+  }, [isOwner]);
+
   const loadZones = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await adminApi.getDeliveryZones();
+      const response = await adminApi.getDeliveryZones(isOwner ? branchFilter : '');
       setZones(response.zones || []);
       setError('');
     } catch (err) {
@@ -45,11 +68,14 @@ export default function AdminDeliveryZonesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isOwner, branchFilter]);
 
   useEffect(() => {
+    if (isOwner && !branchFilter) {
+      return;
+    }
     loadZones();
-  }, [loadZones]);
+  }, [loadZones, isOwner, branchFilter]);
 
   const activeCount = useMemo(() => zones.filter((zone) => zone.isActive).length, [zones]);
 
@@ -60,6 +86,15 @@ export default function AdminDeliveryZonesPage() {
       .replace(/[^a-z0-9]+/g, '_')
       .replace(/^_+|_+$/g, '');
 
+  // Zones with the same key from different branches get merged into one
+  // (cheapest fee wins) at checkout — capitalizing consistently keeps the
+  // label the customer sees tidy no matter which branch's zone wins.
+  const normalizeLabel = (value) =>
+    String(value || '')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+
   const submitNewZone = async (event) => {
     event.preventDefault();
     setError('');
@@ -69,9 +104,10 @@ export default function AdminDeliveryZonesPage() {
     try {
       const payload = {
         key: normalizeKey(form.key || form.label),
-        label: form.label.trim(),
+        label: normalizeLabel(form.label),
         fee: Number(form.fee),
         isActive: Boolean(form.isActive),
+        ...(isOwner ? { branch: branchFilter } : {}),
       };
 
       await adminApi.createDeliveryZone(payload);
@@ -107,7 +143,7 @@ export default function AdminDeliveryZonesPage() {
     try {
       await adminApi.updateDeliveryZone(zoneId, {
         key: normalizeKey(editForm.key || editForm.label),
-        label: editForm.label.trim(),
+        label: normalizeLabel(editForm.label),
         fee: Number(editForm.fee),
         isActive: Boolean(editForm.isActive),
       });
@@ -137,6 +173,19 @@ export default function AdminDeliveryZonesPage() {
       <h1>Delivery Zones</h1>
       <p className="muted">Manage zone labels and delivery fees used at checkout.</p>
 
+      {isOwner ? (
+        <div className="field-label" style={{ marginTop: '0.75rem' }}>
+          Branch:{' '}
+          <select value={branchFilter} onChange={(event) => setBranchFilter(event.target.value)}>
+            {branches.map((branch) => (
+              <option key={branch._id} value={branch._id}>
+                {branch.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+
       {error ? <p className="error">{error}</p> : null}
       {message ? <p className="message">{message}</p> : null}
       {loading ? <Skeleton variant="card" count={4} /> : null}
@@ -155,6 +204,10 @@ export default function AdminDeliveryZonesPage() {
 
         <article className="panel zone-create-card">
           <h3>Add Zone</h3>
+          <p className="muted">
+            Use the exact same zone name the other branch uses for the same area (e.g. "Zone A") — when both
+            branches can deliver there, customers automatically get whichever fee is cheaper.
+          </p>
           <form className="form" onSubmit={submitNewZone}>
             <input
               placeholder="Zone label (e.g. Zone D)"
