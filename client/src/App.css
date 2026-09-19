@@ -2372,7 +2372,12 @@ select:hover {
   position: fixed;
   left: 0;
   top: 0;
-  height: 100vh;
+  bottom: 0;
+  /* Anchoring both top and bottom (rather than a fixed height: 100vh) keeps
+     the drawer matching the actually-visible viewport on mobile Safari,
+     where 100vh is taller than what's visible while the address bar is
+     showing — that gap was pushing the footer's Logout button below the
+     fold. */
   width: 280px;
   background: var(--wg-card);
   box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
@@ -2444,6 +2449,7 @@ select:hover {
 
 .drawer-footer {
   padding: 1rem;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid #f0f0f0;
 }
 
