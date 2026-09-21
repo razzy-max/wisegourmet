@@ -12,7 +12,7 @@ const { reconcileCartDiscounts, computeCartDiscount } = require('../utils/cartDi
 const { validatePromoCodeEligibility } = require('../utils/promoCodeDiscount');
 const { isBranchScopingEnabled } = require('../utils/branchScoping');
 const { getFeasibleBranchIds, findRemovableConflicts } = require('../utils/branchAvailability');
-const { sendEmail, wrapEmail } = require('../utils/email');
+const { sendEmail, wrapEmail, BRAND_ORANGE, BRAND_ORANGE_DARK } = require('../utils/email');
 
 const buildOrderConfirmationEmail = (order) => {
   const itemRows = order.items
@@ -20,15 +20,19 @@ const buildOrderConfirmationEmail = (order) => {
       (item) => `
         <tr>
           <td style="padding:6px 0;font-size:14px;">${item.quantity} × ${item.name}</td>
-          <td style="padding:6px 0;font-size:14px;text-align:right;">₦${Number(item.price * item.quantity).toLocaleString()}</td>
+          <td style="padding:6px 0 6px 12px;font-size:14px;text-align:right;white-space:nowrap;">₦${Number(item.price * item.quantity).toLocaleString()}</td>
         </tr>`
     )
     .join('');
 
+  // Explicit column widths + left padding on the amount cell so the label
+  // and the figure never render flush against each other (some clients
+  // collapse a bare two-<td> row with no width split down to content
+  // width, leaving "Total paid₦6,390" with no visible gap).
   const summaryRow = (label, amount, bold) => `
-    <tr>
-      <td style="padding:4px 0;font-size:14px;${bold ? 'font-weight:bold;' : 'color:#6b6259;'}">${label}</td>
-      <td style="padding:4px 0;font-size:14px;text-align:right;${bold ? 'font-weight:bold;' : 'color:#6b6259;'}">₦${Number(amount || 0).toLocaleString()}</td>
+    <tr${bold ? ` style="border-top:1px solid #ece4d8;"` : ''}>
+      <td width="65%" style="padding:${bold ? '8px' : '4px'} 0;font-size:14px;${bold ? `font-weight:bold;color:${BRAND_ORANGE_DARK};` : 'color:#6b6259;'}">${label}</td>
+      <td width="35%" style="padding:${bold ? '8px' : '4px'} 0 ${bold ? '8px' : '4px'} 12px;font-size:${bold ? '16px' : '14px'};text-align:right;white-space:nowrap;${bold ? `font-weight:bold;color:${BRAND_ORANGE_DARK};` : 'color:#6b6259;'}">₦${Number(amount || 0).toLocaleString()}</td>
     </tr>`;
 
   const fulfillmentLine =
@@ -50,7 +54,7 @@ const buildOrderConfirmationEmail = (order) => {
        ${summaryRow('Total paid', order.total, true)}
      </table>
      <p style="font-size:14px;margin-top:16px;">${fulfillmentLine}</p>
-     ${order.deliveryPin ? `<p style="font-size:14px;">Delivery PIN: <b>${order.deliveryPin}</b> — share this with your rider on arrival.</p>` : ''}`
+     ${order.deliveryPin ? `<p style="font-size:14px;">Delivery PIN: <b style="color:${BRAND_ORANGE};font-size:16px;">${order.deliveryPin}</b> — share this with your rider on arrival.</p>` : ''}`
   );
 };
 
