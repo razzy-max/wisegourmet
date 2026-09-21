@@ -166,7 +166,12 @@ const orderSchema = new mongoose.Schema(
       },
       status: {
         type: String,
-        enum: ['pending', 'paid', 'failed'],
+        // 'verifying' is a brief transitional lock held only while a
+        // /payment/verify request is actively checking with Paystack —
+        // see verifyPayment's atomic claim in orderController.js. It
+        // always resolves to 'paid' or back to 'pending' within the
+        // same request.
+        enum: ['pending', 'verifying', 'paid', 'failed'],
         default: 'pending',
       },
       reference: {

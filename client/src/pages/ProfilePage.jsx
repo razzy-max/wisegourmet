@@ -21,6 +21,7 @@ const formatZoneLabel = (zoneKey) =>
 
 const initialForm = {
   fullName: '',
+  email: '',
   phone: '',
   savedAddress: {
     fullText: '',
@@ -57,6 +58,7 @@ export default function ProfilePage() {
       const response = await authApi.me();
       setForm({
         fullName: response.user?.fullName || '',
+        email: response.user?.email || '',
         phone: response.user?.phone || '',
         savedAddress: {
           fullText: response.user?.savedAddress?.fullText || '',
@@ -219,6 +221,25 @@ export default function ProfilePage() {
     }
   };
 
+  const closeAccount = async () => {
+    const password = window.prompt('Enter your password to confirm closing your account. This cannot be undone.');
+    if (!password) {
+      return;
+    }
+
+    if (!window.confirm('Are you sure? Your account will be closed and you’ll be logged out.')) {
+      return;
+    }
+
+    setError('');
+    try {
+      await authApi.closeAccount(password);
+      logout();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   return (
     <section className="page-wrap panel narrow profile-card">
       <div className="profile-header">
@@ -232,6 +253,15 @@ export default function ProfilePage() {
             value={form.fullName}
             disabled={!isEditing}
             onChange={(event) => setForm((prev) => ({ ...prev, fullName: event.target.value }))}
+          />
+        </label>
+        <label className="field">
+          <span className="field-label">Email</span>
+          <input
+            type="email"
+            value={form.email}
+            disabled={!isEditing}
+            onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
           />
         </label>
         <label className="field">
@@ -365,6 +395,15 @@ export default function ProfilePage() {
           </div>
         ) : null}
         {notificationsMessage ? <p className="muted" style={{ marginTop: '0.75rem' }}>{notificationsMessage}</p> : null}
+      </article>
+      <article className="panel" style={{ marginTop: '1rem' }}>
+        <h3>Close Account</h3>
+        <p className="muted">
+          This closes your account and signs you out. You won&apos;t be able to log back in unless you ask us to reopen it.
+        </p>
+        <button type="button" className="btn btn-danger" style={{ marginTop: '0.5rem' }} onClick={closeAccount}>
+          Close my account
+        </button>
       </article>
       {message ? <p className="message">{message}</p> : null}
       {error ? <p className="error">{error}</p> : null}

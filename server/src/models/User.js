@@ -75,6 +75,19 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Hashed (never store the raw token — same reason passwords are
+    // hashed: anyone reading the DB shouldn't be able to reset accounts).
+    // Cleared after a successful reset or once expired/replaced by a newer request.
+    passwordResetTokenHash: {
+      type: String,
+      default: null,
+      select: false,
+    },
+    passwordResetExpires: {
+      type: Date,
+      default: null,
+      select: false,
+    },
     pushSubscriptions: {
       type: [
         {

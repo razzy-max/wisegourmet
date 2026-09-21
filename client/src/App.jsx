@@ -12,6 +12,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import HomeMenuPage from './pages/HomeMenuPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import InstallPage from './pages/InstallPage';
 import OrderDetailsPage from './pages/OrderDetailsPage';
 import CartPage from './pages/CartPage';
@@ -152,6 +154,8 @@ function App() {
         <Route path="/admin/login" element={<Navigate to="/login" replace />} />
         <Route path="/staff/login" element={<Navigate to="/login" replace />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route
           path="/cart"
           element={

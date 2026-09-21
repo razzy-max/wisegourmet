@@ -98,6 +98,10 @@ export default function LoginPage() {
                 </button>
               </div>
 
+              <p className="auth-forgot-link">
+                <Link to="/forgot-password">Forgot password?</Link>
+              </p>
+
               <button className="btn auth-submit-btn" type="submit">
                 Sign in
               </button>

@@ -4,6 +4,9 @@ export const userApi = {
   listCustomers() {
     return apiRequest('/users/customers');
   },
+  deleteCustomer(id) {
+    return apiRequest(`/users/customers/${id}`, { method: 'DELETE' });
+  },
   sendReEngagementMessage(payload) {
     return apiRequest('/users/customers/notify', { method: 'POST', body: payload });
   },

@@ -16,4 +16,13 @@ export const authApi = {
   updateProfile(payload) {
     return apiRequest('/auth/profile', { method: 'PATCH', body: payload });
   },
+  forgotPassword(email) {
+    return apiRequest('/auth/forgot-password', { method: 'POST', body: { email } });
+  },
+  resetPassword(payload) {
+    return apiRequest('/auth/reset-password', { method: 'POST', body: payload });
+  },
+  closeAccount(password) {
+    return apiRequest('/auth/close-account', { method: 'POST', body: { password } });
+  },
 };

@@ -49,12 +49,15 @@ export async function getServiceWorkerRegistration(timeoutMs = 3000) {
 // these APIs as present (isPushSupported() === true) but any subscribe
 // attempt will fail. This is an iOS/WebKit-wide restriction, not specific
 // to Safari's UI, and there's no way to lift it from code.
-export function isIosNonStandalone() {
+const isIos = () => {
   const ua = navigator.userAgent.toLowerCase();
-  const isIos = /iphone|ipad|ipod/.test(ua) && !window.MSStream;
+  return /iphone|ipad|ipod/.test(ua) && !window.MSStream;
+};
+
+export function isIosNonStandalone() {
   const isStandalone =
     window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-  return isIos && !isStandalone;
+  return isIos() && !isStandalone;
 }
 
 export async function ensurePushSubscription(publicKey) {
@@ -69,6 +72,15 @@ export async function ensurePushSubscription(publicKey) {
   }
 
   if (window.Notification.permission === 'denied') {
+    // A standalone iOS home-screen app has no visible browser chrome, so
+    // "open your browser's site settings" (the desktop/Android fix) points
+    // nowhere — the actual reset path is the iPhone Settings app, or
+    // removing and re-adding the Home Screen icon if it's not listed there.
+    if (isIos()) {
+      throw new Error(
+        'Notifications are blocked for this app. Open iPhone Settings, scroll to this app in the list, and turn Notifications on. If it isn’t listed there, remove it from your Home Screen and add it again, then retry.'
+      );
+    }
     throw new Error(
       "Notifications are blocked for this site in your browser. Open your browser's site settings, allow notifications, then try again."
     );

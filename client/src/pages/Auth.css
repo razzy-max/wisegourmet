@@ -128,6 +128,17 @@
   font-weight: 600;
 }
 
+.auth-forgot-link {
+  margin: -0.3rem 0 0.4rem;
+  text-align: right;
+  font-size: 0.85rem;
+}
+
+.auth-forgot-link a {
+  color: var(--wg-green);
+  font-weight: 600;
+}
+
 /* Auth pages reuse .floating-label-field from the admin password page, but the
    password input sits inside a .form grid here, so make sure it spans full width
    and keeps consistent spacing with the floating-field inputs around it. */

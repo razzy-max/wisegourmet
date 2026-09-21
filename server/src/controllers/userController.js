@@ -62,6 +62,29 @@ const listCustomers = asyncHandler(async (_req, res) => {
   res.json({ customers: results });
 });
 
+// Hard delete, not deactivate — this is the owner explicitly removing an
+// account (spam, a takedown request, etc.), distinct from the customer's
+// own "close my account" which just deactivates. Orders/tickets already
+// tolerate a missing customer ref (shown as "Unknown customer" elsewhere),
+// so business/order history stays intact rather than being deleted too.
+const deleteCustomer = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const user = await User.findById(id);
+
+  if (!user) {
+    res.status(404);
+    throw new Error('Customer not found');
+  }
+
+  if (user.role !== 'customer') {
+    res.status(400);
+    throw new Error('This endpoint only deletes customer accounts');
+  }
+
+  await User.deleteOne({ _id: id });
+  res.json({ message: 'Customer account deleted.' });
+});
+
 const sendReEngagementMessage = asyncHandler(async (req, res) => {
   const { userIds, title, body } = req.body;
 
@@ -418,6 +441,7 @@ const unsubscribeNotifications = asyncHandler(async (req, res) => {
 
 module.exports = {
   listCustomers,
+  deleteCustomer,
   sendReEngagementMessage,
   getReengagementSettings,
   updateReengagementSettings,

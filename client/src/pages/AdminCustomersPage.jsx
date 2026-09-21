@@ -60,6 +60,18 @@ export default function AdminCustomersPage() {
     loadCustomers();
   }, [loadCustomers]);
 
+  const deleteCustomer = async (row) => {
+    if (!window.confirm(`Delete ${row.fullName}'s account (${row.email})? This cannot be undone.`)) {
+      return;
+    }
+    try {
+      await userApi.deleteCustomer(row._id);
+      await loadCustomers();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   const loadAutomationSettings = useCallback(async () => {
     try {
       const response = await userApi.getReengagementSettings();
@@ -233,6 +245,7 @@ export default function AdminCustomersPage() {
                 <th>Orders</th>
                 <th>Last Order</th>
                 <th>Inactive For</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -251,6 +264,11 @@ export default function AdminCustomersPage() {
                   <td>{row.orderCount}</td>
                   <td>{row.lastOrderAt ? new Date(row.lastOrderAt).toLocaleDateString() : 'Never ordered'}</td>
                   <td>{formatInactiveFor(row.hoursInactive)}</td>
+                  <td>
+                    <button className="btn btn-danger" type="button" onClick={() => deleteCustomer(row)}>
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

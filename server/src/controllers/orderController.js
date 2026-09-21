@@ -12,6 +12,47 @@ const { reconcileCartDiscounts, computeCartDiscount } = require('../utils/cartDi
 const { validatePromoCodeEligibility } = require('../utils/promoCodeDiscount');
 const { isBranchScopingEnabled } = require('../utils/branchScoping');
 const { getFeasibleBranchIds, findRemovableConflicts } = require('../utils/branchAvailability');
+const { sendEmail, wrapEmail } = require('../utils/email');
+
+const buildOrderConfirmationEmail = (order) => {
+  const itemRows = order.items
+    .map(
+      (item) => `
+        <tr>
+          <td style="padding:6px 0;font-size:14px;">${item.quantity} × ${item.name}</td>
+          <td style="padding:6px 0;font-size:14px;text-align:right;">₦${Number(item.price * item.quantity).toLocaleString()}</td>
+        </tr>`
+    )
+    .join('');
+
+  const summaryRow = (label, amount, bold) => `
+    <tr>
+      <td style="padding:4px 0;font-size:14px;${bold ? 'font-weight:bold;' : 'color:#6b6259;'}">${label}</td>
+      <td style="padding:4px 0;font-size:14px;text-align:right;${bold ? 'font-weight:bold;' : 'color:#6b6259;'}">₦${Number(amount || 0).toLocaleString()}</td>
+    </tr>`;
+
+  const fulfillmentLine =
+    order.fulfillmentType === 'self_pickup'
+      ? `Self pickup${order.deliveryAddress?.fullText ? ` — ${order.deliveryAddress.fullText}` : ''}`
+      : `Delivery — ${order.deliveryAddress?.fullText || ''}`;
+
+  return wrapEmail(
+    'Order confirmed — payment received',
+    `<p style="font-size:15px;line-height:1.5;">Thanks for your order! We’ve received your payment and the kitchen has been notified.</p>
+     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;border-top:1px solid #ece4d8;border-bottom:1px solid #ece4d8;padding:10px 0;">
+       <tr><td colspan="2" style="padding:6px 0;font-size:13px;color:#6b6259;">Order #${String(order._id).slice(-6).toUpperCase()} &middot; Ref ${order.payment?.reference || ''}</td></tr>
+       ${itemRows}
+     </table>
+     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+       ${summaryRow('Subtotal', order.subtotal)}
+       ${order.discount?.amount ? summaryRow('Discount', -order.discount.amount) : ''}
+       ${order.fulfillmentType === 'delivery' ? summaryRow('Delivery fee', order.deliveryFee) : ''}
+       ${summaryRow('Total paid', order.total, true)}
+     </table>
+     <p style="font-size:14px;margin-top:16px;">${fulfillmentLine}</p>
+     ${order.deliveryPin ? `<p style="font-size:14px;">Delivery PIN: <b>${order.deliveryPin}</b> — share this with your rider on arrival.</p>` : ''}`
+  );
+};
 
 const STAFF_ALLOWED_STATUSES = new Set([
   ORDER_STATUS.CONFIRMED,
@@ -689,6 +730,34 @@ const verifyPayment = asyncHandler(async (req, res) => {
     throw new Error('Invalid payment reference');
   }
 
+  const respondWithCurrentOrder = async () => {
+    const current = await Order.findById(order._id)
+      .populate('customer', 'fullName email phone role')
+      .populate('assignedRider', 'fullName email role')
+      .populate('kitchenHandledBy', 'fullName email phone role')
+      .populate('statusTimeline.changedBy', 'fullName role');
+    res.json({ order: current });
+  };
+
+  // A plain "if already paid, skip" read-then-write check can't close the
+  // real race here: the Paystack callback page's effect can fire this
+  // route twice almost simultaneously (StrictMode's double-invoke, a
+  // fast page refresh, a mobile browser retry) — both requests read
+  // 'pending' before either has saved, so both would proceed. Atomically
+  // claim the order for processing instead: only one concurrent request
+  // can flip status away from 'pending', so the loser sees no match here
+  // and just returns the current state instead of re-running side effects.
+  const claimed = await Order.findOneAndUpdate(
+    { _id: order._id, customer: req.user._id, 'payment.reference': reference, 'payment.status': 'pending' },
+    { $set: { 'payment.status': 'verifying' } },
+    { returnDocument: 'after' }
+  );
+
+  if (!claimed) {
+    await respondWithCurrentOrder();
+    return;
+  }
+
   // Verify with Paystack API for real transaction
   const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
   let isVerified = false;
@@ -717,14 +786,17 @@ const verifyPayment = asyncHandler(async (req, res) => {
   }
 
   if (!isVerified) {
+    // Release the claim so a genuine retry (payment actually succeeds on a
+    // later attempt) isn't permanently stuck at 'verifying'.
+    await Order.updateOne({ _id: claimed._id, 'payment.status': 'verifying' }, { $set: { 'payment.status': 'pending' } });
     res.status(400);
     throw new Error('Payment verification failed. Please try again.');
   }
 
-  order.payment.status = 'paid';
-  order.payment.reference = reference;
+  claimed.payment.status = 'paid';
+  claimed.payment.reference = reference;
   if (paystackData) {
-    order.payment.metadata = {
+    claimed.payment.metadata = {
       paystackReference: paystackData.reference,
       amount: paystackData.amount,
       paidAt: paystackData.paid_at,
@@ -734,28 +806,36 @@ const verifyPayment = asyncHandler(async (req, res) => {
   // A promo code only counts as "used" once its order is actually paid —
   // matches the same rule used for new-customer eligibility, so an
   // abandoned/never-paid order never burns a limited-use code.
-  if (order.discount?.promoCode) {
-    await PromoCode.updateOne({ _id: order.discount.promoCode }, { $inc: { usageCount: 1 } });
+  if (claimed.discount?.promoCode) {
+    await PromoCode.updateOne({ _id: claimed.discount.promoCode }, { $inc: { usageCount: 1 } });
   }
 
-  if (order.status === ORDER_STATUS.PENDING && canTransition(order.status, ORDER_STATUS.CONFIRMED)) {
-    order.status = ORDER_STATUS.CONFIRMED;
-    order.statusTimeline.push({
+  if (claimed.status === ORDER_STATUS.PENDING && canTransition(claimed.status, ORDER_STATUS.CONFIRMED)) {
+    claimed.status = ORDER_STATUS.CONFIRMED;
+    claimed.statusTimeline.push({
       status: ORDER_STATUS.CONFIRMED,
       changedBy: req.user._id,
       note: 'Payment verified',
     });
   }
 
-  await order.save();
+  await claimed.save();
 
-  const hydrated = await Order.findById(order._id)
+  const hydrated = await Order.findById(claimed._id)
     .populate('customer', 'fullName email phone role')
     .populate('assignedRider', 'fullName email role')
     .populate('kitchenHandledBy', 'fullName email phone role')
     .populate('statusTimeline.changedBy', 'fullName role');
 
   notifyOrderChanged(req, hydrated);
+
+  if (hydrated.customer?.email) {
+    await sendEmail({
+      to: hydrated.customer.email,
+      subject: `Order #${String(hydrated._id).slice(-6).toUpperCase()} confirmed — Wise Gourmet`,
+      html: buildOrderConfirmationEmail(hydrated),
+    });
+  }
 
   await sendCustomerStatusPush(hydrated);
 

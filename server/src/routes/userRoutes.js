@@ -1,6 +1,7 @@
 const express = require('express');
 const {
 	listCustomers,
+	deleteCustomer,
 	sendReEngagementMessage,
 	getReengagementSettings,
 	updateReengagementSettings,
@@ -20,6 +21,7 @@ const { protect, authorize } = require('../middleware/auth');
 const router = express.Router();
 
 router.get('/customers', protect, authorize('admin'), listCustomers);
+router.delete('/customers/:id', protect, authorize('admin'), deleteCustomer);
 router.post('/customers/notify', protect, authorize('admin'), sendReEngagementMessage);
 router.get('/reengagement-settings', protect, authorize('admin'), getReengagementSettings);
 router.put('/reengagement-settings', protect, authorize('admin'), updateReengagementSettings);
