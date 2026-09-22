@@ -915,8 +915,13 @@ button {
 
 /* Excludes checkbox/radio — this text-field styling (full width, padding,
    border-radius) was being inherited by every checkbox in the app, forcing
-   its native square box to stretch to ~100% of its flex row's width. */
-input:not([type='checkbox']):not([type='radio']),
+   its native square box to stretch to ~100% of its flex row's width.
+   Also excludes file inputs — this rule's higher specificity than
+   .hidden-file-input's was overriding its width:1px, stretching the
+   visually-hidden file input to 100% of its containing block (positioned
+   absolute with no left offset) and pushing it past the viewport edge,
+   causing horizontal overflow on pages with an upload zone (e.g. Support). */
+input:not([type='checkbox']):not([type='radio']):not([type='file']),
 textarea,
 select {
   width: 100%;
@@ -3010,7 +3015,12 @@ select:hover {
   padding-right: 2.5rem;
   border: 1px solid var(--wg-border);
   border-radius: 8px;
-  font-size: 0.95rem;
+  /* Must stay >= 16px — iOS Safari auto-zooms the whole viewport when a
+     focused input's font-size is below that, and since this is an SPA
+     (no full page reload), that zoom persists across route changes until
+     the user manually zooms back out. This field sits on login/register/
+     reset-password, the first inputs a customer taps. */
+  font-size: 1rem;
   font-family: 'Inter', sans-serif;
   background: var(--wg-card);
   color: var(--wg-text);
