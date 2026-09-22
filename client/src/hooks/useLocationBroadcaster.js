@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { orderApi } from '../api/orderApi';
+import { GESTURE_EVENTS } from '../lib/interactionEvents';
 
 const MIN_INTERVAL_MS = 5000;
 
@@ -22,6 +23,7 @@ export function useLocationBroadcaster(orderId) {
 
   const start = useCallback(() => {
     if (!orderId) return;
+    if (watchIdRef.current !== null) return; // already watching — avoid a duplicate watch
     if (!('geolocation' in navigator)) {
       setError('Location sharing is not supported on this device.');
       return;
@@ -74,23 +76,40 @@ export function useLocationBroadcaster(orderId) {
     }
 
     let cancelled = false;
-    let removeClickListener;
+    let removeGestureListeners;
 
+    // Not just a tap/click — any real interaction on the page (touch, mouse,
+    // keyboard) counts as the gesture browsers require before a permission
+    // prompt can appear.
     const askOnFirstInteraction = () => {
-      const handleFirstInteraction = () => start();
-      document.addEventListener('click', handleFirstInteraction, { once: true });
-      removeClickListener = () => document.removeEventListener('click', handleFirstInteraction);
+      const handleInteraction = () => {
+        removeGestureListeners();
+        start();
+        // If the prompt was dismissed without a decision (permission still
+        // "prompt"), re-arm for the next interaction instead of only ever
+        // getting one shot for this page view.
+        if ('permissions' in navigator) {
+          navigator.permissions
+            .query({ name: 'geolocation' })
+            .then((status) => {
+              if (!cancelled && status.state === 'prompt') askOnFirstInteraction();
+            })
+            .catch(() => {});
+        }
+      };
+      GESTURE_EVENTS.forEach((type) => document.addEventListener(type, handleInteraction, { once: true }));
+      removeGestureListeners = () => GESTURE_EVENTS.forEach((type) => document.removeEventListener(type, handleInteraction));
     };
 
     if (!('permissions' in navigator)) {
       // Permissions API can't be queried here (e.g. older Safari) — we can't
       // tell in advance whether this is already granted or denied, so fall
-      // back to asking on the page's first click, same as the common case.
+      // back to asking on the page's first interaction, same as the common case.
       askOnFirstInteraction();
       setCheckingPermission(false);
       return () => {
         cancelled = true;
-        if (removeClickListener) removeClickListener();
+        if (removeGestureListeners) removeGestureListeners();
       };
     }
 
@@ -123,7 +142,7 @@ export function useLocationBroadcaster(orderId) {
 
     return () => {
       cancelled = true;
-      if (removeClickListener) removeClickListener();
+      if (removeGestureListeners) removeGestureListeners();
     };
   }, [orderId, start]);
 
