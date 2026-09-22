@@ -44,6 +44,34 @@
   height: 88px;
   width: auto;
   flex-shrink: 0;
+  animation: auth-logo-wobble 0.9s ease-in-out 0.15s both;
+  transform-origin: 50% 85%;
+}
+
+@keyframes auth-logo-wobble {
+  0% {
+    transform: rotate(0deg) scale(0.92);
+    opacity: 0;
+  }
+  35% {
+    transform: rotate(-6deg) scale(1.02);
+    opacity: 1;
+  }
+  60% {
+    transform: rotate(4deg) scale(1);
+  }
+  80% {
+    transform: rotate(-2deg) scale(1);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-brand-logo {
+    animation: none;
+  }
 }
 
 .auth-testimonial {

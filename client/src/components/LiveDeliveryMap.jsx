@@ -5,6 +5,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { TruckIcon, ProfileIcon, MapPinIcon } from './icons';
 import { fetchRoutePath } from '../lib/routing';
+import { useSmoothPosition } from '../hooks/useSmoothPosition';
 import './LiveDeliveryMap.css';
 
 const ROUTE_REFRESH_MS = 20000;
@@ -49,6 +50,12 @@ export default function LiveDeliveryMap({
   const hasRider = Number.isFinite(riderLocation?.lat) && Number.isFinite(riderLocation?.lng);
   const hasCustomer = Number.isFinite(customerLocation?.lat) && Number.isFinite(customerLocation?.lng);
   const hasAddress = Number.isFinite(deliveryAddress?.lat) && Number.isFinite(deliveryAddress?.lng);
+
+  // Only the marker's on-screen position animates — bounds-fitting below
+  // still reacts to the real (non-interpolated) location so the map
+  // doesn't chase the tween's intermediate points.
+  const riderSmoothPos = useSmoothPosition(hasRider ? [riderLocation.lat, riderLocation.lng] : null);
+  const customerSmoothPos = useSmoothPosition(hasCustomer ? [customerLocation.lat, customerLocation.lng] : null);
 
   const points = useMemo(() => {
     const list = [];
@@ -118,12 +125,12 @@ export default function LiveDeliveryMap({
           <Polyline positions={routePath} pathOptions={{ color: '#2b2118', weight: 4, opacity: 0.85 }} />
         ) : null}
         {hasRider ? (
-          <Marker position={[riderLocation.lat, riderLocation.lng]} icon={riderIcon}>
+          <Marker position={riderSmoothPos || [riderLocation.lat, riderLocation.lng]} icon={riderIcon}>
             <Popup>{viewerRole === 'rider' ? 'You' : 'Rider'}</Popup>
           </Marker>
         ) : null}
         {hasCustomer ? (
-          <Marker position={[customerLocation.lat, customerLocation.lng]} icon={customerIcon}>
+          <Marker position={customerSmoothPos || [customerLocation.lat, customerLocation.lng]} icon={customerIcon}>
             <Popup>{viewerRole === 'customer' ? 'You' : 'Customer'}</Popup>
           </Marker>
         ) : hasAddress ? (

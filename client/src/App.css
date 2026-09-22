@@ -998,8 +998,17 @@ select:hover {
 }
 
 .btn:active:not(:disabled) {
-  transform: translateY(0);
+  /* The hover lift above only ever fires on devices with a real pointer —
+     most users here are on mobile, where :hover never triggers, so this
+     scale-down is the only tactile press feedback they get at all. */
+  transform: translateY(0) scale(0.97);
   box-shadow: 0 1px 3px rgba(42, 122, 64, 0.15);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn:active:not(:disabled) {
+    transform: none;
+  }
 }
 
 .btn:disabled {
@@ -2164,6 +2173,22 @@ select:hover {
   border-color: var(--wg-amber);
   color: white;
   box-shadow: 0 0 0 4px rgba(232, 160, 32, 0.2);
+  animation: stepper-current-pulse 2s ease-in-out infinite;
+}
+
+@keyframes stepper-current-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(232, 160, 32, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(232, 160, 32, 0.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stepper-circle-current {
+    animation: none;
+  }
 }
 
 .stepper-circle-future {
@@ -3311,6 +3336,26 @@ input:-webkit-autofill::first-line {
     font-size: 13px;
     font-weight: 500;
     position: relative;
+  }
+
+  /* One-fifth-width bar that slides to the active tab. .mobile-bottom-nav
+     is already `position: fixed`, which is itself a containing block, so
+     no extra positioning context is needed here. */
+  .mobile-tab-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 20%;
+    height: 3px;
+    background: var(--wg-green);
+    border-radius: 0 0 3px 3px;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-tab-indicator {
+      transition: none;
+    }
   }
 
   .mobile-tab.active {

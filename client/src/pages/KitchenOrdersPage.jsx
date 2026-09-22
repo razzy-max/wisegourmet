@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { orderApi } from '../api/orderApi';
 import { useOrdersRealtime } from '../hooks/useOrdersRealtime';
+import { useNewItemIds } from '../hooks/useNewItemIds';
 import EnableAlertsCard from '../components/EnableAlertsCard';
 import PinEntryForm from '../components/PinEntryForm';
 import Skeleton from '../components/Skeleton';
@@ -47,6 +48,8 @@ export default function KitchenOrdersPage() {
       ),
     [orders]
   );
+
+  const newOrderIds = useNewItemIds(kitchenOrders);
 
   const updateStatus = async (orderId, status, note) => {
     setError('');
@@ -100,7 +103,7 @@ export default function KitchenOrdersPage() {
       <div className="grid">
         {kitchenOrders.map((order, index) => (
           <article
-            className={`panel order-card-enter ops-order-card ops-status-${order.status}`}
+            className={`panel order-card-enter ops-order-card ops-status-${order.status}${newOrderIds.has(order._id) ? ' ops-order-card-new' : ''}`}
             key={order._id}
             style={{ '--order-card-delay': `${Math.min(index, 8) * 0.05}s` }}
           >

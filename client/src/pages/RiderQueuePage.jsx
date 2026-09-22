@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { orderApi } from '../api/orderApi';
 import { useOrdersRealtime } from '../hooks/useOrdersRealtime';
+import { useNewItemIds } from '../hooks/useNewItemIds';
 import { useOrderLocationRealtime } from '../hooks/useOrderLocationRealtime';
 import { useLocationBroadcaster } from '../hooks/useLocationBroadcaster';
 import EnableAlertsCard from '../components/EnableAlertsCard';
@@ -211,6 +212,8 @@ export default function RiderQueuePage() {
     }
   }, [location.hash]);
 
+  const newQueueOrderIds = useNewItemIds(queueOrders);
+
   const activeOrders = useMemo(
     () =>
       myOrders.filter((order) =>
@@ -290,7 +293,7 @@ export default function RiderQueuePage() {
         <div className="grid">
           {queueOrders.map((order, index) => (
             <article
-              className={`panel order-card-enter ops-order-card ops-status-${order.status}`}
+              className={`panel order-card-enter ops-order-card ops-status-${order.status}${newQueueOrderIds.has(order._id) ? ' ops-order-card-new' : ''}`}
               key={order._id}
               style={{ '--order-card-delay': `${Math.min(index, 8) * 0.05}s` }}
             >

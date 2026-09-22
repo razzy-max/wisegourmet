@@ -26,6 +26,32 @@
   }
 }
 
+/* Flashes a card that just arrived via a live refresh (a genuinely new
+   order, not every card re-rendering on every refetch — see
+   useNewItemIds). The class itself is removed by that hook after a few
+   seconds, so this settles to the card's resting background well before
+   then rather than snapping back abruptly. */
+.ops-order-card-new {
+  animation: order-card-new-flash 4s ease-out both;
+}
+
+@keyframes order-card-new-flash {
+  0%, 55% {
+    background: var(--wg-green-light);
+    box-shadow: 0 0 0 2px var(--wg-green);
+  }
+  100% {
+    background: var(--wg-card);
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ops-order-card-new {
+    animation: none;
+  }
+}
+
 .live-map-wrap {
   margin: 0.75rem 0;
 }

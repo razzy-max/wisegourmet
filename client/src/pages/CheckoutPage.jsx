@@ -5,6 +5,7 @@ import { cartApi } from '../api/cartApi';
 import { authApi } from '../api/authApi';
 import { useCart } from '../context/CartContext';
 import PinDisplay from '../components/PinDisplay';
+import ConfettiBurst from '../components/ConfettiBurst';
 import { CheckCircleIcon } from '../components/icons';
 import './OrderFlow.css';
 
@@ -416,6 +417,7 @@ export default function CheckoutPage() {
         <div className="panel">
           <div className="checkout-confirmed-icon" aria-hidden="true">
             <CheckCircleIcon size={48} />
+            <ConfettiBurst />
           </div>
           <p><strong>Order Confirmed:</strong> {order._id}</p>
           <h3>Order summary</h3>

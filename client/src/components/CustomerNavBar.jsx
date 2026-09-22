@@ -1,12 +1,15 @@
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import ThemeToggle from './ThemeToggle';
 import { CartIcon, MenuIcon, ReceiptIcon, ProfileIcon, SupportIcon, LogoutIcon } from './icons';
 
+const BOTTOM_TAB_PATHS = ['/', '/cart', '/orders', '/profile', '/support'];
+
 export default function CustomerNavBar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout, isAuthenticated } = useAuth();
   const { cartCount, cartPulse } = useCart();
   const [animateCart, setAnimateCart] = useState(false);
@@ -74,6 +77,12 @@ export default function CustomerNavBar() {
     </span>
   );
 
+  const activeTabIndex = (() => {
+    if (location.pathname === '/') return 0;
+    const index = BOTTOM_TAB_PATHS.findIndex((path, i) => i > 0 && location.pathname.startsWith(path));
+    return index === -1 ? 0 : index;
+  })();
+
   const renderBottomNavIcon = (iconName) => {
     const icons = {
       menu: <MenuIcon className="mobile-nav-icon-svg" size={22} strokeWidth={2.2} />,
@@ -102,6 +111,7 @@ export default function CustomerNavBar() {
               <>
                 <NavLink
                   to="/cart"
+                  data-cart-icon-target="desktop"
                   className={() => {
                     const baseClass = 'nav-link cart-link cart-link-primary';
                     return animateCart ? `${baseClass} cart-link-pop` : baseClass;
@@ -179,7 +189,11 @@ export default function CustomerNavBar() {
                     Install
                   </button>
                 ) : null}
-                <Link to="/cart" className={animateCart ? 'mobile-cart-link cart-link-pop' : 'mobile-cart-link'}>
+                <Link
+                  to="/cart"
+                  data-cart-icon-target="mobile-top"
+                  className={animateCart ? 'mobile-cart-link cart-link-pop' : 'mobile-cart-link'}
+                >
                   <span className="mobile-cart-button">
                     {renderCartIcon('cart-icon cart-icon-mobile')}
                   </span>
@@ -215,11 +229,20 @@ export default function CustomerNavBar() {
 
       {isAuthenticated ? (
         <nav className="mobile-bottom-nav" aria-label="Main mobile navigation">
+          <span
+            className="mobile-tab-indicator"
+            aria-hidden="true"
+            style={{ transform: `translateX(${activeTabIndex * 100}%)` }}
+          />
           <NavLink to="/" className={({ isActive }) => (isActive ? 'mobile-tab active' : 'mobile-tab')}>
             {renderBottomNavIcon('menu')}
             <span>Menu</span>
           </NavLink>
-          <NavLink to="/cart" className={({ isActive }) => (isActive ? 'mobile-tab active' : 'mobile-tab')}>
+          <NavLink
+            to="/cart"
+            data-cart-icon-target="mobile-bottom"
+            className={({ isActive }) => (isActive ? 'mobile-tab active' : 'mobile-tab')}
+          >
             {renderBottomNavIcon('cart')}
             <span>Cart</span>
             {cartCount > 0 ? <span className="mobile-tab-badge">{cartCount}</span> : null}

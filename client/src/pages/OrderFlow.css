@@ -19,6 +19,7 @@
 
 /* --- Checkout: order-confirmed checkmark entrance --- */
 .checkout-confirmed-icon {
+  position: relative;
   display: flex;
   justify-content: center;
   color: var(--wg-green);

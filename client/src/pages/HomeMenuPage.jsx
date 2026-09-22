@@ -11,6 +11,7 @@ import { usePromotionsRealtime } from '../hooks/usePromotionsRealtime';
 import { useHeroBackgroundRealtime } from '../hooks/useHeroBackgroundRealtime';
 import { useInView } from '../hooks/useInView';
 import { buildGreeting } from '../utils/greeting';
+import { flyToCart } from '../lib/flyToCart';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PromoCarousel from '../components/PromoCarousel';
 import EnableAlertsCard from '../components/EnableAlertsCard';
@@ -187,7 +188,12 @@ function MenuItemCard({ item, quantity, onQuantityChange, onAddToCart }) {
           </button>
         </div>
       ) : null}
-      <button className="btn menu-add-btn" type="button" onClick={onAddToCart} disabled={!inStock}>
+      <button
+        className="btn menu-add-btn"
+        type="button"
+        onClick={(event) => onAddToCart(event)}
+        disabled={!inStock}
+      >
         {inStock ? 'Add to cart' : 'Currently unavailable'}
       </button>
     </article>
@@ -540,13 +546,15 @@ export default function HomeMenuPage() {
     }));
   };
 
-  const addToCart = async (item) => {
+  const addToCart = async (item, event) => {
     if (!isAuthenticated || user.role !== 'customer') {
       showToast('Login as customer to add items to cart.');
       return;
     }
 
     const quantity = quantities[item._id] || 1;
+    const sourceImg = event?.currentTarget?.closest('article')?.querySelector('.menu-item-image');
+    flyToCart(sourceImg);
     showToast(`${item.name} added to cart!`);
     adjustCartCount(quantity);
     triggerCartPulse();
@@ -632,7 +640,7 @@ export default function HomeMenuPage() {
             item={item}
             quantity={quantities[item._id] || 1}
             onQuantityChange={(quantity) => setItemQuantity(item._id, quantity)}
-            onAddToCart={() => addToCart(item)}
+            onAddToCart={(event) => addToCart(item, event)}
           />
         ))}
       </div>
