@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mirrors the web app's brand tokens in client/src/App.css (:root) -->
+    <color name="colorPrimary">#fa6d01</color>
+    <color name="colorPrimaryDark">#1c1815</color>
+    <color name="colorAccent">#fa6d01</color>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Wise Gourmet</string>
+    <string name="title_activity_main">Wise Gourmet</string>
+    <string name="package_name">com.wisegourmet.app</string>
+    <string name="custom_url_scheme">com.wisegourmet.app</string>
+</resources>
